@@ -4,7 +4,7 @@ import subprocess
 
 def fs_data_collect(group, path_base):
 
-	# subprocess.Popen(['/home/bran/Desktop/Skripte/fs_gen_tables %s' % group], shell=True, executable="/bin/bash")
+	# subprocess.Popen(['/home/bran/Desktop/bash_scripts/fs_gen_tables %s' % group], shell=True, executable="/bin/bash")
 	group_table	= pd.DataFrame()
 
 	f = open(path_base + group + '_tables/' + group + '_table_filenames.txt')

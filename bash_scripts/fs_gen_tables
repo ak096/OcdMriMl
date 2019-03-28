@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#extract all features from aseg.stats and apart.stats into tables using free surfer „“2table methods (for group ‚${SUB}={con|pat}‘ as command line input)
+
+PATH=$PATH:/usr/local/freesurfer/bin:/usr/local/freesurfer/fsfast/bin:/usr/local/freesurfer/tktools:/usr/local/freesurfer/mni/bin
+export PATH
+
+SUB=$1
+basepathtosubjfile=/home/bran/Desktop/FS_SUBJ_ALL
+basepathtotablesdir=$basepathtosubjfile/${SUB}_tables
+export SUBJECTS_DIR=$basepathtosubjfile/${SUB}
+echo $SUBJECTS_DIR
+
+#asegstats2table----
+
+asegstats2table --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt --tablefile $basepathtotablesdir/${SUB}.aseg.vol.table  --common-segs
+
+asegstats2table --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt --tablefile $basepathtotablesdir/${SUB}.aseg.mean-intensity.table  --meas mean
+
+asegstats2table --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt --tablefile $basepathtotablesdir/${SUB}.wmparc.vol.table  --stats wmparc.stats --common-segs
+
+
+#aparcstats2table-----
+
+#lh with Desikan (Default) then Destrieux (aparc.a2009s)
+
+aparcstats2table --hemi lh --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt --tablefile $basepathtotablesdir/${SUB}.lh.aparc.area.table 
+
+aparcstats2table --hemi lh --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt --tablefile $basepathtotablesdir/${SUB}.lh.aparc.thickness.table  --meas thickness
+
+aparcstats2table --hemi lh --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt --tablefile $basepathtotablesdir/${SUB}.lh.aparc.a2009.area.table  --parc aparc.a2009s
+
+aparcstats2table --hemi lh --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt --tablefile $basepathtotablesdir/${SUB}.lh.aparc.a2009.thickness.table  --parc aparc.a2009s --meas thickness
+
+
+#rh with Desikan (Default) then Destrieux (aparc.a2009s)
+
+aparcstats2table --hemi rh --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt --tablefile $basepathtotablesdir/${SUB}.rh.aparc.area.table 
+
+aparcstats2table --hemi rh --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt --tablefile $basepathtotablesdir/${SUB}.rh.aparc.thickness.table  --meas thickness
+
+aparcstats2table --hemi rh --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt --tablefile $basepathtotablesdir/${SUB}.rh.aparc.a2009.area.table  --parc aparc.a2009s
+
+aparcstats2table --hemi rh --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt --tablefile $basepathtotablesdir/${SUB}.rh.aparc.a2009.thickness.table  --parc aparc.a2009s --meas thickness
