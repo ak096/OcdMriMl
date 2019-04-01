@@ -114,6 +114,6 @@ aparcstats2table --hemi rh \
                  --common-parcs
 
 cd $basepathtotablesdir
-ls > ${SUB}_table_filenames.txt
+ls >| ${SUB}_table_filenames.txt
 
 conda deactivate ~/PycharmProjects/OcdMriMl/fs_script_env_py2
