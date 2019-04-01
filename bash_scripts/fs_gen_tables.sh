@@ -5,6 +5,8 @@
 
 SUB=$1
 basepathtosubjfile=~/Desktop/FS_SUBJ_ALL/${SUB}
+rm -r $basepathtosubjfile/${SUB}_tables
+mkdir $basepathtosubjfile/${SUB}_tables
 basepathtotablesdir=$basepathtosubjfile/${SUB}_tables
 export SUBJECTS_DIR=$basepathtosubjfile/${SUB}_FS_done
 echo "cd to" $SUBJECTS_DIR
@@ -112,4 +114,4 @@ aparcstats2table --hemi rh \
                  --common-parcs
 
 cd $basepathtotablesdir
-ls >| ${SUB}_table_filenames.txt
+ls *.table > ${SUB}_table_filenames.txt
