@@ -10,6 +10,8 @@ export SUBJECTS_DIR=$basepathtosubjfile/${SUB}_FS_done
 echo "cd to" $SUBJECTS_DIR
 cd $SUBJECTS_DIR
 
+conda activate ~/PycharmProjects/OcdMriMl/fs_script_env_py2
+
 #asegstats2table----
 
 asegstats2table --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
@@ -113,3 +115,5 @@ aparcstats2table --hemi rh \
 
 cd $basepathtotablesdir
 ls > ${SUB}_table_filenames.txt
+
+conda deactivate ~/PycharmProjects/OcdMriMl/fs_script_env_py2
