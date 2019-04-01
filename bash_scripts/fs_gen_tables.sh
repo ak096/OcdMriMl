@@ -54,20 +54,20 @@ aparcstats2table --hemi lh \
 
 aparcstats2table --hemi lh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
-                 --tablefile $basepathtotablesdir/${SUB}.lh.aparc.a2009.area.table  \
+                 --tablefile $basepathtotablesdir/${SUB}.lh.aparc.a2009s.area.table  \
                  --parc aparc.a2009s \
                  --common-parcs
 
 aparcstats2table --hemi lh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
-                 --tablefile $basepathtotablesdir/${SUB}.lh.aparc.a2009.thick.table \
+                 --tablefile $basepathtotablesdir/${SUB}.lh.aparc.a2009s.thick.table \
                  --parc aparc.a2009s \
                  --meas thickness \
                  --common-parcs
 
 aparcstats2table --hemi lh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
-                 --tablefile $basepathtotablesdir/${SUB}.lh.aparc.a2009.vol.table \
+                 --tablefile $basepathtotablesdir/${SUB}.lh.aparc.a2009s.vol.table \
                  --parc aparc.a2009s \
                  --meas volume \
                  --common-parcs
@@ -95,20 +95,20 @@ aparcstats2table --hemi rh \
 
 aparcstats2table --hemi rh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
-                 --tablefile $basepathtotablesdir/${SUB}.rh.aparc.a2009.area.table \
+                 --tablefile $basepathtotablesdir/${SUB}.rh.aparc.a2009s.area.table \
                  --parc aparc.a2009s \
                  --common-parcs
 
 aparcstats2table --hemi rh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
-                 --tablefile $basepathtotablesdir/${SUB}.rh.aparc.a2009.thick.table \
+                 --tablefile $basepathtotablesdir/${SUB}.rh.aparc.a2009s.thick.table \
                  --parc aparc.a2009s \
                  --meas thickness \
                  --common-parcs
 
 aparcstats2table --hemi rh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
-                 --tablefile $basepathtotablesdir/${SUB}.rh.aparc.a2009.vol.table \
+                 --tablefile $basepathtotablesdir/${SUB}.rh.aparc.a2009s.vol.table \
                  --parc aparc.a2009s \
                  --meas volume \
                  --common-parcs
