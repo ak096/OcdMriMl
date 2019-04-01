@@ -1,45 +1,37 @@
 import pandas as pd
 import subprocess
+import os
 
 
 def fs_data_collect(group, path_base):
 
-	# subprocess.Popen(['/home/bran/Desktop/bash_scripts/fs_gen_tables %s' % group], shell=True, executable="/bin/bash")
-	group_table	= pd.DataFrame()
+    # subprocess.Popen(['/fs_gen_tables %s' % group], shell=True, executable="/bin/bash")
+    group_table = pd.DataFrame()
 
-	f = open(path_base + group + '_tables/' + group + '_table_filenames.txt')
-	for line in f:
-		filename = line.rstrip('\n')
-		table = pd.read_table(path_base + group + '_tables/' + filename, index_col=0)
-		# rename columns
-		measure = table.index.name
-		table.index.name = 'subj'
-		table.columns = [n + '**' + measure for n in table.columns]
-		table.columns = [s.replace('_and_', '&') for s in table.columns]
+    # concat fs table files into one data frame
+    for table_file in os.scandir(path_base + group + '/' + group + '_tables/'):
+        table = pd.read_table(table_file.path, index_col=0)
 
-		frames = [group_table, table]
-		group_table = pd.concat(frames, axis=1)
-	f.close()
-	#print(group_table.columns.size)
-	group_table = group_table.groupby(lambda s: s, axis=1).sum()
-	group_table.sort_index(axis=1, inplace=True)
+        # specify feature set (columns)
+        if '.aseg.vol.' in table_file.name:
+            suffix = 'volume'
+        elif '.aseg.area.' in table_file.name:
+            suffix = 'area'
+        elif '.aparc.a2009s.' in table_file.name:
+            suffix = 'aparc.a2009s'
+        else:
+            suffix = 'aparc'
+        table.columns = [n + '**' + suffix if n != 'BrainSegVolNotVent' and n != 'eTIV' else n for n in table.columns]
 
-	#remove duplicate BrainSegVolNotVent and eTIV features
-	#print(group_table.columns.size)
-	#Bcount = 0
-	#ecount = 0
-	for x in group_table.columns.tolist():
-		if (x != "BrainSegVolNotVent**Measure:volume") and (x.split('**')[0] == "BrainSegVolNotVent"):
-			group_table.drop(columns=x, inplace=True)
-			#Bcount= Bcount+1
-		if x.split("**")[0] == "eTIV":
-			group_table.rename({x: "eTIV"}, axis='columns', inplace=True)
-			#ecount= ecount+1
-	#print(Bcount)
-	#print(ecount)
-	#print(group_table.columns.size)
-	group_table = group_table.loc[:, ~group_table.columns.duplicated()]
-	#print(group_table.columns.size)
-	#todo remove columns with only zeros
+        table.columns = [s.replace('_and_', '&') for s in table.columns]
 
-	return group_table
+        # name the subject index
+        table.index.name = 'subj'
+
+        frames = [group_table, table]
+        group_table = pd.concat(frames, axis=1)
+
+    # remove duplicates (BrainSegVolNotVent and eTIV features)
+    group_table = group_table.loc[:, ~group_table.columns.duplicated()]
+
+    return group_table
