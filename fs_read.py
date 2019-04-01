@@ -34,4 +34,7 @@ def fs_data_collect(group, path_base):
     # remove duplicates (BrainSegVolNotVent and eTIV features)
     group_table = group_table.loc[:, ~group_table.columns.duplicated()]
 
+    # remove constant features (f.e. all 0's)
+    group_table = group_table.loc[:, group_table.nunique() != 1]
+
     return group_table
