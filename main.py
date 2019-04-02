@@ -84,21 +84,21 @@ n = iteration['n']
 num_tfeats = iteration['num_tfeats']
 
 
-while True: # mean, minmax, (robust-quantile-based) normalizations of input data
+while True:  # mean, minmax, (robust-quantile-based) normalizations of input data
     t0 = time.time()
     norm = normType_list[n]
 
     print("HOEXTER Regression with norm " + norm)
-    hoexter_reg_models += regress(pat_frame_train_norms[n][hoexter_FSfeats], pat_frame_y_train_reg, cv_folds,
+    hoexter_reg_models = regress(pat_frame_train_norms[n][hoexter_FSfeats], pat_frame_y_train_reg, cv_folds,
                                      reg_scoring, normType_list[n])
     print("HOEXTER Classification with norm " + norm)
-    hoexter_clr_models += classify(pat_frame_train_norms[n][hoexter_FSfeats], pat_frame_y_train_clr, cv_folds,
+    hoexter_clr_models = classify(pat_frame_train_norms[n][hoexter_FSfeats], pat_frame_y_train_clr, cv_folds,
                                        clr_scoring, norm)
     print("BOEDHOE Regression with norm " + norm)
-    boedhoe_reg_models += regress(pat_frame_train_norms[n][boedhoe_FSfeats], pat_frame_y_train_reg, cv_folds,
+    boedhoe_reg_models = regress(pat_frame_train_norms[n][boedhoe_FSfeats], pat_frame_y_train_reg, cv_folds,
                                       reg_scoring, normType_list[n])
     print("BOEDHOE Classification with norm " + norm)
-    boedhoe_clr_models += classify(pat_frame_train_norms[n][boedhoe_FSfeats], pat_frame_y_train_clr, cv_folds,
+    boedhoe_clr_models = classify(pat_frame_train_norms[n][boedhoe_FSfeats], pat_frame_y_train_clr, cv_folds,
                                        clr_scoring, normType_list[n])
     print()
     print("!!!!!!!!!!!!!!!!!!!!!!!!HOEXTER and BOEDHOE with norm %s took %.2f seconds" % (norm, time.time()-t0))
@@ -118,23 +118,25 @@ while True: # mean, minmax, (robust-quantile-based) normalizations of input data
     t_feats = t_frame.columns.tolist()
     print("FINISHED COMPUTING T VALUES with norm " + norm)
     print()
-    while True: # through FS_tfeats
+    while True:  # through FS_tfeats
         t0 = time.time()
         t_feats = t_feats[0:num_tfeats]
 
         pat_frame_train_feats = pat_frame_train_norms[n][t_feats]
         print("Regression on %d tfeats with norm %s" % (num_tfeats, norm))
-        t_reg_models_all += regress(pat_frame_train_feats, pat_frame_y_train_reg, cv_folds,
+        t_reg_models = regress(pat_frame_train_feats, pat_frame_y_train_reg, cv_folds,
                                     reg_scoring, normType_list[n])
         print("Classification on %d tfeats with norm %s" % (num_tfeats, norm))
-        t_clr_models_all += classify(pat_frame_train_feats, pat_frame_y_train_clr, cv_folds,
+        t_clr_models = classify(pat_frame_train_feats, pat_frame_y_train_clr, cv_folds,
                                      clr_scoring, normType_list[n])
         print()
         print("!!!!!!!!!!!!!!!!!!!!!!!! %d t_feats with norm %s took %.2f seconds" % (num_tfeats, norm, time.time()-t0))
         print()
-        save_data('t', t_reg_models, t_reg_models)
+        save_data('t', t_reg_models, t_clr_models)
+
         t_reg_models_all += t_reg_models
         t_clr_models_all += t_clr_models
+
         t_reg_models = []
         t_clr_models = []
 
@@ -153,10 +155,12 @@ while True: # mean, minmax, (robust-quantile-based) normalizations of input data
 
     save_data('h', hoexter_reg_models, hoexter_clr_models)
     save_data('b', boedhoe_reg_models, boedhoe_clr_models)
+
     hoexter_reg_models_all += hoexter_reg_models
     hoexter_clr_models_all += hoexter_clr_models
     boedhoe_reg_models_all += boedhoe_reg_models
     boedhoe_clr_models_all += boedhoe_clr_models
+
     hoexter_reg_models = []
     hoexter_clr_models = []
     boedhoe_reg_models = []
