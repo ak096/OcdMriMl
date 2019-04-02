@@ -36,19 +36,19 @@ asegstats2table --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
 aparcstats2table --hemi lh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
                  --tablefile $basepathtotablesdir/${SUB}.lh.aparc.area.table \
-                 --common-parcs
+                 #--common-parcs
 
 aparcstats2table --hemi lh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
                  --tablefile $basepathtotablesdir/${SUB}.lh.aparc.thick.table \
                  --meas thickness \
-                 --common-parcs
+                 #--common-parcs
 
 aparcstats2table --hemi lh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
                  --tablefile $basepathtotablesdir/${SUB}.lh.aparc.vol.table \
                  --meas volume \
-                 --common-parcs
+                 #--common-parcs
 
 #lh with Destrieux (aparc.a2009s)
 
@@ -56,40 +56,40 @@ aparcstats2table --hemi lh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
                  --tablefile $basepathtotablesdir/${SUB}.lh.aparc.a2009s.area.table  \
                  --parc aparc.a2009s \
-                 --common-parcs
+                 #--common-parcs
 
 aparcstats2table --hemi lh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
                  --tablefile $basepathtotablesdir/${SUB}.lh.aparc.a2009s.thick.table \
                  --parc aparc.a2009s \
                  --meas thickness \
-                 --common-parcs
+                 #--common-parcs
 
 aparcstats2table --hemi lh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
                  --tablefile $basepathtotablesdir/${SUB}.lh.aparc.a2009s.vol.table \
                  --parc aparc.a2009s \
                  --meas volume \
-                 --common-parcs
+                 #--common-parcs
 
-#rh with Desikan (Default) then Destrieux (aparc.a2009s)
+#rh with Desikan (Default)
 
 aparcstats2table --hemi rh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
                  --tablefile $basepathtotablesdir/${SUB}.rh.aparc.area.table \
-                 --common-parcs
+                 #--common-parcs
 
 aparcstats2table --hemi rh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
                  --tablefile $basepathtotablesdir/${SUB}.rh.aparc.thick.table \
                  --meas thickness \
-                 --common-parcs
+                 #--common-parcs
 
 aparcstats2table --hemi rh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
                  --tablefile $basepathtotablesdir/${SUB}.rh.aparc.vol.table \
                  --meas volume \
-                 --common-parcs
+                 #--common-parcs
 
 #rh with Destrieux (aparc.a2009s)
 
@@ -97,20 +97,20 @@ aparcstats2table --hemi rh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
                  --tablefile $basepathtotablesdir/${SUB}.rh.aparc.a2009s.area.table \
                  --parc aparc.a2009s \
-                 --common-parcs
+                 #--common-parcs
 
 aparcstats2table --hemi rh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
                  --tablefile $basepathtotablesdir/${SUB}.rh.aparc.a2009s.thick.table \
                  --parc aparc.a2009s \
                  --meas thickness \
-                 --common-parcs
+                 #--common-parcs
 
 aparcstats2table --hemi rh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
                  --tablefile $basepathtotablesdir/${SUB}.rh.aparc.a2009s.vol.table \
                  --parc aparc.a2009s \
                  --meas volume \
-                 --common-parcs
+                 #--common-parcs
 
 cd $basepathtotablesdir
