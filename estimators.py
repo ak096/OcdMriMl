@@ -76,7 +76,7 @@ def regress(feat_frame_train, y_train, cv_folds, performance_metric, normType_tr
 
     # SVM Regression
     svmr_hyper_param_space = svm_hyper_param_space('reg')
-    reg_params.append([SVR(cache_size=1000, max_iter=10000), svmr_hyper_param_space, regType_list[1]])
+    reg_params.append([SVR(cache_size=2000, max_iter=10000), svmr_hyper_param_space, regType_list[1]])
 
 
     # MLP Regression
@@ -137,7 +137,7 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normType_t
 
     # SVM Classification
     svmc_hyper_param_space = svm_hyper_param_space('clr')
-    clr_params.append([SVC(cache_size=1000, max_iter=10000), svmc_hyper_param_space, clrType_list[1]])
+    clr_params.append([SVC(cache_size=2000, max_iter=10000), svmc_hyper_param_space, clrType_list[1]])
 
     # MLP Classification
     mlpc_hyper_param_space = mlp_hyper_param_space(num_samples, 'clr')

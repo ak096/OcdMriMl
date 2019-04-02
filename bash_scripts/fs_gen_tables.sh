@@ -31,7 +31,7 @@ asegstats2table --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
 
 #aparcstats2table-----
 
-#lh with Desikan (Default)
+#lh with Desikan (Default) atlas
 
 aparcstats2table --hemi lh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
@@ -50,7 +50,7 @@ aparcstats2table --hemi lh \
                  --meas volume \
                  #--common-parcs
 
-#lh with Destrieux (aparc.a2009s)
+#lh with Destrieux (aparc.a2009s) atlas
 
 aparcstats2table --hemi lh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
@@ -72,7 +72,7 @@ aparcstats2table --hemi lh \
                  --meas volume \
                  #--common-parcs
 
-#rh with Desikan (Default)
+#rh with Desikan (Default) atlas
 
 aparcstats2table --hemi rh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \
@@ -91,7 +91,7 @@ aparcstats2table --hemi rh \
                  --meas volume \
                  #--common-parcs
 
-#rh with Destrieux (aparc.a2009s)
+#rh with Destrieux (aparc.a2009s) atlas
 
 aparcstats2table --hemi rh \
                  --subjectsfile=$basepathtosubjfile/${SUB}_name_list.txt \

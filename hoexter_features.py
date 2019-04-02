@@ -1,32 +1,43 @@
 # Hoexter et al 2013 (CSTC)
-hoexter_FSfeats = ['rh_rostralanteriorcingulate_area**rh.aparc.area',
-                   'lh_rostralanteriorcingulate_area**lh.aparc.area',
-                   'lh_rostralanteriorcingulate_thickness**lh.aparc.thickness',
-                   'rh_rostralanteriorcingulate_thickness**rh.aparc.thickness',
+# volumetric data:
+# right rostral anteriorcingulate
+# left rostral anteriorcingulate
+# right thalamus
+# left thalamus
+# right medial orbitofrontal
+# right lateral orbitofrontal
+# left medial orbitofrontal
+# left lateral orbitofrontal
+# right accumbens area (?)
+# right pallidum
+# right putamen
+# right caudate
+# left accumbens area (?)
+# left pallidum
+# left putamen
+# left caudate
 
-                   'Left-Thalamus-Proper**Measure:mean',
-                   'Right-Thalamus-Proper**Measure:mean',
-                   'Right-Thalamus-Proper**Measure:volume',
-                   'Left-Thalamus-Proper**Measure:volume',
+hoexter_FSfeats = ['lh_rostralanteriorcingulate_volume**aparc',
+                   'rh_rostralanteriorcingulate_volume**aparc',
 
-                   'rh_medialorbitofrontal_thickness**rh.aparc.thickness',
-                   'lh_medialorbitofrontal_thickness**lh.aparc.thickness',
-                   'rh_medialorbitofrontal_area**rh.aparc.area',
-                   'lh_medialorbitofrontal_area**lh.aparc.area',
+                   'Right-Thalamus-Proper**volume',
+                   'Left-Thalamus-Proper**volume',
 
-                   'rh_lateralorbitofrontal_thickness**rh.aparc.thickness',
-                   'lh_lateralorbitofrontal_thickness**lh.aparc.thickness',
-                   'lh_lateralorbitofrontal_area**lh.aparc.area',
-                   'rh_lateralorbitofrontal_area**rh.aparc.area',
+                   'rh_medialorbitofrontal_volume**aparc',
+                   'lh_medialorbitofrontal_volume**aparc',
 
-                   'Left-Accumbens-area**Measure:volume',
-                   'Right-Accumbens-area**Measure:volume',
+                   'rh_lateralorbitofrontal_volume**aparc',
+                   'lh_lateralorbitofrontal_volume**aparc',
 
-                   'Left-Pallidum**Measure:volume',
+                   'Left-Accumbens-area**volume',
+                   'Right-Accumbens-area**volume',
 
-                   'Right-Putamen**Measure:volume',
-                   'Left-Putamen**Measure:volume',
+                   'Left-Pallidum**volume',
+                   'Right-Pallidum**volume',
 
-                   'Left-Caudate**Measure:volume',
-                   'Right-Caudate**Measure:volume'
+                   'Right-Putamen**volume',
+                   'Left-Putamen**volume',
+
+                   'Left-Caudate**volume',
+                   'Right-Caudate**volume'
                    ]
