@@ -114,4 +114,3 @@ aparcstats2table --hemi rh \
                  --common-parcs
 
 cd $basepathtotablesdir
-ls *.table > ${SUB}_table_filenames.txt
