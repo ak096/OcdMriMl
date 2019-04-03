@@ -156,8 +156,8 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normType_t
                               'C': C,
                               'class_weight': ['balanced'],
                               'max_iter': [10000]}
-    if feat_frame_train.shape[0] <= feat_frame_train.shape[1]:
-        logr_hyper_param_space['dual'] = [True]
+    # if feat_frame_train.shape[0] <= feat_frame_train.shape[1]:
+    #     logr_hyper_param_space['dual'] = [True]
     clr_params.append([LogisticRegression(), logr_hyper_param_space, clrType_list[4]])
 
     # KNeighbors Classification

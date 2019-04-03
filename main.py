@@ -141,7 +141,7 @@ while True:  # mean, minmax, (robust-quantile-based) normalizations of input dat
         t_clr_models = []
 
         num_tfeats += 1
-        if num_tfeats >= len(FS_feats):
+        if num_tfeats > len(FS_feats):
             iteration['num_tfeats'] = 1
             brk = True
         else:
@@ -169,7 +169,7 @@ while True:  # mean, minmax, (robust-quantile-based) normalizations of input dat
     n += 1
     iteration['n'] = n
     save_data('itr')
-    if n >= 2:
+    if n > 2:
         break
 
 # end while
