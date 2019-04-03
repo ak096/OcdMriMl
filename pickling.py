@@ -1,6 +1,5 @@
 import pickle
-from config import *
-import os
+import glob
 
 
 def save_data(data, reg_models=[], clr_models=[]):
@@ -28,21 +27,22 @@ def save_data(data, reg_models=[], clr_models=[]):
         bcm.close()
     elif data == 'itr':
         itr = open('itr.pkl', 'wb')
-        pickle.dump(iteration, itr, -1)
+        pickle.dump(glob.iteration, itr, -1)
         itr.close()
     return
 
 
 def pkl_loader(file):
-
-    models = []
+    print("LOADING PICKLE FILE : %s" % file.name)
+    model = []
     while True:
         try:
-            models += pickle.load(file)
+            model += pickle.load(file)
         except EOFError:
             break
-
-    return models
+    if not model:
+        print("DATA FROM PICKLE FILE EMPTY")
+    return model
 
 
 def load_data():
@@ -56,13 +56,20 @@ def load_data():
         trm = open('trm.pkl', 'rb')
         tcm = open('tcm.pkl', 'rb')
 
-        iteration = pickle.load(itr)
-        hoexter_reg_models_all = pkl_loader(hrm)
-        hoexter_clr_models_all = pkl_loader(hcm)
-        boedhoe_reg_models_all = pkl_loader(brm)
-        boedhoe_clr_models_all = pkl_loader(bcm)
-        t_reg_models_all = pkl_loader(trm)
-        t_clr_models_all = pkl_loader(tcm)
+
+        glob.iteration = pickle.load(itr)
+
+        glob.hoexter_reg_models_all = pkl_loader(hrm)
+
+        glob.hoexter_clr_models_all = pkl_loader(hcm)
+
+        glob.boedhoe_reg_models_all = pkl_loader(brm)
+
+        glob.boedhoe_clr_models_all = pkl_loader(bcm)
+
+        glob.t_reg_models_all = pkl_loader(trm)
+
+        glob.t_clr_models_all = pkl_loader(tcm)
 
         itr.close()
         hrm.close()
@@ -76,6 +83,7 @@ def load_data():
         pass
 
     return
+
 
 
 

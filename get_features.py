@@ -1,6 +1,6 @@
 from hoexter_features import hoexter_FSfeats
 from boedhoe_features import boedhoe_FSfeats
-from config import *
+from glob import *
 
 
 def get_feats(key, bm):
