@@ -214,4 +214,4 @@ writer = pd.ExcelWriter('results.xlsx')
 write_report(writer, best_models_results, pat_frame_y_test_clr, pat_frame_y_test_reg)
 
 writer.save()
-print("TOTAL TIME %.2f days" % (time.time()-start_time)*1.15741e-5)
+print("TOTAL TIME %.2f" % (time.time()-start_time))
