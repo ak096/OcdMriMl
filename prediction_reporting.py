@@ -31,11 +31,13 @@ def write_report(writer, best_models_results, pat_y_test_clr, pat_y_test_reg):
         elif est_class == 'clr':
             clr_frames.append(pred_results)
 
+        est_type = value['best_model']['est_type']
+
         # gather features
-        feat_data[key] = pd.Series(value['features'])
+        feat_data[key + '_' + est_type] = pd.Series(value['features'])
 
         # gather estimator parameters
-        param_data[key] = pd.Series(value['best_model']['GridObject'].best_params_)
+        param_data[key + '_' + est_type] = pd.Series(value['best_model']['GridObject'].best_params_)
 
     reg_frames.append(pat_y_test_reg)
     clr_frames.append(pat_y_test_clr)
