@@ -203,7 +203,7 @@ pickle.dump(best_models_results, bmr, -1)
 bmr.close()
 
 # best_models_results[key] = {'features': [list],
-#                             'est_class': {'reg'|'clr},
+#                             'est_class': 'reg'||'clr',
 #                             'best_model': {'GridObject': , 'est_type': , 'normType_train': , 'num_feats': },
 #                             'pred_results': prediction_frame
 #                             }
