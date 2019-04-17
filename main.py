@@ -14,12 +14,15 @@ from sklearn.model_selection import train_test_split
 import time
 import pickle
 from pickling import load_data, save_data
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
 
 start_time = time.time()
 
 glob.init_globals()
 
-seed = 1
+seed = 7
 np.random.seed(seed)
 
 # get data from FreeSurfer stats
@@ -42,17 +45,22 @@ num_reg = len(glob.regType_list)
 num_clr = len(glob.clrType_list)
 
 # get patient stats, labels, ybocs ...
-y = open('/home/bran/Desktop/data_master_akshay/akshay_pat_stats.csv')
-pat_stats = pd.DataFrame()
-pat_stats = pd.read_csv(y, index_col=0)
-y.close()
-if pat_stats.index.all() == pat_frame.index.all():
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds = ServiceAccountCredentials.from_json_keyfile_name('ocdmriml_gdrive_client_secret.json', scope)
+gsclient = gspread.authorize(creds)
+pat_stats_sheet = gsclient.open("AKSHAY_pat_stats").sheet1
+
+pat_frame_stats = pd.DataFrame(pat_stats_sheet.get_all_records())
+pat_frame_stats.index = pat_frame_stats.loc[:, 'subject']
+pat_frame_stats.drop(columns=['', 'subject'])
+
+if pat_frame_stats.index.values == pat_frame.index.values:
     print("FS pats and YBOCS pats indices are same")
 
-ybocs = pd.DataFrame({'YBOCS_total': pat_stats.loc[:, 'YBOCS_total']})
+ybocs = pd.DataFrame({'YBOCS': pat_frame_stats.loc[:, 'YBOCS']})
 
 # non-ocd (0-9) mild (10-20), moderate (21-30), severe (31-40) Okasha et. al. (2000)
-ybocs_classes = pd.DataFrame({'YBOCS_class_4': pat_stats.loc[:, 'YBOCS_class_4']})
+ybocs_classes = pd.DataFrame({'YBOCS_class_4': pat_frame_stats.loc[:, 'YBOCS_class_4']})
 
 # extract train and test sets
 pat_train, pat_test = train_test_split(pat_names, test_size=0.1)
@@ -69,7 +77,7 @@ pat_frame_train_norms, pat_frame_train_scalers = scale(pat_frame_train)
 pat_frame_test_norms = testSet_scale(pat_frame_test, pat_frame_train_scalers)
 con_frame_norms, con_frame_scalers = scale(con_frame)
 
-cv_folds = 3
+cv_folds = 4
 
 reg_scoring = 'neg_mean_absolute_error'
 clr_scoring = 'accuracy'
@@ -78,31 +86,30 @@ clr_scoring = 'accuracy'
 load_data()
 
 print(glob.iteration)
-print("shape of hr_models_all")
+print("shape of hr_clr_models_all")
 np.array(glob.hoexter_clr_models_all).shape
 
 n = glob.iteration['n']
 num_tfeats = glob.iteration['num_tfeats']
 
 
-
-
 while True:  # mean, minmax, (robust-quantile-based) normalizations of input data
     t0 = time.time()
     norm = glob.normType_list[n]
 
+
     print("HOEXTER Regression with norm " + norm)
     hoexter_reg_models = regress(pat_frame_train_norms[n][hoexter_FSfeats], pat_frame_y_train_reg, cv_folds,
-                                     reg_scoring, glob.normType_list[n])
+                                     reg_scoring, n)
     print("HOEXTER Classification with norm " + norm)
     hoexter_clr_models = classify(pat_frame_train_norms[n][hoexter_FSfeats], pat_frame_y_train_clr, cv_folds,
                                        clr_scoring, norm)
     print("BOEDHOE Regression with norm " + norm)
     boedhoe_reg_models = regress(pat_frame_train_norms[n][boedhoe_FSfeats], pat_frame_y_train_reg, cv_folds,
-                                      reg_scoring, glob.normType_list[n])
+                                      reg_scoring, n)
     print("BOEDHOE Classification with norm " + norm)
     boedhoe_clr_models = classify(pat_frame_train_norms[n][boedhoe_FSfeats], pat_frame_y_train_clr, cv_folds,
-                                       clr_scoring, glob.normType_list[n])
+                                       clr_scoring, n)
     print()
     print("!!!!!!!!!!!!!!!!!!!!!!!!HOEXTER and BOEDHOE with norm %s took %.2f seconds" % (norm, time.time()-t0))
     print()
@@ -128,10 +135,10 @@ while True:  # mean, minmax, (robust-quantile-based) normalizations of input dat
         pat_frame_train_feats = pat_frame_train_norms[n][t_feats]
         print("Regression on %d tfeats with norm %s" % (num_tfeats, norm))
         t_reg_models = regress(pat_frame_train_feats, pat_frame_y_train_reg, cv_folds,
-                                    reg_scoring, glob.normType_list[n])
+                                    reg_scoring, n)
         print("Classification on %d tfeats with norm %s" % (num_tfeats, norm))
         t_clr_models = classify(pat_frame_train_feats, pat_frame_y_train_clr, cv_folds,
-                                     clr_scoring, glob.normType_list[n])
+                                     clr_scoring, n)
         print()
         print("!!!!!!!!!!!!!!!!!!!!!!!! %d t_feats with norm %s took %.2f seconds" % (num_tfeats, norm, time.time()-t0))
         print()
@@ -187,7 +194,7 @@ for key, value in models_all.items():
     if value:
         bm = find_best_model(value)
         est_type = bm['est_type']
-        pat_frame_test = pat_frame_test_norms[glob.normType_list.index(bm['normType_train'])]
+        pat_frame_test = pat_frame_test_norms[bm['normType_train']]
         ft = get_feats(key, bm)
         if est_type in glob.regType_list:
             ec = 'reg'
@@ -206,7 +213,7 @@ bmr.close()
 #                             'est_class': 'reg'||'clr',
 #                             'best_model': {'GridObject': , 'est_type': , 'normType_train': , 'num_feats': },
 #                             'pred_results': prediction_frame
-#                             }
+#                            }
 
 # write prediction results to excel
 writer = pd.ExcelWriter('results.xlsx')
