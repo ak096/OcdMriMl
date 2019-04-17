@@ -13,6 +13,6 @@ def get_feats(key, bm):
         feats = boedhoe_FSfeats
     elif 't_' in key:
         print('returning tfeatures')
-        feats = glob.t_frame_perNorm_list[glob.normType_list.index(bm['normType_train'])].columns[0:bm['num_feats']].values
+        feats = glob.t_frame_perNorm_list[bm['normType_train']].columns[0:bm['num_feats']].values
 
     return feats
