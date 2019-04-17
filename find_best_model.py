@@ -1,4 +1,3 @@
-from operator import itemgetter
 
 
 def find_best_model(estimators_class_per_feats):
