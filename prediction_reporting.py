@@ -12,7 +12,7 @@ def predict_report(feat_set_est_class, best_model, pat_frame_test, feats, pat_y_
     print("%s: %.3f" % (best_model['GridObject'].scorer_, pred_score))
 
     return pd.DataFrame(index=pat_frame_test.index.values.tolist() + ['pred_score'],
-                        columns=[feat_set_est_class + '_' + best_model['est_type']],
+                        columns=[feat_set_est_class + '_' + best_model['est_type'] + '_' + best_model['normType_train']],
                         data=predictions.tolist() + [pred_score])
 
 
@@ -32,12 +32,13 @@ def write_report(writer, best_models_results, pat_y_test_clr, pat_y_test_reg):
             clr_frames.append(pred_results)
 
         est_type = value['best_model']['est_type']
+        normType_train = value['best_model']['normType_train']
 
         # gather features
-        feat_data[key + '_' + est_type] = pd.Series(value['features'])
+        feat_data[key + '_' + est_type + '_' + normType_train] = pd.Series(value['features'])
 
         # gather estimator parameters
-        param_data[key + '_' + est_type] = pd.Series(value['best_model']['GridObject'].best_params_)
+        param_data[key + '_' + est_type + '_' + normType_train] = pd.Series(value['best_model']['GridObject'].best_params_)
 
     reg_frames.append(pat_y_test_reg)
     clr_frames.append(pat_y_test_clr)
