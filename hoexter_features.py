@@ -17,7 +17,8 @@
 # left putamen
 # left caudate
 
-hoexter_FSfeats = ['lh_rostralanteriorcingulate_volume**aparc',
+hoexter_FSfeats = [
+                   'lh_rostralanteriorcingulate_volume**aparc',
                    'rh_rostralanteriorcingulate_volume**aparc',
 
                    'Right-Thalamus-Proper**volume',
