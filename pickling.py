@@ -1,5 +1,6 @@
 import pickle
 import glob
+import os
 
 
 def save_data(data, reg_models=[], clr_models=[]):
@@ -25,6 +26,10 @@ def save_data(data, reg_models=[], clr_models=[]):
         pickle.dump(clr_models, bcm, -1)
         brm.close()
         bcm.close()
+    elif data == 'tfn':
+        tfn = open('tfn.pkl', 'wb')
+        pickle.dump(glob.t_frame_perNorm_list, tfn, -1)
+        tfn.close()
     elif data == 'itr':
         itr = open('itr.pkl', 'wb')
         pickle.dump(glob.iteration, itr, -1)
@@ -33,6 +38,7 @@ def save_data(data, reg_models=[], clr_models=[]):
 
 
 def pkl_loader(file):
+
     print("LOADING PICKLE FILE : %s" % file.name)
     model = []
     while True:
@@ -55,9 +61,11 @@ def load_data():
         bcm = open('bcm.pkl', 'rb')
         trm = open('trm.pkl', 'rb')
         tcm = open('tcm.pkl', 'rb')
-
+        tfn = open('tfn.pkl', 'rb')
 
         glob.iteration = pickle.load(itr)
+
+        glob.t_frame_perNorm_list = pickle.load(tfn)
 
         glob.hoexter_reg_models_all = pkl_loader(hrm)
 
@@ -85,5 +93,15 @@ def load_data():
     return
 
 
+def remove_data():
+
+    try:
+        for file in os.listdir():
+            if file.endswith('.pkl'):
+                os.remove(file)
+    except OSError:
+        pass
+
+    return
 
 

@@ -16,7 +16,13 @@ def init_globals():
     # variables to save to disk (pickle) ---------
     # the iteration that needs to be done next
     global iteration
-    iteration = {'n': 0, 'num_tfeats': 1}
+    iteration = {'n': 0, 't_feats_num': 1, 'clr_targets': ['obs_class_3_score_range',
+                                                          'com_class_3_score_range',
+                                                          'YBOCS_class_3_score_range',
+                                                          'obs_class_3_equal_pat',
+                                                          'com_class_3_equal_pat',
+                                                          'YBOCS_class_3_equal_pat']
+                }
     # expert-picked-feature-based models for regression and classification
     global hoexter_reg_models_all
     hoexter_reg_models_all = []

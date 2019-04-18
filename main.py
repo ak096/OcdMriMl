@@ -13,17 +13,20 @@ from get_features import get_feats
 from sklearn.model_selection import train_test_split
 import time
 import pickle
-from pickling import load_data, save_data
+from pickling import load_data, save_data, remove_data
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import os
 
+# non-ocd (0-9) mild (10-20), moderate (21-30), severe (31-40) Okasha et. al. (2000)
 
 start_time = time.time()
 
 glob.init_globals()
+cv_folds = 5
 
-seed = 7
-np.random.seed(seed)
+# seed = 7
+# np.random.seed(seed)
 
 # get data from FreeSurfer stats
 path_base = '/home/bran/Desktop/FS_SUBJ_ALL/'
@@ -36,13 +39,16 @@ pat_frame = fs_data_collect(group[1], path_base)
 pd.DataFrame({'con': con_frame.columns[con_frame.columns != pat_frame.columns], 
               'pat': pat_frame.columns[con_frame.columns != pat_frame.columns]})
 
-glob.FS_feats = con_frame.columns
+glob.FS_feats = con_frame.columns.tolist()
 num_pats = pat_frame.shape[0]
-pat_names = pat_frame.index.values.tolist()
+pat_names = pat_frame.index.tolist()
 num_cons = con_frame.shape[0]
 
 num_reg = len(glob.regType_list)
 num_clr = len(glob.clrType_list)
+
+reg_scoring = 'neg_mean_absolute_error'
+clr_scoring = 'accuracy'
 
 # get patient stats, labels, ybocs ...
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -54,171 +60,189 @@ pat_frame_stats = pd.DataFrame(pat_stats_sheet.get_all_records())
 pat_frame_stats.index = pat_frame_stats.loc[:, 'subject']
 pat_frame_stats.drop(columns=['', 'subject'])
 
-if pat_frame_stats.index.values == pat_frame.index.values:
-    print("FS pats and YBOCS pats indices are same")
+if True in pat_frame_stats.index != pat_frame.index:
+    exit("feature and target pats not same")
 
-ybocs = pd.DataFrame({'YBOCS': pat_frame_stats.loc[:, 'YBOCS']})
-
-# non-ocd (0-9) mild (10-20), moderate (21-30), severe (31-40) Okasha et. al. (2000)
-ybocs_classes = pd.DataFrame({'YBOCS_class_4': pat_frame_stats.loc[:, 'YBOCS_class_4']})
-
-# extract train and test sets
-pat_train, pat_test = train_test_split(pat_names, test_size=0.1)
-
-pat_frame_train = pat_frame.loc[pat_train]
-pat_frame_y_train_reg = ybocs.loc[pat_train]
-pat_frame_y_train_clr = ybocs_classes.loc[pat_train]
-
-pat_frame_test = pat_frame.loc[pat_test]
-pat_frame_y_test_reg = ybocs.loc[pat_test]
-pat_frame_y_test_clr = ybocs_classes.loc[pat_test]
-
-pat_frame_train_norms, pat_frame_train_scalers = scale(pat_frame_train)
-pat_frame_test_norms = testSet_scale(pat_frame_test, pat_frame_train_scalers)
-con_frame_norms, con_frame_scalers = scale(con_frame)
-
-cv_folds = 4
-
-reg_scoring = 'neg_mean_absolute_error'
-clr_scoring = 'accuracy'
-
+demo_clin_feats = ['gender_num', 'age', 'duration', 'med']
+pat_frame = pd.concat([pat_frame, pat_frame_stats.loc[:, demo_clin_feats]], axis=1, sort=False)
 
 load_data()
 
+# test if load_data() worked
 print(glob.iteration)
 print("shape of hr_clr_models_all")
 np.array(glob.hoexter_clr_models_all).shape
 
+# load iteration loop values
+clr_targets = glob.iteration['clr_targets']
 n = glob.iteration['n']
-num_tfeats = glob.iteration['num_tfeats']
+t_feats_num = glob.iteration['t_feats_num']
 
 
-while True:  # mean, minmax, (robust-quantile-based) normalizations of input data
-    t0 = time.time()
-    norm = glob.normType_list[n]
+for clr_tgt in clr_targets:
 
+    if 'obs' in clr_tgt:
+        reg_target = pd.DataFrame({'obs': pat_frame_stats.loc[:, 'obs']})
+    elif 'com' in clr_tgt:
+        reg_target = pd.DataFrame({'com': pat_frame_stats.loc[:, 'com']})
+    else:
+        reg_target = pd.DataFrame({'YBOCS': pat_frame_stats.loc[:, 'YBOCS']})
 
-    print("HOEXTER Regression with norm " + norm)
-    hoexter_reg_models = regress(pat_frame_train_norms[n][hoexter_FSfeats], pat_frame_y_train_reg, cv_folds,
-                                     reg_scoring, n)
-    print("HOEXTER Classification with norm " + norm)
-    hoexter_clr_models = classify(pat_frame_train_norms[n][hoexter_FSfeats], pat_frame_y_train_clr, cv_folds,
-                                       clr_scoring, norm)
-    print("BOEDHOE Regression with norm " + norm)
-    boedhoe_reg_models = regress(pat_frame_train_norms[n][boedhoe_FSfeats], pat_frame_y_train_reg, cv_folds,
-                                      reg_scoring, n)
-    print("BOEDHOE Classification with norm " + norm)
-    boedhoe_clr_models = classify(pat_frame_train_norms[n][boedhoe_FSfeats], pat_frame_y_train_clr, cv_folds,
-                                       clr_scoring, n)
-    print()
-    print("!!!!!!!!!!!!!!!!!!!!!!!!HOEXTER and BOEDHOE with norm %s took %.2f seconds" % (norm, time.time()-t0))
-    print()
+    clr_target = pd.DataFrame({clr_tgt: pat_frame_stats.loc[:, clr_tgt]})
 
-    print("COMPUTING T VALUES with norm " + norm)
-    # t_test per feature
-    t_frame = pd.DataFrame(index=['t_statistic', 'p_value'], columns=glob.FS_feats)
-    for idx, feat in enumerate(glob.FS_feats):
-        t_result = ttest_ind(pat_frame_train_norms[n].loc[:, feat], con_frame_norms[n].loc[:, feat])
-        t_frame.iloc[0, idx] = t_result.statistic
-        t_frame.iloc[1, idx] = t_result.pvalue
+    # extract train and test sets
+    pat_names_train, pat_names_test = train_test_split(pat_names, test_size=0.15, stratify=clr_target)
 
-    t_frame.sort_values(by='t_statistic', axis=1, ascending=False, inplace=True)
-    glob.t_frame_perNorm_list.append(t_frame)
+    pat_frame_train = pat_frame.loc[pat_names_train, :]
+    pat_frame_y_train_reg = reg_target.loc[pat_names_train, :]
+    pat_frame_y_train_clr = clr_target.loc[pat_names_train, :]
 
-    t_feats = t_frame.columns.tolist()
-    print("FINISHED COMPUTING T VALUES with norm " + norm)
-    print()
-    while True:  # through FS_tfeats
+    pat_frame_test = pat_frame.loc[pat_names_test, :]
+    pat_frame_y_test_reg = reg_target.loc[pat_names_test, :]
+    pat_frame_y_test_clr = clr_target.loc[pat_names_test, :]
+
+    pat_frame_train_norms, pat_frame_train_scalers = scale(pat_frame_train)
+    pat_frame_test_norms = testSet_scale(pat_frame_test, pat_frame_train_scalers)
+    con_frame_norms, con_frame_scalers = scale(con_frame)
+
+    while True:  # mean, minmax, (robust-quantile-based) normalizations of input data
         t0 = time.time()
-        t_feats = t_feats[0:num_tfeats]
+        norm = glob.normType_list[n]
 
-        pat_frame_train_feats = pat_frame_train_norms[n][t_feats]
-        print("Regression on %d tfeats with norm %s" % (num_tfeats, norm))
-        t_reg_models = regress(pat_frame_train_feats, pat_frame_y_train_reg, cv_folds,
-                                    reg_scoring, n)
-        print("Classification on %d tfeats with norm %s" % (num_tfeats, norm))
-        t_clr_models = classify(pat_frame_train_feats, pat_frame_y_train_clr, cv_folds,
-                                     clr_scoring, n)
+        print("HOEXTER Regression with norm " + norm)
+        hoexter_reg_models = regress(pat_frame_train_norms[n][hoexter_FSfeats + demo_clin_feats],
+                                     pat_frame_y_train_reg, cv_folds, reg_scoring, n)
+        print("HOEXTER Classification with norm " + norm)
+        hoexter_clr_models = classify(pat_frame_train_norms[n][hoexter_FSfeats + demo_clin_feats],
+                                      pat_frame_y_train_clr, cv_folds, clr_scoring, n)
+        print("BOEDHOE Regression with norm " + norm)
+        boedhoe_reg_models = regress(pat_frame_train_norms[n][boedhoe_FSfeats + demo_clin_feats],
+                                     pat_frame_y_train_reg, cv_folds, reg_scoring, n)
+        print("BOEDHOE Classification with norm " + norm)
+        boedhoe_clr_models = classify(pat_frame_train_norms[n][boedhoe_FSfeats + demo_clin_feats],
+                                      pat_frame_y_train_clr, cv_folds, clr_scoring, n)
         print()
-        print("!!!!!!!!!!!!!!!!!!!!!!!! %d t_feats with norm %s took %.2f seconds" % (num_tfeats, norm, time.time()-t0))
+        print("!!!!!!!!!!!!!!!!!!!!!!!!HOEXTER and BOEDHOE with norm %s took %.2f seconds" % (norm, time.time()-t0))
         print()
-        save_data('t', t_reg_models, t_clr_models)
 
-        glob.t_reg_models_all += t_reg_models
-        glob.t_clr_models_all += t_clr_models
+        print("COMPUTING T VALUES with norm " + norm)
+        # t_test per feature
+        t_frame = pd.DataFrame(index=['t_statistic', 'p_value'], columns=glob.FS_feats)
+        for idx, feat in enumerate(glob.FS_feats):
+            t_result = ttest_ind(pat_frame_train_norms[n].loc[:, feat], con_frame_norms[n].loc[:, feat])
+            t_frame.iloc[0, idx] = t_result.statistic
+            t_frame.iloc[1, idx] = t_result.pvalue
 
-        t_reg_models = []
-        t_clr_models = []
+        t_frame.sort_values(by='t_statistic', axis=1, ascending=False, inplace=True)
+        glob.t_frame_perNorm_list.append(t_frame)
 
-        num_tfeats += 1
-        if num_tfeats > len(glob.FS_feats):
-            glob.iteration['num_tfeats'] = 1
+        t_feats = t_frame.columns.tolist()
+        print("FINISHED COMPUTING T VALUES from norm " + norm)
+        print()
+
+        while True:  # through FS_tfeats
+            t0 = time.time()
+            t_feats = t_feats[0:t_feats_num]
+
+            pat_frame_train_t_feats = pat_frame_train_norms[n][t_feats + demo_clin_feats]
+            print("Regression on %d tfeats with norm %s" % (t_feats_num, norm))
+            t_reg_models = regress(pat_frame_train_t_feats, pat_frame_y_train_reg, cv_folds,
+                                   reg_scoring, n)
+            print("Classification on %d tfeats with norm %s" % (t_feats_num, norm))
+            t_clr_models = classify(pat_frame_train_t_feats, pat_frame_y_train_clr, cv_folds,
+                                    clr_scoring, n)
+            print()
+            print("!!!!!!!!!!!!!!!!!!!!!!!! %d t_feats with norm %s took %.2f seconds" % (t_feats_num, norm, time.time() - t0))
+            print()
+            save_data('t', t_reg_models, t_clr_models)
+
+            glob.t_reg_models_all += t_reg_models
+            glob.t_clr_models_all += t_clr_models
+
+            t_reg_models = []
+            t_clr_models = []
+
+            t_feats_num += 1
+            if t_feats_num > len(glob.FS_feats):
+                glob.iteration['t_feats_num'] = 1
+                brk = True
+            else:
+                glob.iteration['t_feats_num'] = t_feats_num
+                brk = False
+            save_data('itr')
+            if brk:
+                break
+
+        # end while
+        save_data('tfn')
+        save_data('h', hoexter_reg_models, hoexter_clr_models)
+        save_data('b', boedhoe_reg_models, boedhoe_clr_models)
+
+        glob.hoexter_reg_models_all += hoexter_reg_models
+        glob.hoexter_clr_models_all += hoexter_clr_models
+        glob.boedhoe_reg_models_all += boedhoe_reg_models
+        glob.boedhoe_clr_models_all += boedhoe_clr_models
+
+        hoexter_reg_models = []
+        hoexter_clr_models = []
+        boedhoe_reg_models = []
+        boedhoe_clr_models = []
+
+        n += 1
+        if n > 1:
+            glob.iteration['n'] = 0
             brk = True
         else:
-            glob.iteration['num_feats'] = num_tfeats
-            brk = False
+            glob.iteration['n'] = n
         save_data('itr')
         if brk:
             break
 
     # end while
 
-    save_data('h', hoexter_reg_models, hoexter_clr_models)
-    save_data('b', boedhoe_reg_models, boedhoe_clr_models)
+    # find best trained models and prediction results
+    best_models_results = {}
+    models_all = {'hoexter_reg': glob.hoexter_reg_models_all, 'hoexter_clr': glob.hoexter_clr_models_all,
+                  'boedhoe_reg': glob.boedhoe_reg_models_all, 'boedhoe_clr': glob.boedhoe_clr_models_all,
+                  't_reg': glob.t_reg_models_all, 't_clr': glob.t_clr_models_all}
 
-    glob.hoexter_reg_models_all += hoexter_reg_models
-    glob.hoexter_clr_models_all += hoexter_clr_models
-    glob.boedhoe_reg_models_all += boedhoe_reg_models
-    glob.boedhoe_clr_models_all += boedhoe_clr_models
+    for key, value in models_all.items():
+        if value:
+            bm = find_best_model(value)
+            est_type = bm['est_type']
+            pat_frame_test = pat_frame_test_norms[bm['normType_train']]
+            ft = get_feats(key, bm) + demo_clin_feats
+            if est_type in glob.regType_list:
+                ec = 'reg'
+                pr = predict_report(key, bm, pat_frame_test, ft, pat_frame_y_test_reg)
+            elif est_type in glob.clrType_list:
+                ec = 'clr'
+                pr = predict_report(key, bm, pat_frame_test, ft, pat_frame_y_test_clr)
 
-    hoexter_reg_models = []
-    hoexter_clr_models = []
-    boedhoe_reg_models = []
-    boedhoe_clr_models = []
+            best_models_results[key] = {'features': ft, 'est_class': ec, 'best_model': bm, 'pred_results': pr}
 
-    n += 1
-    glob.iteration['n'] = n
+    # best_models_results[key] = {'features': [list],
+    #                             'est_class': 'reg'||'clr',
+    #                             'best_model': {'GridObject': , 'est_type': , 'normType_train': , 'num_feats': },
+    #                             'pred_results': prediction_frame
+    #                            }
+
+
+    # SAVE RESULTS
+    os.mkdir(clr_target)
+
+    bmr = open(clr_target + '/' + clr_target + '_bmr.pkl', 'wb')
+    pickle.dump(best_models_results, bmr, -1)
+    bmr.close()
+
+    # write prediction results to excel
+    writer = pd.ExcelWriter(clr_target + '/' + clr_target + '_results.xlsx')
+    write_report(writer, best_models_results, pat_frame_y_test_clr, pat_frame_y_test_reg)
+    writer.save()
+
+    clr_targets.remove(clr_tgt)
+    glob.iteration['clr_targets'] = clr_targets
+    remove_data()
     save_data('itr')
-    if n > 2:
-        break
 
-# end while
-
-# find best trained models and prediction results
-best_models_results = {}
-models_all = {'hoexter_reg': glob.hoexter_reg_models_all, 'hoexter_clr': glob.hoexter_clr_models_all,
-              'boedhoe_reg': glob.boedhoe_reg_models_all, 'boedhoe_clr': glob.boedhoe_clr_models_all,
-              't_reg': glob.t_reg_models_all, 't_clr': glob.t_clr_models_all}
-
-for key, value in models_all.items():
-    if value:
-        bm = find_best_model(value)
-        est_type = bm['est_type']
-        pat_frame_test = pat_frame_test_norms[bm['normType_train']]
-        ft = get_feats(key, bm)
-        if est_type in glob.regType_list:
-            ec = 'reg'
-            pr = predict_report(key, bm, pat_frame_test, ft, pat_frame_y_test_reg)
-        elif est_type in glob.clrType_list:
-            ec = 'clr'
-            pr = predict_report(key, bm, pat_frame_test, ft, pat_frame_y_test_clr)
-
-        best_models_results[key] = {'features': ft, 'est_class': ec, 'best_model': bm, 'pred_results': pr}
-
-bmr = open('bmr.pkl', 'wb')
-pickle.dump(best_models_results, bmr, -1)
-bmr.close()
-
-# best_models_results[key] = {'features': [list],
-#                             'est_class': 'reg'||'clr',
-#                             'best_model': {'GridObject': , 'est_type': , 'normType_train': , 'num_feats': },
-#                             'pred_results': prediction_frame
-#                            }
-
-# write prediction results to excel
-writer = pd.ExcelWriter('results.xlsx')
-
-write_report(writer, best_models_results, pat_frame_y_test_clr, pat_frame_y_test_reg)
-
-writer.save()
 print("TOTAL TIME %.2f" % (time.time()-start_time))
