@@ -172,8 +172,8 @@ for clr_tgt in clr_targets:
             save_data('itr')
             if brk:
                 break
+            # end while
 
-        # end while
         save_data('tfn')
         save_data('h', hoexter_reg_models, hoexter_clr_models)
         save_data('b', boedhoe_reg_models, boedhoe_clr_models)
@@ -194,11 +194,11 @@ for clr_tgt in clr_targets:
             brk = True
         else:
             glob.iteration['n'] = n
+            brk = False
         save_data('itr')
         if brk:
             break
-
-    # end while
+        # end while
 
     # find best trained models and prediction results
     best_models_results = {}
@@ -210,7 +210,7 @@ for clr_tgt in clr_targets:
         if value:
             bm = find_best_model(value)
             est_type = bm['est_type']
-            pat_frame_test = pat_frame_test_norms[bm['normType_train']]
+            pat_frame_test = pat_frame_test_norms[bm['normIdx_train']]
             ft = get_feats(key, bm) + demo_clin_feats
             if est_type in glob.regType_list:
                 ec = 'reg'
@@ -223,10 +223,9 @@ for clr_tgt in clr_targets:
 
     # best_models_results[key] = {'features': [list],
     #                             'est_class': 'reg'||'clr',
-    #                             'best_model': {'GridObject': , 'est_type': , 'normType_train': , 'num_feats': },
+    #                             'best_model': {'GridObject': , 'est_type': , 'normIdx_train': , 'num_feats': },
     #                             'pred_results': prediction_frame
     #                            }
-
 
     # SAVE RESULTS
     os.mkdir(clr_target)

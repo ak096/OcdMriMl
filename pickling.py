@@ -64,9 +64,9 @@ def load_data():
         tfn = open('tfn.pkl', 'rb')
 
         glob.iteration = pickle.load(itr)
-
+        print("LOADED PICKLE FILE : itr.pkl")
         glob.t_frame_perNorm_list = pickle.load(tfn)
-
+        print("LOADED PICKLE FILE : tfn.pkl")
         glob.hoexter_reg_models_all = pkl_loader(hrm)
 
         glob.hoexter_clr_models_all = pkl_loader(hcm)

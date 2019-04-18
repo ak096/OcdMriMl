@@ -56,7 +56,7 @@ def mlp_hyper_param_space(num_samples, est_type):
 
 
 # return best regressors in a list with order rfr, svmr, mlpr, lr, enr, rr, lasr, laslarr
-def regress(feat_frame_train, y_train, cv_folds, performance_metric, normType_train):
+def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_train):
 
     t0 = time.time()
 
@@ -112,14 +112,14 @@ def regress(feat_frame_train, y_train, cv_folds, performance_metric, normType_tr
         reg_all.append([GridSearchCV(reg_p[0], param_grid=reg_p[1], n_jobs=-1, scoring=performance_metric,
                                      cv=cv_folds, verbose=1, iid=True).fit(feat_frame_train, np.ravel(y_train)),
                         reg_p[2],
-                        normType_train,
+                        normIdx_train,
                         num_feats])
     print("!!!!!!!!!!!!!!!!!!!!!!!!REGRESSION TOOK %.2f seconds" % (time.time()-t0))
     return reg_all
 
 
 # return best classifiers in a list with order rfc, svmc, mlpc, abc, logr, knc, gpc, gnb, lda, qda
-def classify(feat_frame_train, y_train, cv_folds, performance_metric, normType_train):
+def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_train):
 
     t0 = time.time()
 
@@ -194,7 +194,7 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normType_t
         clr_all.append([GridSearchCV(clr_p[0], param_grid=clr_p[1], n_jobs=-1, scoring=performance_metric,
                                      cv=cv_folds, verbose=1, iid=True).fit(feat_frame_train, np.ravel(y_train)),
                         clr_p[2],
-                        normType_train,
+                        normIdx_train,
                         num_feats])
     print("!!!!!!!!!!!!!!!!!!!!!!!!CLASSIFICATION TOOK %.2f seconds" % (time.time()-t0))
     return clr_all

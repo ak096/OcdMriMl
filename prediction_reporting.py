@@ -1,18 +1,21 @@
 from sklearn.metrics import mean_absolute_error
 import pandas as pd
+import glob
 
 
-#  best_model =  {'GridObject': , 'est_type': , 'normType_train': , 'num_feats': },
+#  best_model =  {'GridObject': , 'est_type': , 'normIdx_train': , 'num_feats': },
 def predict_report(feat_set_est_class, best_model, pat_frame_test, feats, pat_y_test):
 
     print("Best trained model for %s is %s on normed TrainingSet type %s with %d number of features" %
-          (feat_set_est_class, best_model['est_type'], best_model['normType_train'], best_model['num_feats']))
+          (feat_set_est_class, best_model['est_type'], glob.normType_list[best_model['normIdx_train']],
+           best_model['num_feats']))
     predictions = best_model['GridObject'].predict(pat_frame_test.loc[:, feats])
     pred_score = mean_absolute_error(pat_y_test, predictions)
     print("%s: %.3f" % (best_model['GridObject'].scorer_, pred_score))
 
-    return pd.DataFrame(index=pat_frame_test.index.values.tolist() + ['pred_score'],
-                        columns=[feat_set_est_class + '_' + best_model['est_type'] + '_' + best_model['normType_train']],
+    return pd.DataFrame(index=pat_frame_test.index.tolist() + ['pred_score'],
+                        columns=[feat_set_est_class + '_' + best_model['est_type'] + '_' +
+                                 glob.normType_list[best_model['normIdx_train']]],
                         data=predictions.tolist() + [pred_score])
 
 
@@ -32,13 +35,14 @@ def write_report(writer, best_models_results, pat_y_test_clr, pat_y_test_reg):
             clr_frames.append(pred_results)
 
         est_type = value['best_model']['est_type']
-        normType_train = value['best_model']['normType_train']
+        normType_train = glob.normType_list[value['best_model']['normIdx_train']]
 
         # gather features
         feat_data[key + '_' + est_type + '_' + normType_train] = pd.Series(value['features'])
 
         # gather estimator parameters
-        param_data[key + '_' + est_type + '_' + normType_train] = pd.Series(value['best_model']['GridObject'].best_params_)
+        param_data[key + '_' + est_type + '_' + normType_train] = \
+            pd.Series(value['best_model']['GridObject'].best_params_)
 
     reg_frames.append(pat_y_test_reg)
     clr_frames.append(pat_y_test_clr)
