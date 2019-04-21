@@ -10,7 +10,7 @@ def fs_data_collect(group, path_base):
     group_frame = pd.DataFrame()
 
     # concat fs table files into one data frame
-    for table_file in os.scandir(path_base + group + '/' + group + '_tables/'):
+    for table_file in os.scandir(path_base + '/' + group + '/' + group + '_tables/'):
         print("reading %s" % table_file.path)
 
         table = pd.read_table(table_file.path, index_col=0)

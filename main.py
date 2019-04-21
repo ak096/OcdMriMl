@@ -34,7 +34,7 @@ cv_folds = 4
 # np.random.seed(seed)
 
 # get data from FreeSurfer stats
-path_base = os.path.abspath('~/Desktop/FS_SUBJ_ALL/')
+path_base = os.path.abspath('Desktop/FS_SUBJ_ALL').replace('PycharmProjects/OcdMriMl/', '')
 
 group = ['con', 'pat']
 
