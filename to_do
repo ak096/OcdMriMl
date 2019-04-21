@@ -1,9 +1,10 @@
 ## to do
-# ask kathrin if other features make any sense thicknessstd in cortex
+# check if global assignments pointers are a problem, consider just using the globals n and t_feats_num...think
+# about it differently now ...hmmm
 
 # recursive feature selection
 # Free Surfer Group Analysis
-# use of extra demographic features
+
 # deep learning on original images
 
 ## later if time

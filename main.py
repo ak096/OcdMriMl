@@ -74,32 +74,32 @@ print("shape of hr_clr_models_all")
 np.array(glob.hoexter_clr_models_all).shape
 
 # load iteration loop values
-clr_targets = glob.iteration['clr_targets']
+clr_tgts = glob.iteration['clr_targets']
 n = glob.iteration['n']
 t_feats_num = glob.iteration['t_feats_num']
 
 
-for clr_tgt in clr_targets:
+for clr_tgt in clr_tgts[:]:
 
     if 'obs' in clr_tgt:
-        reg_target = pd.DataFrame({'obs': pat_frame_stats.loc[:, 'obs']})
+        y_reg = pd.DataFrame({'obs': pat_frame_stats.loc[:, 'obs']})
     elif 'com' in clr_tgt:
-        reg_target = pd.DataFrame({'com': pat_frame_stats.loc[:, 'com']})
+        y_reg = pd.DataFrame({'com': pat_frame_stats.loc[:, 'com']})
     else:
-        reg_target = pd.DataFrame({'YBOCS': pat_frame_stats.loc[:, 'YBOCS']})
+        y_reg = pd.DataFrame({'YBOCS': pat_frame_stats.loc[:, 'YBOCS']})
 
-    clr_target = pd.DataFrame({clr_tgt: pat_frame_stats.loc[:, clr_tgt]})
+    y_clr = pd.DataFrame({clr_tgt: pat_frame_stats.loc[:, clr_tgt]})
 
     # extract train and test sets
-    pat_names_train, pat_names_test = train_test_split(pat_names, test_size=0.15, stratify=clr_target)
+    pat_names_train, pat_names_test = train_test_split(pat_names, test_size=0.15, stratify=y_clr)
 
     pat_frame_train = pat_frame.loc[pat_names_train, :]
-    pat_frame_y_train_reg = reg_target.loc[pat_names_train, :]
-    pat_frame_y_train_clr = clr_target.loc[pat_names_train, :]
+    pat_frame_y_train_reg = y_reg.loc[pat_names_train, :]
+    pat_frame_y_train_clr = y_clr.loc[pat_names_train, :]
 
     pat_frame_test = pat_frame.loc[pat_names_test, :]
-    pat_frame_y_test_reg = reg_target.loc[pat_names_test, :]
-    pat_frame_y_test_clr = clr_target.loc[pat_names_test, :]
+    pat_frame_y_test_reg = y_reg.loc[pat_names_test, :]
+    pat_frame_y_test_clr = y_clr.loc[pat_names_test, :]
 
     pat_frame_train_norms, pat_frame_train_scalers = scale(pat_frame_train)
     pat_frame_test_norms = testSet_scale(pat_frame_test, pat_frame_train_scalers)
@@ -136,15 +136,16 @@ for clr_tgt in clr_targets:
         t_frame.sort_values(by='t_statistic', axis=1, ascending=False, inplace=True)
         glob.t_frame_perNorm_list.append(t_frame)
 
-        t_feats = t_frame.columns.tolist()
+        t_feats_list = t_frame.columns.tolist()
         print("FINISHED COMPUTING T VALUES from norm " + norm)
         print()
 
-        while True:  # through FS_tfeats
+        while True:  # through FS_t_feats
             t0 = time.time()
-            t_feats = t_feats[0:t_feats_num]
-
+            t_feats = t_feats_list[0:t_feats_num]
+            print(t_feats)
             pat_frame_train_t_feats = pat_frame_train_norms[n][t_feats + demo_clin_feats]
+
             print("Regression on %d tfeats with norm %s" % (t_feats_num, norm))
             t_reg_models = regress(pat_frame_train_t_feats, pat_frame_y_train_reg, cv_folds,
                                    reg_scoring, n)
@@ -164,11 +165,11 @@ for clr_tgt in clr_targets:
 
             t_feats_num += 1
             if t_feats_num > len(glob.FS_feats):
-                glob.iteration['t_feats_num'] = 1
+                t_feats_num = 1
                 brk = True
             else:
-                glob.iteration['t_feats_num'] = t_feats_num
                 brk = False
+            glob.iteration['t_feats_num'] = t_feats_num
             save_data('itr')
             if brk:
                 break
@@ -190,11 +191,11 @@ for clr_tgt in clr_targets:
 
         n += 1
         if n > 1:
-            glob.iteration['n'] = 0
+            n = 0
             brk = True
         else:
-            glob.iteration['n'] = n
             brk = False
+        glob.iteration['n'] = n
         save_data('itr')
         if brk:
             break
@@ -228,20 +229,25 @@ for clr_tgt in clr_targets:
     #                            }
 
     # SAVE RESULTS
-    os.mkdir(clr_target)
+    try:
+        os.mkdir(clr_tgt)
+    except FileExistsError:
+        pass
 
-    bmr = open(clr_target + '/' + clr_target + '_bmr.pkl', 'wb')
-    pickle.dump(best_models_results, bmr, -1)
-    bmr.close()
+    # bmr = open(clr_tgt + '/' + clr_tgt + '_bmr.pkl', 'wb')
+    # pickle.dump(best_models_results, bmr, -1)
+    # bmr.close()
 
     # write prediction results to excel
-    writer = pd.ExcelWriter(clr_target + '/' + clr_target + '_results.xlsx')
+    writer = pd.ExcelWriter(clr_tgt + '/' + clr_tgt + '_results.xlsx')
     write_report(writer, best_models_results, pat_frame_y_test_clr, pat_frame_y_test_reg)
+    glob.t_frame_perNorm_list[0].to_excel(writer, 't_frame_' + glob.normType_list[0])
+    glob.t_frame_perNorm_list[1].to_excel(writer, 't_frame_' + glob.normType_list[1])
     writer.save()
 
-    clr_targets.remove(clr_tgt)
-    glob.iteration['clr_targets'] = clr_targets
+    glob.iteration['clr_targets'].remove(clr_tgt)
     remove_data()
+    glob.init_globals(itr=False)
     save_data('itr')
-
+    # end for loop
 print("TOTAL TIME %.2f" % (time.time()-start_time))

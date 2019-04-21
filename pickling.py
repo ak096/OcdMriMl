@@ -55,13 +55,13 @@ def load_data():
 
     try:
         itr = open('itr.pkl', 'rb')
+        tfn = open('tfn.pkl', 'rb')
         hrm = open('hrm.pkl', 'rb')
         hcm = open('hcm.pkl', 'rb')
         brm = open('brm.pkl', 'rb')
         bcm = open('bcm.pkl', 'rb')
         trm = open('trm.pkl', 'rb')
         tcm = open('tcm.pkl', 'rb')
-        tfn = open('tfn.pkl', 'rb')
 
         glob.iteration = pickle.load(itr)
         print("LOADED PICKLE FILE : itr.pkl")
@@ -80,6 +80,7 @@ def load_data():
         glob.t_clr_models_all = pkl_loader(tcm)
 
         itr.close()
+        tfn.close()
         hrm.close()
         hcm.close()
         brm.close()
