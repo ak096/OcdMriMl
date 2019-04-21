@@ -1,4 +1,4 @@
-pat_names_train_equal_per_YBOCS_class_3 = [
+pat_names_train_equal_per_class = [
     'pat_StFl82',
     'pat_KaGe55',
     'pat_FoDi79',
