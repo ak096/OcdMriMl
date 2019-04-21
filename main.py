@@ -23,7 +23,7 @@ import os
 start_time = time.time()
 
 glob.init_globals()
-cv_folds = 5
+cv_folds = 4
 
 # seed = 7
 # np.random.seed(seed)
@@ -172,12 +172,12 @@ for clr_tgt in clr_tgts[:]:
             t_feats_num += 1
             if t_feats_num > t_feats_num_total:
                 t_feats_num = 1
-                brk = True
+                brk1 = True
             else:
-                brk = False
+                brk1 = False
             glob.iteration['t_feats_num'] = t_feats_num
             save_data('itr')
-            if brk:
+            if brk1:
                 break
             # end while
 
@@ -198,12 +198,12 @@ for clr_tgt in clr_tgts[:]:
         n += 1
         if n > 1:
             n = 0
-            brk = True
+            brk2 = True
         else:
-            brk = False
+            brk2 = False
         glob.iteration['n'] = n
         save_data('itr')
-        if brk:
+        if brk2:
             break
         # end while
 
