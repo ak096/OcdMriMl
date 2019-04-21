@@ -9,7 +9,7 @@ from scale import scale, testSet_scale
 from prediction_reporting import predict_report, write_report
 from hoexter_features import hoexter_FSfeats
 from boedhoe_features import boedhoe_FSfeats
-from pat_names_train_equal_per_class import pat_names_train_equal_per_class
+from pat_names_train_equal_per_class import pat_names_train_equal_per_YBOCS_class_3
 from get_features import get_feats
 from sklearn.model_selection import train_test_split
 import time
