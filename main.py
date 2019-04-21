@@ -135,6 +135,12 @@ for clr_tgt in clr_tgts[:]:
 
         t_frame.sort_values(by='t_statistic', axis=1, ascending=False, inplace=True)
         glob.t_frame_perNorm_list.append(t_frame)
+        print('Dropping insignificant t features')
+        for column in t_frame:
+            if abs(t_frame.loc['t_statistic', column]) < 1.96 or abs(t_frame.loc['p_value', column]) > 0.05:
+                t_frame.drop(columns=column, inplace=True)
+        t_feats_num_total = t_frame.shape[1]
+        print('%d t features left' % t_feats_num_total)
 
         t_feats_list = t_frame.columns.tolist()
         print("FINISHED COMPUTING T VALUES from norm " + norm)
@@ -164,7 +170,7 @@ for clr_tgt in clr_tgts[:]:
             t_clr_models = []
 
             t_feats_num += 1
-            if t_feats_num > len(glob.FS_feats):
+            if t_feats_num > t_feats_num_total:
                 t_feats_num = 1
                 brk = True
             else:
