@@ -20,6 +20,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import os
 import warnings
 from sklearn.exceptions import ConvergenceWarning
+import copy
 
 warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
 
@@ -79,9 +80,9 @@ print("shape of hr_clr_models_all")
 np.array(glob.hoexter_clr_models_all).shape
 
 # load iteration loop values
-clr_tgts = glob.iteration['clr_targets']
-n = glob.iteration['n']
-t_feats_num = glob.iteration['t_feats_num']
+clr_tgts = copy.deepcopy(glob.iteration['clr_targets'])
+n = copy.deepcopy(glob.iteration['n'])
+t_feats_num = copy.deepcopy(glob.iteration['t_feats_num'])
 
 
 for clr_tgt in clr_tgts[:]:
@@ -96,7 +97,9 @@ for clr_tgt in clr_tgts[:]:
     y_clr = pd.DataFrame({clr_tgt: pat_frame_stats.loc[:, clr_tgt]})
 
     # extract train and test sets
-    pat_names_train, pat_names_test = train_test_split(pat_names, test_size=0.15, stratify=y_clr)
+    # pat_names_train, pat_names_test = train_test_split(pat_names, test_size=0.15, stratify=y_clr)
+    pat_names_train = pat_names_train_equal_per_YBOCS_class_3
+    pat_names_test = y_clr.drop(index=pat_names_train_equal_per_YBOCS_class_3).index.to_list()
 
     pat_frame_train = pat_frame.loc[pat_names_train, :]
     pat_frame_y_train_reg = y_reg.loc[pat_names_train, :]

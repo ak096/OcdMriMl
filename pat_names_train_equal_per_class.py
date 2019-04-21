@@ -1,3 +1,4 @@
+# 1-14 class 1; 15-35 class 2; 36-53 class 3
 pat_names_train_equal_per_YBOCS_class_3 = [
     'pat_StFl82',
     'pat_KaGe55',
@@ -53,3 +54,4 @@ pat_names_train_equal_per_YBOCS_class_3 = [
     'pat_IaAn60',
     'pat_BaCl80'
 ]
+
