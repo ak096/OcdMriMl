@@ -1,4 +1,4 @@
-pat_train_names_equal_per_class = [
+pat_names_train_equal_per_class = [
     'pat_StFl82',
     'pat_KaGe55',
     'pat_FoDi79',
