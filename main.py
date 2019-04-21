@@ -17,6 +17,10 @@ from pickling import load_data, save_data, remove_data
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+
+warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
 
 # non-ocd (0-9) mild (10-20), moderate (21-30), severe (31-40) Okasha et. al. (2000)
 
