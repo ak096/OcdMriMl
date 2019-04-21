@@ -1,6 +1,8 @@
 ## to do
-# check if global assignments pointers are a problem, consider just using the globals n and t_feats_num...think
-# about it differently now ...hmmm
+use only severe YBOCS for t feat selection, but train with those feats on wider train set
+
+ml experience : learning : can build up insights for further more focused analysis i.e. t feats inform further learning
+or simple clustering informs what features to focus on ... and reduces much searchin in hypothesis space
 
 # recursive feature selection
 # Free Surfer Group Analysis
