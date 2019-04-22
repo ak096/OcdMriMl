@@ -9,7 +9,7 @@ from scale import scale, testSet_scale
 from prediction_reporting import predict_report, write_report
 from hoexter_features import hoexter_FSfeats
 from boedhoe_features import boedhoe_FSfeats
-from pat_names_train_equal_per_class import pat_names_train_equal_per_YBOCS_class_3
+from pat_names_train_equal_per_class import *
 from get_features import get_feats
 from sklearn.model_selection import train_test_split
 import time
@@ -21,8 +21,13 @@ import os
 import warnings
 from sklearn.exceptions import ConvergenceWarning
 import copy
+import sys
 
 warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
+
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
+    os.environ["PYTHONWARNINGS"] = "ignore" # Also affect subprocesses
 
 # non-ocd (0-9) mild (10-20), moderate (21-30), severe (31-40) Okasha et. al. (2000)
 
