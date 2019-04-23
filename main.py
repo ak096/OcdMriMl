@@ -74,7 +74,8 @@ pat_frame_stats.drop(columns=['', 'subject'])
 if True in pat_frame_stats.index != pat_frame.index:
     exit("feature and target pats not same")
 
-demo_clin_feats = ['gender_num', 'age', 'duration', 'med']
+# demo_clin_feats = ['gender_num', 'age', 'duration', 'med']
+demo_clin_feats = []
 pat_frame = pd.concat([pat_frame, pat_frame_stats.loc[:, demo_clin_feats]], axis=1, sort=False)
 
 load_data()
@@ -102,8 +103,9 @@ for clr_tgt in clr_tgts[:]:
     y_clr = pd.DataFrame({clr_tgt: pat_frame_stats.loc[:, clr_tgt]})
 
     # extract train and test sets
-    pat_names_train, pat_names_test = train_test_split(pat_names, test_size=0.15, stratify=y_clr)
-
+    # pat_names_train, pat_names_test = train_test_split(pat_names, test_size=0.15, stratify=y_clr)
+    pat_names_train = pat_names_train_equal_per_YBOCS_class_3
+    pat_names_test = pat_names_test_equal_per_YBOCS_class_3
 
     pat_frame_train = pat_frame.loc[pat_names_train, :]
     pat_frame_y_train_reg = y_reg.loc[pat_names_train, :]
@@ -117,7 +119,7 @@ for clr_tgt in clr_tgts[:]:
     pat_frame_test_norms = testSet_scale(pat_frame_test, pat_frame_train_scalers)
     con_frame_norms, con_frame_scalers = scale(con_frame)
 
-    while True:  # mean, minmax, (robust-quantile-based) normalizations of input data
+    while True:  # standard, minmax, (robust-quantile-based) normalizations of input data
         t0 = time.time()
         norm = glob.normType_list[n]
 
@@ -208,7 +210,7 @@ for clr_tgt in clr_tgts[:]:
         boedhoe_clr_models = []
 
         n += 1
-        if n > 1:
+        if n >= 1:
             n = 0
             brk2 = True
         else:

@@ -18,8 +18,8 @@ def init_globals(itr=True):
 
         # variables to save to disk (pickle) ---------
         global iteration
-        iteration = {'n': 0, 't_feats_num': 1, 'clr_targets': ['obs_class_3_score_range',
-                                                               'com_class_3_score_range',
+        iteration = {'n': 0, 't_feats_num': 1, 'clr_targets': [#'obs_class_3_score_range',
+                                                               #'com_class_3_score_range',
                                                                'YBOCS_class_3_score_range']
                                                                #'obs_class_3_equal_pat',
                                                                #'com_class_3_equal_pat',
