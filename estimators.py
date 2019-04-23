@@ -78,8 +78,8 @@ def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tra
 
 
     # MLP Regression
-    mlpr_hyper_param_space = mlp_hyper_param_space(num_samples, 'reg')
-    reg_params.append([MLPRegressor(), mlpr_hyper_param_space, glob.regType_list[2]])
+    # mlpr_hyper_param_space = mlp_hyper_param_space(num_samples, 'reg')
+    # reg_params.append([MLPRegressor(), mlpr_hyper_param_space, glob.regType_list[2]])
 
 
     # Linear Regression
@@ -138,8 +138,8 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
     clr_params.append([SVC(cache_size=2000, max_iter=10000), svmc_hyper_param_space, glob.clrType_list[1]])
 
     # MLP Classification
-    mlpc_hyper_param_space = mlp_hyper_param_space(num_samples, 'clr')
-    clr_params.append([MLPClassifier(), mlpc_hyper_param_space, glob.clrType_list[2]])
+    # mlpc_hyper_param_space = mlp_hyper_param_space(num_samples, 'clr')
+    # clr_params.append([MLPClassifier(), mlpc_hyper_param_space, glob.clrType_list[2]])
 
     # Adaboost Classification
     # abc_hyper_param_space = {'n_estimators': np.arange(50, 101, 10),
