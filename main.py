@@ -253,9 +253,9 @@ for clr_tgt in clr_tgts[:]:
     except FileExistsError:
         pass
 
-    # bmr = open(clr_tgt + '/' + clr_tgt + '_bmr.pkl', 'wb')
-    # pickle.dump(best_models_results, bmr, -1)
-    # bmr.close()
+    bmr = open(clr_tgt + '/' + clr_tgt + '_bmr.pkl', 'wb')
+    pickle.dump(best_models_results, bmr, -1)
+    bmr.close()
 
     # write prediction results to excel
     writer = pd.ExcelWriter(clr_tgt + '/' + clr_tgt + '_results.xlsx')
