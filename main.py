@@ -102,9 +102,8 @@ for clr_tgt in clr_tgts[:]:
     y_clr = pd.DataFrame({clr_tgt: pat_frame_stats.loc[:, clr_tgt]})
 
     # extract train and test sets
-    # pat_names_train, pat_names_test = train_test_split(pat_names, test_size=0.15, stratify=y_clr)
-    pat_names_train = pat_names_train_equal_per_YBOCS_class_3
-    pat_names_test = y_clr.drop(index=pat_names_train_equal_per_YBOCS_class_3).index.to_list()
+    pat_names_train, pat_names_test = train_test_split(pat_names, test_size=0.15, stratify=y_clr)
+
 
     pat_frame_train = pat_frame.loc[pat_names_train, :]
     pat_frame_y_train_reg = y_reg.loc[pat_names_train, :]
