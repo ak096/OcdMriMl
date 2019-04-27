@@ -1,14 +1,42 @@
-## to do
-use only severe YBOCS for t feat selection, but train with those feats on wider train set
+#------------TO DO------------#
 
+
+train without scaled data -> remove FS_feats that are sparse or non-informative, or close to zero (write Alessandro
+for his preproc steps), cut down on FS_feats?
+
+try more cv_folds more accuracy? -> cv10 did worse than cv5?
+
+check if GridSearchCV fully taken advantage of?
+
+try some other scoring metrics
+
+recursive feature selection
+
+Free Surfer Group Analysis
+
+use p_values instead? probably doesn't bring much
+
+
+#------------DONE------------#
+bug: why not writing FS_features to excel? -> .save()
+why train_test_split on std always same 8 t features? -> is indeed the right calculation
+check if GridSearchCV used properly -> indeed
+try imbalanced functionality of gridsearch scoring with more training and test samples
+t and p values or and? -> and
+try just with minMax
+use only severe YBOCS pats for t feat selection
+
+#------------ IF TIME LATER------------#
+graph model scores against num of features?
+run meta analysis on them? which features seen the most?
+deep learning on original images
+
+#------------LEARNING------------#
 ml experience : learning : can build up insights for further more focused analysis i.e. t feats inform further learning
 or simple clustering informs what features to focus on ... and reduces much searchin in hypothesis space
 
-# recursive feature selection
-# Free Surfer Group Analysis
+implies doing experiments in steps for faster feedback and informing next ecps instead of doing many experiments at a time...
 
-# deep learning on original images
+using only severe YBOCS for t test seems to make accuracy worse
 
-## later if time
-# graph model scores against num of features?
-# run meta analysis on them? which features seen the most?
+using hand picked balanced

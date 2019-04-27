@@ -42,5 +42,7 @@ def fs_data_collect(group, path_base):
 
     # remove constant features (f.e. all 0's)
     # group_frame = group_frame.loc[:, group_frame.nunique() != 1]
-
+    writer1 = pd.ExcelWriter('FS_features.xlsx')
+    group_frame.to_excel(writer1, 'FS_feats')
+    writer1.save()
     return group_frame

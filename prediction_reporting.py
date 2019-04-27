@@ -1,22 +1,27 @@
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, accuracy_score, balanced_accuracy_score
 import pandas as pd
 import glob
 
 
 #  best_model =  {'GridObject': , 'est_type': , 'normIdx_train': , 'num_feats': },
-def predict_report(feat_set_est_class, best_model, pat_frame_test, feats, pat_y_test):
+def predict_report(feat_set_est_class, best_model, pat_frame_test, feats, pat_y_test, ec):
 
     print("Best trained model for %s is %s on normed TrainingSet type %s with %d number of features" %
           (feat_set_est_class, best_model['est_type'], glob.normType_list[best_model['normIdx_train']],
            best_model['num_feats']))
     predictions = best_model['GridObject'].predict(pat_frame_test.loc[:, feats])
-    pred_score = mean_absolute_error(pat_y_test, predictions)
-    print("%s: %.3f" % (best_model['GridObject'].scorer_, pred_score))
 
-    return pd.DataFrame(index=pat_frame_test.index.tolist() + ['pred_score'],
+    pred_score = best_model['GridObject'].score(pat_frame_test.loc[:, feats], pat_y_test)
+    print("%s: %.3f" % (best_model['GridObject'].scorer_, pred_score))
+    pred_score2 = -1
+    if ec == 'clr':
+        pred_score2 = accuracy_score(pat_y_test, predictions)
+        print('accuracy_score %.3f' % pred_score2)
+
+    return pd.DataFrame(index=pat_frame_test.index.tolist() + [best_model['GridObject'].scorer_, 'acc_score'],
                         columns=[feat_set_est_class + '_' + best_model['est_type'] + '_' +
                                  glob.normType_list[best_model['normIdx_train']]],
-                        data=predictions.tolist() + [pred_score])
+                        data=predictions.tolist() + [pred_score, pred_score2])
 
 
 def write_report(writer, best_models_results, pat_y_test_clr, pat_y_test_reg):

@@ -108,13 +108,13 @@ def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tra
     reg_params.append([LassoLars(), laslarr_hyper_param_space, glob.regType_list[7]])
 
     for reg_p in reg_params:
-        print("Running GridSearch with %s" % reg_p[2])
+        # print("Running GridSearchCV with %s" % reg_p[2])
         reg_all.append([GridSearchCV(reg_p[0], param_grid=reg_p[1], n_jobs=-1, scoring=performance_metric,
-                                     cv=cv_folds, verbose=1, iid=True).fit(feat_frame_train, np.ravel(y_train)),
+                                     cv=cv_folds, verbose=0, iid=True).fit(feat_frame_train, np.ravel(y_train)),
                         reg_p[2],
                         normIdx_train,
                         num_feats])
-    print("!!!!!!!!!!!!!!!!!!!!!!!!REGRESSION TOOK %.2f seconds" % (time.time()-t0))
+    # print("REGRESS() TOOK %.2f SEC" % (time.time()-t0))
     return reg_all
 
 
@@ -178,11 +178,11 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
     clr_params.append([GaussianNB(), gnb_hyper_param_space, glob.clrType_list[7]])
 
     # Linear Discriminant Analysis
-    lda_hyper_param_space = {'solver': ['svd'],
-                             #'shrinkage': ['auto'],
-                             #'priors': np.array([0.10, 0.15, 0.60, 0.15]),
-                            }
-    clr_params.append([LinearDiscriminantAnalysis(), lda_hyper_param_space, glob.clrType_list[8]])
+    # lda_hyper_param_space = {'solver': ['svd'],
+    #                          #'shrinkage': ['auto'],
+    #                          #'priors': np.array([0.10, 0.15, 0.60, 0.15]),
+    #                         }
+    # clr_params.append([LinearDiscriminantAnalysis(), lda_hyper_param_space, glob.clrType_list[8]])
 
     # # Quadratic Discriminant Analysis
     # qda_hyper_param_space = {'priors': np.array([0.10, 0.15, 0.60, 0.15]),
@@ -190,11 +190,11 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
     # clr_params.append([QuadraticDiscriminantAnalysis(), qda_hyper_param_space, glob.clrType_list[9]])
 
     for clr_p in clr_params:
-        print("Running GridSearch with %s" % clr_p[2])
+        # print("Running GridSearchCV with %s" % clr_p[2])
         clr_all.append([GridSearchCV(clr_p[0], param_grid=clr_p[1], n_jobs=-1, scoring=performance_metric,
-                                     cv=cv_folds, verbose=1, iid=True).fit(feat_frame_train, np.ravel(y_train)),
+                                     cv=cv_folds, verbose=0, iid=True).fit(feat_frame_train, np.ravel(y_train)),
                         clr_p[2],
                         normIdx_train,
                         num_feats])
-    print("!!!!!!!!!!!!!!!!!!!!!!!!CLASSIFICATION TOOK %.2f seconds" % (time.time()-t0))
+    # print("CLASSIFY() TOOK %.2f SEC" % (time.time()-t0))
     return clr_all
