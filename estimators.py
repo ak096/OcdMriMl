@@ -3,7 +3,10 @@ from sklearn.svm import SVR
 from sklearn.linear_model import LinearRegression, ElasticNet, Lasso, Ridge, LassoLars
 import glob
 from sklearn.model_selection import GridSearchCV
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.ensemble import RandomForestClassifier, \
+                             AdaBoostClassifier, \
+                             GradientBoostingClassifier, \
+                             GradientBoostingRegressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.neighbors import KNeighborsClassifier
@@ -14,6 +17,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticD
 from sklearn.gaussian_process.kernels import RBF
 import numpy as np
 import time
+
 
 C = np.arange(1, 1001, 100)
 
@@ -107,10 +111,18 @@ def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tra
     laslarr_hyper_param_space = {'alpha': alpha}
     reg_params.append([LassoLars(), laslarr_hyper_param_space, glob.regType_list[7]])
 
+    # Gradient Boosting Regressor (Tree Based)
+    gbr_hyper_param_space = {'loss': ['ls', 'lad', 'huber'], 'n_estimators': np.arange(100, 501, 50)}
+    reg_params.append([GradientBoostingRegressor(), gbr_hyper_param_space, glob.regType_list[8]])
+
     for reg_p in reg_params:
         # print("Running GridSearchCV with %s" % reg_p[2])
-        reg_all.append([GridSearchCV(reg_p[0], param_grid=reg_p[1], n_jobs=-1, scoring=performance_metric,
-                                     cv=cv_folds, verbose=0, iid=True).fit(feat_frame_train, np.ravel(y_train)),
+        if reg_p[2] == 'gbr':
+            scoring = None
+        else:
+            scoring = performance_metric
+        reg_all.append([GridSearchCV(reg_p[0], param_grid=reg_p[1], n_jobs=-1, scoring=scoring,
+                                     cv=cv_folds, verbose=0, iid=True).fit(feat_frame_train, y_train.iloc[:, 0]),
                         reg_p[2],
                         normIdx_train,
                         num_feats])
@@ -125,26 +137,26 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
 
     num_samples = feat_frame_train.shape[0]
     num_feats = feat_frame_train.shape[1]
-    clr_params = []
-    clr_all = []
+    clf_params = []
+    clf_all = []
 
     # Random Forest Classification
     rfc_hyper_param_space = {'n_estimators': np.arange(50, 201, 50),
                              'warm_start': [True]}
-    clr_params.append([RandomForestClassifier(), rfc_hyper_param_space, glob.clrType_list[0]])
+    clf_params.append([RandomForestClassifier(), rfc_hyper_param_space, glob.clfType_list[0]])
 
     # SVM Classification
-    svmc_hyper_param_space = svm_hyper_param_space('clr')
-    clr_params.append([SVC(cache_size=2000, max_iter=10000), svmc_hyper_param_space, glob.clrType_list[1]])
+    svmc_hyper_param_space = svm_hyper_param_space('clf')
+    clf_params.append([SVC(cache_size=2000, max_iter=10000), svmc_hyper_param_space, glob.clfType_list[1]])
 
     # MLP Classification
-    # mlpc_hyper_param_space = mlp_hyper_param_space(num_samples, 'clr')
-    # clr_params.append([MLPClassifier(), mlpc_hyper_param_space, glob.clrType_list[2]])
+    # mlpc_hyper_param_space = mlp_hyper_param_space(num_samples, 'clf')
+    # clf_params.append([MLPClassifier(), mlpc_hyper_param_space, glob.clfType_list[2]])
 
     # Adaboost Classification
     # abc_hyper_param_space = {'n_estimators': np.arange(50, 101, 10),
     #                         'learning_rate': [0.0001, 0.001, 0.01, 0.1, 0.15, 0.2, 0.25, 0.3]}
-    # clr_params.append([AdaBoostClassifier(), abc_hyper_param_space, glob.clrType_list[3]])
+    # clf_params.append([AdaBoostClassifier(), abc_hyper_param_space, glob.clfType_list[3]])
 
     # Logistic Regression
     logr_hyper_param_space = {'penalty': ['l2'],
@@ -156,45 +168,61 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
                               'max_iter': [10000]}
     # if feat_frame_train.shape[0] <= feat_frame_train.shape[1]:
     #     logr_hyper_param_space['dual'] = [True]
-    clr_params.append([LogisticRegression(), logr_hyper_param_space, glob.clrType_list[4]])
+    clf_params.append([LogisticRegression(), logr_hyper_param_space, glob.clfType_list[4]])
 
     # KNeighbors Classification
     knc_hyper_param_space = {'n_neighbors': [3, 5, 7],
                              'weights': ['uniform', 'distance'],
                              'algorithm': ['auto'],
                              'p': [2]}
-    clr_params.append([KNeighborsClassifier(), knc_hyper_param_space, glob.clrType_list[5]])
+    clf_params.append([KNeighborsClassifier(), knc_hyper_param_space, glob.clfType_list[5]])
 
     # # Gaussian Processes Classification
     # gpc_hyper_param_space = {'kernel': ['linear', RBF(1.0)],
     #                          'n_restarts_optimizer': [0, 1, 2],
     #                          'multi_class': ['one_vs_rest'],
     #                          'warm_start': [True]}
-    # clr_params.append([GaussianProcessClassifier(), gpc_hyper_param_space, glob.clrType_list[6]])
+    # clf_params.append([GaussianProcessClassifier(), gpc_hyper_param_space, glob.clfType_list[6]])
 
     # Gaussian Naive Bayes Classification
-    gnb_hyper_param_space = {#'priors': [0.10, 0.15, 0.60, 0.15],
+    gnb_hyper_param_space = {#'priors': [0.12, 0.75, 0.13],
                              }
-    clr_params.append([GaussianNB(), gnb_hyper_param_space, glob.clrType_list[7]])
+    clf_params.append([GaussianNB(), gnb_hyper_param_space, glob.clfType_list[7]])
 
     # Linear Discriminant Analysis
     # lda_hyper_param_space = {'solver': ['svd'],
     #                          #'shrinkage': ['auto'],
     #                          #'priors': np.array([0.10, 0.15, 0.60, 0.15]),
     #                         }
-    # clr_params.append([LinearDiscriminantAnalysis(), lda_hyper_param_space, glob.clrType_list[8]])
+    # clf_params.append([LinearDiscriminantAnalysis(), lda_hyper_param_space, glob.clfType_list[8]])
 
     # # Quadratic Discriminant Analysis
     # qda_hyper_param_space = {'priors': np.array([0.10, 0.15, 0.60, 0.15]),
     #                          'reg_param': [0.0, 0.1]}
-    # clr_params.append([QuadraticDiscriminantAnalysis(), qda_hyper_param_space, glob.clrType_list[9]])
+    # clf_params.append([QuadraticDiscriminantAnalysis(), qda_hyper_param_space, glob.clfType_list[9]])
 
-    for clr_p in clr_params:
-        # print("Running GridSearchCV with %s" % clr_p[2])
-        clr_all.append([GridSearchCV(clr_p[0], param_grid=clr_p[1], n_jobs=-1, scoring=performance_metric,
-                                     cv=cv_folds, verbose=0, iid=True).fit(feat_frame_train, np.ravel(y_train)),
-                        clr_p[2],
+    # Gradient Boosting Classifier (Tree Based)
+    gbc_hyper_param_space = {'loss': ['deviance'],
+                             "learning_rate": [0.01, 0.025, 0.05, 0.075, 0.1, 0.15, 0.2],
+                             "min_samples_split": np.linspace(0.1, 0.5, 12),
+                             "min_samples_leaf": np.linspace(0.1, 0.5, 12),
+                             "max_depth": [3, 5, 8],
+                             "max_features": ["log2", "sqrt"],
+                             "criterion": ["friedman_mse", "mae"],
+                             "subsample": [0.5, 0.618, 0.8, 0.85, 0.9, 0.95, 1.0],
+                             'n_estimators': np.arange(100, 501, 50)}
+    clf_params.append([GradientBoostingClassifier(), gbc_hyper_param_space, glob.clfType_list[10]])
+
+    for clf_p in clf_params:
+        # print("Running GridSearchCV with %s" % clf_p[2])
+        if clf_p[2] == 'gbc':
+            scoring = None
+        else:
+            scoring = performance_metric
+        clf_all.append([GridSearchCV(clf_p[0], param_grid=clf_p[1], n_jobs=-1, scoring=scoring,
+                                     cv=cv_folds, verbose=0, iid=True).fit(feat_frame_train, y_train.iloc[:, 0]),
+                        clf_p[2],
                         normIdx_train,
                         num_feats])
     # print("CLASSIFY() TOOK %.2f SEC" % (time.time()-t0))
-    return clr_all
+    return clf_all
