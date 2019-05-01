@@ -24,7 +24,9 @@ import copy
 import sys
 import random
 from sklearn.feature_selection import VarianceThreshold
-from imblearn.over_sampling import ADASYN, SMOTE
+from imblearn.over_sampling import ADASYN, SMOTE, RandomOverSampler
+from sklearn.feature_selection import RFECV
+from univariate import t_compute
 
 warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
 
@@ -62,14 +64,17 @@ num_cons = con_frame.shape[0]
 num_reg = len(glob.regType_list)
 num_clf = len(glob.clfType_list)
 
-r_sc = 1
+
 reg_scorers = ['explained_variance', 'neg_mean_absolute_error', 'neg_mean_squared_log_error']
 reg_scorers_names = ['ev', 'nmae', 'nmsle']
+
+r_sc = 1
 reg_scoring = reg_scorers[r_sc]
 
-c_sc = 0
 clf_scorers = ['balanced_accuracy', 'accuracy']
 clf_scorers_names = ['bac', 'ac']
+
+c_sc = 0
 clf_scoring = clf_scorers[c_sc]
 
 
@@ -140,9 +145,11 @@ for clf_tgt in iteration['clf_targets']:
     #                                                    test_size=t_s,
     #                                                    stratify=y_clf)
     #                                                    #random_state=random.randint(1, 101))
-    pat_names_train = pat_names_train_equal_per_YBOCS_class3
-    pat_names_test = pat_names_test_equal_per_YBOCS_class3
 
+    pat_names_test = pat_names_test_equal_per_YBOCS_class3
+    pat_names_train = [name for name in pat_names if name not in pat_names_test]
+    print(len(pat_names_test))
+    print(len(pat_names_train))
     pat_frame_train = pat_frame.loc[pat_names_train, :]
     pat_frame_train_norms, pat_frame_train_scalers = scale(pat_frame_train)
 
@@ -151,16 +158,20 @@ for clf_tgt in iteration['clf_targets']:
     pat_frame_train_y_clf = y_clf.loc[pat_names_train, :]
     # adasyn_train_clf = ADASYN(random_state=random.randint(1, 101))
     # smote_train_clf = SMOTE(random_state=random.randint(1,101))
-    # pat_train_clf_resamp, pat_train_y_clf_resamp = adasyn_train_clf.fit_resample(pat_frame_train,
-    #                                                                              pat_frame_train_y_clf)
-    # pat_frame_train_clf_resamp = pd.DataFrame(columns=pat_frame_train.columns, data=pat_train_clf_resamp)
-    # pat_frame_train_y_clf_resamp = pd.DataFrame(columns=pat_frame_train_y_clf.columns, data=pat_train_y_clf_resamp)
-    # pat_frame_train_clf_resamp_norms, pat_frame_train_clf_resamp_scalers = scale(pat_frame_train_clf_resamp)
+    ros_train_clf = RandomOverSampler(random_state=random.randint(1, 101))
+    pat_train_clf_ros_resamp, pat_train_y_clf_ros_resamp = ros_train_clf.fit_resample(pat_frame_train,
+                                                                                      pat_frame_train_y_clf)
+    pat_frame_train_clf_ros_resamp = pd.DataFrame(columns=pat_frame_train.columns,
+                                                  data=pat_train_clf_ros_resamp)
+    pat_frame_train_y_clf_ros_resamp = pd.DataFrame(columns=pat_frame_train_y_clf.columns,
+                                                    data=pat_train_y_clf_ros_resamp)
+    pat_frame_train_clf_ros_resamp_norms, pat_frame_train_clf_ros_resamp_scalers = \
+        scale(pat_frame_train_clf_ros_resamp)
 
     # pat_test
     pat_frame_test = pat_frame.loc[pat_names_test, :]
     pat_frame_test_norms = testSet_scale(pat_frame_test, pat_frame_train_scalers)
-    # pat_frame_test_clf_resamp_norms = testSet_scale(pat_frame_test, pat_frame_train_clf_resamp_scalers)
+    pat_frame_test_clf_ros_resamp_norms = testSet_scale(pat_frame_test, pat_frame_train_clf_ros_resamp_scalers)
 
     pat_frame_test_y_reg = y_reg.loc[pat_names_test, :]
     pat_frame_test_y_clf = y_clf.loc[pat_names_test, :]
@@ -204,23 +215,8 @@ for clf_tgt in iteration['clf_targets']:
 
         print("HOEXTER and BOEDHOE EST W/ NORM %s TOOK %.2f SEC" % (norm, time.time()-t0))
 
-        # t_test per feature
-        t_frame = pd.DataFrame(index=['t_statistic', 'p_value'], columns=glob.FS_feats)
-        # print(t_frame)
-        for feat in glob.FS_feats:
-            t_result = ttest_ind(pat_frame_train.loc[:, feat],
-                                 con_frame.loc[:, feat])
-            print(t_result)
-            t_frame.at['t_statistic', feat] = t_result.statistic
-            t_frame.at['p_value', feat] = t_result.pvalue
-            print('%s t:%f p:%f' % (feat, t_frame.loc['t_statistic', feat], t_frame.loc['p_value', feat]))
-        t_frame.sort_values(by='t_statistic', axis=1, ascending=False, inplace=True)
-        glob.t_frame_perNorm_list[n] = t_frame
-
-        for column in t_frame:
-            if abs(t_frame.loc['t_statistic', column]) <= 1.96 and abs(t_frame.loc['p_value', column]) >= 0.05:
-                t_frame.drop(columns=column, inplace=True)
-                print('dropping %s' % column)
+        # compute t_feats
+        t_frame = t_compute(pat_frame_train, con_frame, n)
 
         t_feats_num_total = t_frame.shape[1]
         t_feats_demo_num_total = t_feats_num_total + len(demo_clin_feats)
@@ -228,19 +224,19 @@ for clf_tgt in iteration['clf_targets']:
         t_feats_list = t_frame.columns.tolist()
         print("FINISHED COMPUTING %d T VALUES" % t_feats_num_total)
 
-        print(t_feats_list)
+        print(pd.DataFrame(data=t_feats_list))
 
         for idx2, t_feat in enumerate(t_feats_list):
             t0 = time.time()
             t_feats_num = idx2+1
             t_feats = t_feats_list[0:t_feats_num]
 
-            # t_reg_models_all += regress(pat_frame_train_norms[n][t_feats + demo_clin_feats],
-            #                             pat_frame_train_y_reg, cv_folds,
-            #                             reg_scoring, n, t_r, t_feats_demo_num_total)
+            t_reg_models_all += regress(pat_frame_train_norms[n][t_feats + demo_clin_feats],
+                                        pat_frame_train_y_reg, cv_folds,
+                                        reg_scoring, n, t_r, t_feats_demo_num_total)
 
-            t_clf_models_all += classify(pat_frame_train_norms[n][t_feats + demo_clin_feats],
-                                         pat_frame_train_y_clf, cv_folds,
+            t_clf_models_all += classify(pat_frame_train_clf_ros_resamp_norms[n][t_feats + demo_clin_feats],
+                                         pat_frame_train_y_clf_ros_resamp, cv_folds,
                                          clf_scoring, n, t_c, t_feats_demo_num_total)
 
             print("%d / %d T FEATS EST W/ NORM %s TOOK %.2f SEC" % (t_feats_num,
@@ -273,7 +269,6 @@ for clf_tgt in iteration['clf_targets']:
             best_models_results[key] = {'features': ft, 'est_class': ec, 'best_model': bm, 'pred_results': pr,
                                         'bm5': bm5}
 
-
     # best_models_results[key] = {'features': [list],
     #                             'est_class': 'reg'||'clf',
     #                             'best_model': {'GridObject': , 'est_type': , 'normIdx_train': , 'num_feats': },
@@ -283,22 +278,24 @@ for clf_tgt in iteration['clf_targets']:
 
     # SAVE RESULTS
     print('SAVING RESULTS')
-    exp_description = '**skStrat_test' + str(t_s) + '_' + norm + '_' + reg_scorers_names[r_sc] + '_' \
-                      + clf_scorers_names[c_sc] + '_' + 'cvFolds' + str(cv_folds) + '_xbg'+\
-                      '**t_allTrain_TandP'
+    # str(t_s) + \
+    exp_description = '**handTest_RegTrainRest_ClfTrainROS' + '_' + norm + '_' + reg_scorers_names[r_sc] + '_' \
+                      + clf_scorers_names[c_sc] + '_' + 'cvFolds' + str(cv_folds) + \
+                      '**t_allRegTrain_TorP'
 
-    # try:
-    #     os.mkdir(clf_tgt + exp_description)
-    # except FileExistsError:
-    #     pass
+    try:
+        os.mkdir(clf_tgt + exp_description)
+    except FileExistsError:
+        pass
 
-    # bmr = open(clf_tgt + exp_description + '/' + clf_tgt + exp_description + '**bmr.pkl', 'wb')
-    # pickle.dump(best_models_results, bmr, -1)
-    # bmr.close()
+    bmr = open(clf_tgt + exp_description + '/' + clf_tgt + exp_description + '**bmr.pkl', 'wb')
+    pickle.dump(best_models_results, bmr, -1)
+    bmr.close()
 
     # write prediction results to excel
-    # xlsx_name = clf_tgt + exp_description + '/' + clf_tgt + exp_description + '**results.xlsx'
-    xlsx_name = clf_tgt + exp_description + '**results.xlsx'
+    xlsx_name = clf_tgt + exp_description + '/' + clf_tgt + exp_description + '**results**' + \
+                'tclf:' + format(round(best_models_results[t_c]['pred_results'].iloc[-1, 0], 2))+'_'+\
+                'treg:' + format(round(best_models_results[t_r]['pred_results'].iloc[-2, 0], 2))+'.xlsx'
 
     writer = pd.ExcelWriter(xlsx_name)
     write_report(writer, best_models_results, pat_frame_test_y_clf, pat_frame_test_y_reg)
@@ -308,5 +305,5 @@ for clf_tgt in iteration['clf_targets']:
     writer.save()
     print(xlsx_name)
 
-    # end for loop
+    # end for clr_tgt
 print("TOTAL TIME %.2f" % (time.time()-start_time))

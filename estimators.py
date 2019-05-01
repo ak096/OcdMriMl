@@ -135,7 +135,7 @@ def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tra
     reg_params.append([xg.XGBRegressor(), xgbr_hyper_param_space, glob.regType_list[9]])
 
     for reg_p in reg_params:
-        print("%s: Running GridSearchCV with %s: %d OF %d FEATS" % (task_name, reg_p[2], num_feats, num_feats_total))
+        print("%s: Running RandomizedSearchCV with %s: %d OF %d FEATS" % (task_name, reg_p[2], num_feats, num_feats_total))
         if reg_p[2] in ['gbr', 'xgbr']:
             scoring = None
         else:
@@ -242,7 +242,7 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
     clf_params.append([xg.XGBClassifier(), xgbc_hyper_param_space, glob.clfType_list[11]])
 
     for clf_p in clf_params:
-        print("%s: Running GridSearchCV with %s: %d OF %d FEATS" % (task_name, clf_p[2], num_feats, num_feats_total))
+        print("%s: Running RandomizedSearchCV with %s: %d OF %d FEATS" % (task_name, clf_p[2], num_feats, num_feats_total))
         if clf_p[2] in ['gbc', 'xgbc']:
             scoring = None
         else:
