@@ -2,7 +2,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from sklearn.linear_model import LinearRegression, ElasticNet, Lasso, Ridge, LassoLars
 import glob
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier, \
                              AdaBoostClassifier, \
                              GradientBoostingClassifier, \
@@ -16,7 +16,9 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 from sklearn.gaussian_process.kernels import RBF
 import numpy as np
+from numpy.random import uniform, randint
 import time
+import xgboost as xg
 
 
 C = np.arange(1, 1001, 100)
@@ -60,7 +62,7 @@ def mlp_hyper_param_space(num_samples, est_type):
 
 
 # return best regressors in a list with order rfr, svmr, mlpr, lr, enr, rr, lasr, laslarr
-def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_train):
+def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_train, task_name, num_feats_total):
 
     t0 = time.time()
 
@@ -112,16 +114,33 @@ def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tra
     reg_params.append([LassoLars(), laslarr_hyper_param_space, glob.regType_list[7]])
 
     # Gradient Boosting Regressor (Tree Based)
-    gbr_hyper_param_space = {'loss': ['ls', 'lad', 'huber'], 'n_estimators': np.arange(100, 501, 50)}
+    gbr_hyper_param_space = {'loss': ['ls','lad','huber'],
+                             "learning_rate": [0.025, 0.05, 0.075, 0.1, 0.125, 0.15],
+                             "min_samples_split": np.linspace(0.1, 0.5, 12),
+                             "min_samples_leaf": np.linspace(0.1, 0.5, 12),
+                             "max_depth": [3, 5],
+                             "max_features": ["log2", "sqrt"],
+                             "criterion": ["friedman_mse", "mae"],
+                             "subsample": [0.5, 0.618, 0.8, 0.85, 0.9, 0.95, 1.0],
+                             'n_estimators': np.arange(100, 501, 50)}
     reg_params.append([GradientBoostingRegressor(), gbr_hyper_param_space, glob.regType_list[8]])
 
+    # XG Boost Regressor
+    xgbr_hyper_param_space = {"colsample_bytree": [uniform(0.7, 0.3)],
+                              "gamma": [uniform(0, 0.5)],
+                              "learning_rate": [uniform(0.03, 0.3)], # default 0.1
+                              "max_depth": [randint(2, 6)], # default 3
+                              "n_estimators": np.arange(100, 501, 50), # default 100
+                              "subsample": [uniform(0.6, 0.4)]}
+    reg_params.append([xg.XGBRegressor(), xgbr_hyper_param_space, glob.regType_list[9]])
+
     for reg_p in reg_params:
-        # print("Running GridSearchCV with %s" % reg_p[2])
-        if reg_p[2] == 'gbr':
+        print("%s: Running GridSearchCV with %s: %d OF %d FEATS" % (task_name, reg_p[2], num_feats, num_feats_total))
+        if reg_p[2] in ['gbr', 'xgbr']:
             scoring = None
         else:
             scoring = performance_metric
-        reg_all.append([GridSearchCV(reg_p[0], param_grid=reg_p[1], n_jobs=-1, scoring=scoring,
+        reg_all.append([RandomizedSearchCV(reg_p[0], param_distributions=reg_p[1], n_jobs=-1, scoring=scoring,
                                      cv=cv_folds, verbose=0, iid=True).fit(feat_frame_train, y_train.iloc[:, 0]),
                         reg_p[2],
                         normIdx_train,
@@ -131,7 +150,7 @@ def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tra
 
 
 # return best classifiers in a list with order rfc, svmc, mlpc, abc, logr, knc, gpc, gnb, lda, qda
-def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_train):
+def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_train, task_name, num_feats_total):
 
     t0 = time.time()
 
@@ -177,12 +196,12 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
                              'p': [2]}
     clf_params.append([KNeighborsClassifier(), knc_hyper_param_space, glob.clfType_list[5]])
 
-    # # Gaussian Processes Classification
-    # gpc_hyper_param_space = {'kernel': ['linear', RBF(1.0)],
-    #                          'n_restarts_optimizer': [0, 1, 2],
-    #                          'multi_class': ['one_vs_rest'],
-    #                          'warm_start': [True]}
-    # clf_params.append([GaussianProcessClassifier(), gpc_hyper_param_space, glob.clfType_list[6]])
+    # Gaussian Processes Classification
+    gpc_hyper_param_space = {'kernel': [None],
+                             'n_restarts_optimizer': [0, 1, 2],
+                             'multi_class': ['one_vs_rest'],
+                             'warm_start': [True]}
+    clf_params.append([GaussianProcessClassifier(), gpc_hyper_param_space, glob.clfType_list[6]])
 
     # Gaussian Naive Bayes Classification
     gnb_hyper_param_space = {#'priors': [0.12, 0.75, 0.13],
@@ -190,11 +209,11 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
     clf_params.append([GaussianNB(), gnb_hyper_param_space, glob.clfType_list[7]])
 
     # Linear Discriminant Analysis
-    # lda_hyper_param_space = {'solver': ['svd'],
-    #                          #'shrinkage': ['auto'],
-    #                          #'priors': np.array([0.10, 0.15, 0.60, 0.15]),
-    #                         }
-    # clf_params.append([LinearDiscriminantAnalysis(), lda_hyper_param_space, glob.clfType_list[8]])
+    lda_hyper_param_space = {'solver': ['svd']
+                             #'shrinkage': ['auto'],
+                             #'priors': np.array([0.10, 0.15, 0.60, 0.15]),
+                            }
+    clf_params.append([LinearDiscriminantAnalysis(), lda_hyper_param_space, glob.clfType_list[8]])
 
     # # Quadratic Discriminant Analysis
     # qda_hyper_param_space = {'priors': np.array([0.10, 0.15, 0.60, 0.15]),
@@ -203,23 +222,32 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
 
     # Gradient Boosting Classifier (Tree Based)
     gbc_hyper_param_space = {'loss': ['deviance'],
-                             "learning_rate": [0.01, 0.025, 0.05, 0.075, 0.1, 0.15, 0.2],
+                             "learning_rate": [0.025, 0.05, 0.075, 0.1, 0.125, 0.15],
                              "min_samples_split": np.linspace(0.1, 0.5, 12),
                              "min_samples_leaf": np.linspace(0.1, 0.5, 12),
-                             "max_depth": [3, 5, 8],
+                             "max_depth": [3, 5],
                              "max_features": ["log2", "sqrt"],
                              "criterion": ["friedman_mse", "mae"],
                              "subsample": [0.5, 0.618, 0.8, 0.85, 0.9, 0.95, 1.0],
                              'n_estimators': np.arange(100, 501, 50)}
     clf_params.append([GradientBoostingClassifier(), gbc_hyper_param_space, glob.clfType_list[10]])
 
+    # XG Boost Classifier
+    xgbc_hyper_param_space = {"colsample_bytree": [uniform(0.7, 0.3)],
+                              "gamma": [uniform(0, 0.5)],
+                              "learning_rate": [uniform(0.03, 0.3)], # default 0.1
+                              "max_depth": [randint(2, 6)], # default 3
+                              "n_estimators": np.arange(100, 501, 50), # default 100
+                              "subsample": [uniform(0.6, 0.4)]}
+    clf_params.append([xg.XGBClassifier(), xgbc_hyper_param_space, glob.clfType_list[11]])
+
     for clf_p in clf_params:
-        # print("Running GridSearchCV with %s" % clf_p[2])
-        if clf_p[2] == 'gbc':
+        print("%s: Running GridSearchCV with %s: %d OF %d FEATS" % (task_name, clf_p[2], num_feats, num_feats_total))
+        if clf_p[2] in ['gbc', 'xgbc']:
             scoring = None
         else:
             scoring = performance_metric
-        clf_all.append([GridSearchCV(clf_p[0], param_grid=clf_p[1], n_jobs=-1, scoring=scoring,
+        clf_all.append([RandomizedSearchCV(clf_p[0], param_distributions=clf_p[1], n_jobs=-1, scoring=scoring,
                                      cv=cv_folds, verbose=0, iid=True).fit(feat_frame_train, y_train.iloc[:, 0]),
                         clf_p[2],
                         normIdx_train,

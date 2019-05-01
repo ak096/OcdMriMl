@@ -3,9 +3,9 @@ import pandas as pd
 
 def init_globals(frame):
     global regType_list
-    regType_list = ['rfr', 'svmr', 'mlpr', 'lr', 'enr', 'rr', 'lasr', 'laslarr', 'gbr']
+    regType_list = ['rfr', 'svmr', 'mlpr', 'lr', 'enr', 'rr', 'lasr', 'laslarr', 'gbr', 'xgbr']
     global clfType_list
-    clfType_list = ['rfc', 'svmc', 'mlpc', 'abc', 'logr', 'knc', 'gpc', 'gnb', 'lda', 'qda', 'gbc']
+    clfType_list = ['rfc', 'svmc', 'mlpc', 'abc', 'logr', 'knc', 'gpc', 'gnb', 'lda', 'qda', 'gbc', 'xgbc']
     global normType_list
     normType_list = ['std', 'minMax', 'robust']
     global FS_feats

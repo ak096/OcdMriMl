@@ -24,6 +24,7 @@ import copy
 import sys
 import random
 from sklearn.feature_selection import VarianceThreshold
+from imblearn.over_sampling import ADASYN, SMOTE
 
 warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
 
@@ -35,7 +36,7 @@ if not sys.warnoptions:
 
 start_time = time.time()
 
-cv_folds = 6
+cv_folds = 5
 
 # seed = 7
 # np.random.seed(seed)
@@ -67,8 +68,8 @@ reg_scorers_names = ['ev', 'nmae', 'nmsle']
 reg_scoring = reg_scorers[r_sc]
 
 c_sc = 0
-clf_scorers = ['balanced_accuracy']
-clf_scorers_names = ['bac']
+clf_scorers = ['balanced_accuracy', 'accuracy']
+clf_scorers_names = ['bac', 'ac']
 clf_scoring = clf_scorers[c_sc]
 
 
@@ -101,6 +102,13 @@ demo_clin_feats = ['gender_num', 'age', 'duration', 'med']
 
 pat_frame = pd.concat([pat_frame, pat_frame_stats.loc[:, demo_clin_feats]], axis=1, sort=False)
 
+h_r = 'hoexter_reg'
+h_c = 'hoexter_clf'
+b_r = 'boedhoe_reg'
+b_c = 'boedhoe_clf'
+t_r = 't_reg'
+t_c = 't_clf'
+
 
 iteration = {'n': [0],
              'clf_targets': [#'obs_class3_scorerange',
@@ -112,6 +120,8 @@ iteration = {'n': [0],
                              #'YBOCS_class3_equalpat']
              }
 
+hoexter_feats = hoexter_FSfeats + demo_clin_feats
+boedhoe_feats = boedhoe_FSfeats + demo_clin_feats
 
 for clf_tgt in iteration['clf_targets']:
 
@@ -124,25 +134,38 @@ for clf_tgt in iteration['clf_targets']:
 
     y_clf = pd.DataFrame({clf_tgt: pat_frame_stats.loc[:, clf_tgt]})
 
-    # extract train and test sets
-    t_s = 0.20
-    pat_names_train, pat_names_test = train_test_split(pat_names,
-                                                       test_size=t_s,
-                                                       stratify=y_clf,
-                                                       random_state=random.randint(1,101))
-    #pat_names_train = pat_names_train_equal_per_YBOCS_class3
-    #pat_names_test = pat_names_test_equal_per_YBOCS_class3
+    # extract train and test set names
+    t_s = 0.15
+    # pat_names_train, pat_names_test = train_test_split(pat_names,
+    #                                                    test_size=t_s,
+    #                                                    stratify=y_clf)
+    #                                                    #random_state=random.randint(1, 101))
+    pat_names_train = pat_names_train_equal_per_YBOCS_class3
+    pat_names_test = pat_names_test_equal_per_YBOCS_class3
 
     pat_frame_train = pat_frame.loc[pat_names_train, :]
-    pat_frame_train_y_reg = y_reg.loc[pat_names_train, :]
-    pat_frame_train_y_clf = y_clf.loc[pat_names_train, :]
+    pat_frame_train_norms, pat_frame_train_scalers = scale(pat_frame_train)
 
+    pat_frame_train_y_reg = y_reg.loc[pat_names_train, :]
+
+    pat_frame_train_y_clf = y_clf.loc[pat_names_train, :]
+    # adasyn_train_clf = ADASYN(random_state=random.randint(1, 101))
+    # smote_train_clf = SMOTE(random_state=random.randint(1,101))
+    # pat_train_clf_resamp, pat_train_y_clf_resamp = adasyn_train_clf.fit_resample(pat_frame_train,
+    #                                                                              pat_frame_train_y_clf)
+    # pat_frame_train_clf_resamp = pd.DataFrame(columns=pat_frame_train.columns, data=pat_train_clf_resamp)
+    # pat_frame_train_y_clf_resamp = pd.DataFrame(columns=pat_frame_train_y_clf.columns, data=pat_train_y_clf_resamp)
+    # pat_frame_train_clf_resamp_norms, pat_frame_train_clf_resamp_scalers = scale(pat_frame_train_clf_resamp)
+
+    # pat_test
     pat_frame_test = pat_frame.loc[pat_names_test, :]
+    pat_frame_test_norms = testSet_scale(pat_frame_test, pat_frame_train_scalers)
+    # pat_frame_test_clf_resamp_norms = testSet_scale(pat_frame_test, pat_frame_train_clf_resamp_scalers)
+
     pat_frame_test_y_reg = y_reg.loc[pat_names_test, :]
     pat_frame_test_y_clf = y_clf.loc[pat_names_test, :]
 
-    pat_frame_train_norms, pat_frame_train_scalers = scale(pat_frame_train)
-    pat_frame_test_norms = testSet_scale(pat_frame_test, pat_frame_train_scalers)
+    # con
     con_frame_norms, con_frame_scalers = scale(con_frame)
 
     t_reg_models_all = []
@@ -161,17 +184,23 @@ for clf_tgt in iteration['clf_targets']:
         norm = glob.normType_list[n]
 
         # print("HOEXTER Regression with norm " + norm)
-        hoexter_reg_models_all += regress(pat_frame_train_norms[n][hoexter_FSfeats + demo_clin_feats],
-                                          pat_frame_train_y_reg, cv_folds, reg_scoring, n)
 
-        hoexter_clf_models_all += classify(pat_frame_train_norms[n][hoexter_FSfeats + demo_clin_feats],
-                                           pat_frame_train_y_clf, cv_folds, clf_scoring, n)
-        # print("BOEDHOE Regression with norm " + norm)
-        boedhoe_reg_models_all += regress(pat_frame_train_norms[n][boedhoe_FSfeats + demo_clin_feats],
-                                          pat_frame_train_y_reg, cv_folds, reg_scoring, n)
-
-        boedhoe_clf_models_all += classify(pat_frame_train[boedhoe_FSfeats + demo_clin_feats],
-                                           pat_frame_train_y_clf, cv_folds, clf_scoring, n)
+        # hoexter_reg_models_all += regress(pat_frame_train_norms[n][hoexter_feats],
+        #                                   pat_frame_train_y_reg, cv_folds, reg_scoring, n, h_r,
+        #                                   len(hoexter_feats))
+        #
+        # hoexter_clf_models_all += classify(pat_frame_train_norms[n][hoexter_feats],
+        #                                    pat_frame_train_y_clf, cv_folds, clf_scoring, n, h_c,
+        #                                    len(hoexter_feats))
+        # # print("BOEDHOE Regression with norm " + norm)
+        #
+        # boedhoe_reg_models_all += regress(pat_frame_train_norms[n][boedhoe_feats],
+        #                                   pat_frame_train_y_reg, cv_folds, reg_scoring, n, b_r,
+        #                                   len(boedhoe_feats))
+        #
+        # boedhoe_clf_models_all += classify(pat_frame_train_norms[n][boedhoe_feats],
+        #                                    pat_frame_train_y_clf, cv_folds, clf_scoring, n, b_c,
+        #                                    len(boedhoe_feats))
 
         print("HOEXTER and BOEDHOE EST W/ NORM %s TOOK %.2f SEC" % (norm, time.time()-t0))
 
@@ -181,19 +210,20 @@ for clf_tgt in iteration['clf_targets']:
         for feat in glob.FS_feats:
             t_result = ttest_ind(pat_frame_train.loc[:, feat],
                                  con_frame.loc[:, feat])
-            # print(t_result)
+            print(t_result)
             t_frame.at['t_statistic', feat] = t_result.statistic
             t_frame.at['p_value', feat] = t_result.pvalue
-            # print('%s t:%f p:%f' % (feat, t_frame.loc['t_statistic', feat], t_frame.loc['p_value', feat]))
+            print('%s t:%f p:%f' % (feat, t_frame.loc['t_statistic', feat], t_frame.loc['p_value', feat]))
         t_frame.sort_values(by='t_statistic', axis=1, ascending=False, inplace=True)
         glob.t_frame_perNorm_list[n] = t_frame
 
         for column in t_frame:
-            if abs(t_frame.loc['t_statistic', column]) <= 1.96 or abs(t_frame.loc['p_value', column]) >= 0.05:
+            if abs(t_frame.loc['t_statistic', column]) <= 1.96 and abs(t_frame.loc['p_value', column]) >= 0.05:
                 t_frame.drop(columns=column, inplace=True)
-                # print('dropping %s' % column)
+                print('dropping %s' % column)
 
         t_feats_num_total = t_frame.shape[1]
+        t_feats_demo_num_total = t_feats_num_total + len(demo_clin_feats)
 
         t_feats_list = t_frame.columns.tolist()
         print("FINISHED COMPUTING %d T VALUES" % t_feats_num_total)
@@ -205,13 +235,13 @@ for clf_tgt in iteration['clf_targets']:
             t_feats_num = idx2+1
             t_feats = t_feats_list[0:t_feats_num]
 
-            pat_frame_train_t_feats = pat_frame_train_norms[n][t_feats + demo_clin_feats]
+            # t_reg_models_all += regress(pat_frame_train_norms[n][t_feats + demo_clin_feats],
+            #                             pat_frame_train_y_reg, cv_folds,
+            #                             reg_scoring, n, t_r, t_feats_demo_num_total)
 
-            t_reg_models_all += regress(pat_frame_train_t_feats, pat_frame_train_y_reg, cv_folds,
-                                        reg_scoring, n)
-
-            t_clf_models_all += classify(pat_frame_train_t_feats, pat_frame_train_y_clf, cv_folds,
-                                         clf_scoring, n)
+            t_clf_models_all += classify(pat_frame_train_norms[n][t_feats + demo_clin_feats],
+                                         pat_frame_train_y_clf, cv_folds,
+                                         clf_scoring, n, t_c, t_feats_demo_num_total)
 
             print("%d / %d T FEATS EST W/ NORM %s TOOK %.2f SEC" % (t_feats_num,
                                                                     t_feats_num_total,
@@ -223,13 +253,13 @@ for clf_tgt in iteration['clf_targets']:
 
     # find best trained models and prediction results
     best_models_results = {}
-    models_all = {'hoexter_reg': hoexter_reg_models_all, 'hoexter_clf': hoexter_clf_models_all,
-                  'boedhoe_reg': boedhoe_reg_models_all, 'boedhoe_clf': boedhoe_clf_models_all,
-                  't_reg': t_reg_models_all, 't_clf': t_clf_models_all}
+    models_all = {h_r: hoexter_reg_models_all, h_r: hoexter_clf_models_all,
+                  b_r: boedhoe_reg_models_all, b_c: boedhoe_clf_models_all,
+                  t_r: t_reg_models_all, t_c: t_clf_models_all}
 
     for key, value in models_all.items():
         if value:
-            bm = find_best_model(key, value, reg_scoring)
+            bm, bm5 = find_best_model(key, value, reg_scoring)
             est_type = bm['est_type']
             pat_frame_test = pat_frame_test_norms[bm['normIdx_train']]
             ft = get_feats(key, bm) + demo_clin_feats
@@ -240,19 +270,22 @@ for clf_tgt in iteration['clf_targets']:
                 ec = 'clf'
                 pr = predict_report(key, bm, pat_frame_test, ft, pat_frame_test_y_clf, ec)
 
-            best_models_results[key] = {'features': ft, 'est_class': ec, 'best_model': bm, 'pred_results': pr}
+            best_models_results[key] = {'features': ft, 'est_class': ec, 'best_model': bm, 'pred_results': pr,
+                                        'bm5': bm5}
+
 
     # best_models_results[key] = {'features': [list],
     #                             'est_class': 'reg'||'clf',
     #                             'best_model': {'GridObject': , 'est_type': , 'normIdx_train': , 'num_feats': },
     #                             'pred_results': prediction_frame
+    #                             'bm5': top 5 best scoring models for confidence interval comparison
     #                            }
 
     # SAVE RESULTS
     print('SAVING RESULTS')
-    exp_description = '**skStrat_test' + str(t_s) +'_' + norm +'_' + reg_scorers_names[r_sc] + '_' \
-                      + clf_scorers_names[c_sc] + '_' + 'cvFolds' + str(cv_folds) +\
-                      '**t_allTrain'
+    exp_description = '**skStrat_test' + str(t_s) + '_' + norm + '_' + reg_scorers_names[r_sc] + '_' \
+                      + clf_scorers_names[c_sc] + '_' + 'cvFolds' + str(cv_folds) + '_xbg'+\
+                      '**t_allTrain_TandP'
 
     # try:
     #     os.mkdir(clf_tgt + exp_description)

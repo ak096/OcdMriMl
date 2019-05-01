@@ -1,19 +1,32 @@
 #------------TO DO------------#
 
 PRIO HIGH
+try on hand picked test set and then rest with imbalanced
+volume area with class3
 
-correct to sort descending for gbc score?
-correct to sort ascending for gbr score?
+median split
 
-try again with normed t test : getting .85 .90 accuracy?
+just use standard atlas freesurfer
+just volume
+just area
+just thickness
 
-data augmentation sklearn
+check t test between pat severity
+other univariate tests anova f test
+
+median class split wo univariate classification
+try hand test set with rest train
+
+try data augmentation with repeating samples
+try t test for clf on resamp set
+
+
 
 recursive feature selection
 
 train not scaled data
 
-understand who GBR and GBC work for presentation...
+understand who GBR and GBC work for presentation...also XGboost
 
 PRIO MID
 try more cv_folds more accuracy? -> cv10 did worse than cv5?
@@ -29,6 +42,10 @@ use p_values instead? probably doesn't bring much
 write Alessandro for his preproc steps, cut down on FS_feats?
 
 #------------DONE------------#
+tried ADASYN_clf with t_clf -> results much worse
+try again with normed t test : getting .85 .90 accuracy? doesnt make sense with norm because dist all same 0 mean 1 std
+correct to sort descending for gbc score? yes
+correct to sort ascending for gbr score? yes
 - (train not scaled data) remove FS_feats that are sparse or non-informative, or close to zero
 bug: why not writing FS_features to excel? -> .save()
 why train_test_split on std always same 8 t features? -> is indeed the right calculation
@@ -52,3 +69,10 @@ implies doing experiments in steps for faster feedback and informing next ecps i
 using only severe YBOCS for t test seems to make accuracy worse
 
 using hand picked balanced
+
+mathe ist sehen dass
+t_feats_num_total = t_frame.shape[1]
+
+t_feats_list = t_frame.columns.tolist()
+gleich werte sind, also sich gleichen. aber andere konzepten sind mit unterschiedleich folgen und werten unter
+anderen Bedingungen
