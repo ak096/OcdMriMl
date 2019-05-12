@@ -3,11 +3,12 @@ from scipy.stats import ttest_ind
 import glob
 
 
-def t_compute(pat_frame_train, con_frame, n):
+def t_compute(pat_frame_train, con_frame, n, feat_filter):
+    feat_list = [ft for ft in glob.FS_feats if any(x in ft for x in feat_filter)]
     # t_test per feature
-    t_frame = pd.DataFrame(index=['t_statistic', 'p_value'], columns=glob.FS_feats)
+    t_frame = pd.DataFrame(index=['t_statistic', 'p_value'], columns=feat_list)
     # print(t_frame)
-    for feat in glob.FS_feats:
+    for feat in feat_list:
         t_result = ttest_ind(pat_frame_train.loc[:, feat],
                              con_frame.loc[:, feat])
         # print(t_result)

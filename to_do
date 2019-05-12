@@ -1,35 +1,22 @@
 #------------TO DO------------#
 
 PRIO HIGH
-try on hand picked test set and then rest with imbalanced
-volume area with class3
+?try deniz way of checking each feature with best classification performance then collect them
 
-median split
+read understand xgboot trees to optimize parameters
 
-just use standard atlas freesurfer
-just volume
-just area
-just thickness
-
-check t test between pat severity
 other univariate tests anova f test
 
-median class split wo univariate classification
-try hand test set with rest train
-
-try data augmentation with repeating samples
 try t test for clf on resamp set
-
-
-
-recursive feature selection
 
 train not scaled data
 
 understand who GBR and GBC work for presentation...also XGboost
 
 PRIO MID
-try more cv_folds more accuracy? -> cv10 did worse than cv5?
+
+perhaps create list of feat est and loop through instead of calling classify and regress over and over
+
 
 check if GridSearchCV fully taken advantage of?
 
@@ -37,11 +24,23 @@ try some other scoring metrics
 
 Free Surfer Group Analysis
 
+check t test between pat severity
+
 PRIO LOW
 use p_values instead? probably doesn't bring much
 write Alessandro for his preproc steps, cut down on FS_feats?
 
 #------------DONE------------#
+try more cv_folds more accuracy? -> cv10 did worse than cv5? always trying new ones
+try data augmentation with repeating samples -> seems to work best out of SMOTE and ADASYN
+median class split wo univariate classification -> broke into 2 classes and changed to 0, 1, ... instead of 1,2,3 ...more sklearn style
+just use standard atlas freesurfer, just volume, area, and/or thickness -> added functionality for this with ttest
+only thickness to see if enhance boedhoe and hoexter (informed by orbital thickness what found in previous
+experiments) - not seeming to improve
+try on hand picked test set and then rest with imbalanced and resamp
+added easy parameter setting for resampled sets in running code
+recursive feature selection
+
 tried ADASYN_clf with t_clf -> results much worse
 try again with normed t test : getting .85 .90 accuracy? doesnt make sense with norm because dist all same 0 mean 1 std
 correct to sort descending for gbc score? yes
@@ -76,3 +75,9 @@ t_feats_num_total = t_frame.shape[1]
 t_feats_list = t_frame.columns.tolist()
 gleich werte sind, also sich gleichen. aber andere konzepten sind mit unterschiedleich folgen und werten unter
 anderen Bedingungen
+
+Sonntag 05.05.2019
+scalability concept in concrete design example
+strong dependency: variablization : i.e. making size of list in for loop dependent on input size
+instead of hard coding its size like l = [] for i in l2: do l.append[something i] instead of
+l = [, ,] for idx, i in l2 : do l[idx], automatically scaled with growth or shrinking of l2 ..

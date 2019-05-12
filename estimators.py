@@ -19,19 +19,20 @@ import numpy as np
 from numpy.random import uniform, randint
 import time
 import xgboost as xg
-
+from imblearn.ensemble import BalancedRandomForestClassifier
 
 C = np.arange(1, 1001, 100)
 
 
-def svm_hyper_param_space(est_type):
+def svm_hyper_param_space(est_class):
     svm_hps = {'kernel': ['linear', 'rbf'],
                'C': C,
-               'gamma': ['scale', 'auto']}
+               'gamma': ['auto']}
 
-    if est_type == 'reg':
+    if est_class == 'reg':
         svm_hps['epsilon'] = [0.3, 0.5, 0.7, 0.9]
-
+    if est_class == 'clf':
+        svm_hps['class_weight'] = ['balanced']
     return svm_hps
 
 
@@ -53,7 +54,7 @@ def mlp_hyper_param_space(num_samples, est_type):
                #'beta_1': [0.6, 0.7, 0.8, 0.9],
                'beta_1': [0.5],
                #'beta_2': [0.85, 0.89, 0.95, 0.999],
-               'batch_size': [4]}
+               'batch_size': [10]}
 
     if est_type == 'reg':
         mlp_hps['activation'].append('tanh')
@@ -88,60 +89,65 @@ def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tra
     # reg_params.append([MLPRegressor(), mlpr_hyper_param_space, glob.regType_list[2]])
 
 
-    # Linear Regression
-    lr_hyper_param_space = {}
-    reg_params.append([LinearRegression(), lr_hyper_param_space, glob.regType_list[3]])
-
-
-    # ElasticNet Regression
-    # enr_hyper_param_space = {'l1_ratio': np.arange(0, 11)*0.1,
-    #                          'max_iter': [2000],
-    #                          'precompute': ['auto']}
-    # reg_params.append([ElasticNet(), enr_hyper_param_space, glob.regType_list[4]])
-
-    # Ridge Regression
-    rr_hyper_param_space = {'alpha': alpha}
-    reg_params.append([Ridge(), rr_hyper_param_space, glob.regType_list[5]])
-
-
-    # Lasso Regression
-    lasr_hyper_param_space = {'alpha': alpha}
-    reg_params.append([Lasso(), lasr_hyper_param_space, glob.regType_list[6]])
-
-
-    # LassoLARS Regression
-    laslarr_hyper_param_space = {'alpha': alpha}
-    reg_params.append([LassoLars(), laslarr_hyper_param_space, glob.regType_list[7]])
+    # # Linear Regression
+    # lr_hyper_param_space = {}
+    # reg_params.append([LinearRegression(), lr_hyper_param_space, glob.regType_list[3]])
+    #
+    #
+    # # ElasticNet Regression
+    # # enr_hyper_param_space = {'l1_ratio': np.arange(0, 11)*0.1,
+    # #                          'max_iter': [2000],
+    # #                          'precompute': ['auto']}
+    # # reg_params.append([ElasticNet(), enr_hyper_param_space, glob.regType_list[4]])
+    #
+    # # Ridge Regression
+    # rr_hyper_param_space = {'alpha': alpha}
+    # reg_params.append([Ridge(), rr_hyper_param_space, glob.regType_list[5]])
+    #
+    #
+    # # Lasso Regression
+    # lasr_hyper_param_space = {'alpha': alpha}
+    # reg_params.append([Lasso(), lasr_hyper_param_space, glob.regType_list[6]])
+    #
+    #
+    # # LassoLARS Regression
+    # laslarr_hyper_param_space = {'alpha': alpha}
+    # reg_params.append([LassoLars(), laslarr_hyper_param_space, glob.regType_list[7]])
 
     # Gradient Boosting Regressor (Tree Based)
-    gbr_hyper_param_space = {'loss': ['ls','lad','huber'],
-                             "learning_rate": [0.025, 0.05, 0.075, 0.1, 0.125, 0.15],
-                             "min_samples_split": np.linspace(0.1, 0.5, 12),
-                             "min_samples_leaf": np.linspace(0.1, 0.5, 12),
-                             "max_depth": [3, 5],
-                             "max_features": ["log2", "sqrt"],
-                             "criterion": ["friedman_mse", "mae"],
-                             "subsample": [0.5, 0.618, 0.8, 0.85, 0.9, 0.95, 1.0],
-                             'n_estimators': np.arange(100, 501, 50)}
-    reg_params.append([GradientBoostingRegressor(), gbr_hyper_param_space, glob.regType_list[8]])
+    # gbr_hyper_param_space = {
+    #                          'loss': ['ls','lad','huber'],
+    #                          "learning_rate": [0.05, 0.1, 0.15],
+    #                          #"min_samples_split": np.linspace(0.1, 0.5, 12),
+    #                          #"min_samples_leaf": np.linspace(0.1, 0.5, 12),
+    #                          "max_depth": [3, 5, 7],
+    #                          "max_features": ["log2", "sqrt"],
+    #                          "criterion": ["friedman_mse"],
+    #                          "subsample": [0.5, 0.8, 0.9, 1.0],
+    #                          'n_estimators': np.arange(100, 501, 100)
+    #                         }
+    #
+    # reg_params.append([GradientBoostingRegressor(), gbr_hyper_param_space, glob.regType_list[8]])
 
     # XG Boost Regressor
-    xgbr_hyper_param_space = {"colsample_bytree": [uniform(0.7, 0.3)],
-                              "gamma": [uniform(0, 0.5)],
-                              "learning_rate": [uniform(0.03, 0.3)], # default 0.1
-                              "max_depth": [randint(2, 6)], # default 3
-                              "n_estimators": np.arange(100, 501, 50), # default 100
-                              "subsample": [uniform(0.6, 0.4)]}
-    reg_params.append([xg.XGBRegressor(), xgbr_hyper_param_space, glob.regType_list[9]])
+    # xgbr_hyper_param_space = {
+    #                           "colsample_bytree": [uniform(0.7, 0.3)],
+    #                           "gamma": [uniform(0, 0.5)],
+    #                           "learning_rate": [uniform(0.03, 0.3)], # default 0.1
+    #                           "max_depth": [randint(2, 6)], # default 3
+    #                           "n_estimators": np.arange(100, 501, 50), # default 100
+    #                           "subsample": [uniform(0.6, 0.4)]
+    #                           }
+    # reg_params.append([xg.XGBRegressor(), xgbr_hyper_param_space, glob.regType_list[9]])
 
     for reg_p in reg_params:
-        print("%s: Running RandomizedSearchCV with %s: %d OF %d FEATS" % (task_name, reg_p[2], num_feats, num_feats_total))
+        print("%s: Running GridSearchCV with %s: %d OF %d FEATS" % (task_name, reg_p[2], num_feats, num_feats_total))
         if reg_p[2] in ['gbr', 'xgbr']:
             scoring = None
         else:
             scoring = performance_metric
-        reg_all.append([RandomizedSearchCV(reg_p[0], param_distributions=reg_p[1], n_jobs=-1, scoring=scoring,
-                                     cv=cv_folds, verbose=0, iid=True).fit(feat_frame_train, y_train.iloc[:, 0]),
+        reg_all.append([GridSearchCV(reg_p[0], param_grid=reg_p[1], n_jobs=-1, scoring=scoring,
+                                     cv=cv_folds, verbose=1).fit(feat_frame_train, y_train.iloc[:, 0]),
                         reg_p[2],
                         normIdx_train,
                         num_feats])
@@ -161,7 +167,9 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
 
     # Random Forest Classification
     rfc_hyper_param_space = {'n_estimators': np.arange(50, 201, 50),
-                             'warm_start': [True]}
+                             'warm_start': [True],
+                             'class_weight': ['balanced', 'balanced_subsample']
+                             }
     clf_params.append([RandomForestClassifier(), rfc_hyper_param_space, glob.clfType_list[0]])
 
     # SVM Classification
@@ -174,46 +182,47 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
 
     # Adaboost Classification
     # abc_hyper_param_space = {'n_estimators': np.arange(50, 101, 10),
-    #                         'learning_rate': [0.0001, 0.001, 0.01, 0.1, 0.15, 0.2, 0.25, 0.3]}
+    #                         'learning_rate': [0.0001, 0.001, 0.01, 0.1, 0.15, 0.2, 0.25, 0.3],
+    #                         'class_weight': ['balanced']}
     # clf_params.append([AdaBoostClassifier(), abc_hyper_param_space, glob.clfType_list[3]])
 
     # Logistic Regression
-    logr_hyper_param_space = {'penalty': ['l2'],
-                              'multi_class': ['ovr', 'multinomial'],
-                              'solver': ['newton-cg', 'sag', 'lbfgs'],
-                              'warm_start': [True],
-                              'C': C,
-                              'class_weight': ['balanced'],
-                              'max_iter': [10000]}
-    # if feat_frame_train.shape[0] <= feat_frame_train.shape[1]:
-    #     logr_hyper_param_space['dual'] = [True]
-    clf_params.append([LogisticRegression(), logr_hyper_param_space, glob.clfType_list[4]])
-
-    # KNeighbors Classification
-    knc_hyper_param_space = {'n_neighbors': [3, 5, 7],
-                             'weights': ['uniform', 'distance'],
-                             'algorithm': ['auto'],
-                             'p': [2]}
-    clf_params.append([KNeighborsClassifier(), knc_hyper_param_space, glob.clfType_list[5]])
-
-    # Gaussian Processes Classification
-    gpc_hyper_param_space = {'kernel': [None],
-                             'n_restarts_optimizer': [0, 1, 2],
-                             'multi_class': ['one_vs_rest'],
-                             'warm_start': [True]}
-    clf_params.append([GaussianProcessClassifier(), gpc_hyper_param_space, glob.clfType_list[6]])
-
-    # Gaussian Naive Bayes Classification
-    gnb_hyper_param_space = {#'priors': [0.12, 0.75, 0.13],
-                             }
-    clf_params.append([GaussianNB(), gnb_hyper_param_space, glob.clfType_list[7]])
-
-    # Linear Discriminant Analysis
-    lda_hyper_param_space = {'solver': ['svd']
-                             #'shrinkage': ['auto'],
-                             #'priors': np.array([0.10, 0.15, 0.60, 0.15]),
-                            }
-    clf_params.append([LinearDiscriminantAnalysis(), lda_hyper_param_space, glob.clfType_list[8]])
+    # logr_hyper_param_space = {
+    #                           'penalty': ['l2'],
+    #                           'multi_class': ['ovr', 'multinomial'],
+    #                           'solver': ['sag', 'lbfgs', 'newton-cg'],
+    #                           'warm_start': [True],
+    #                           'C': C,
+    #                           'class_weight': ['balanced'],
+    #                           'max_iter': [10000],
+    #                           }
+    # clf_params.append([LogisticRegression(), logr_hyper_param_space, glob.clfType_list[4]])
+    #
+    # # KNeighbors Classification
+    # knc_hyper_param_space = {'n_neighbors': [3, 5, 7],
+    #                          'weights': ['uniform', 'distance'],
+    #                          'algorithm': ['auto'],
+    #                          'p': [2]}
+    # clf_params.append([KNeighborsClassifier(), knc_hyper_param_space, glob.clfType_list[5]])
+    #
+    # # Gaussian Processes Classification
+    # gpc_hyper_param_space = {'kernel': [None],
+    #                          'n_restarts_optimizer': [0, 1, 2],
+    #                          'multi_class': ['one_vs_rest', 'one_vs_one'],
+    #                          'warm_start': [True]}
+    # clf_params.append([GaussianProcessClassifier(), gpc_hyper_param_space, glob.clfType_list[6]])
+    #
+    # # Gaussian Naive Bayes Classification
+    # gnb_hyper_param_space = {#'priors': [0.12, 0.75, 0.13],
+    #                          }
+    # clf_params.append([GaussianNB(), gnb_hyper_param_space, glob.clfType_list[7]])
+    #
+    # # Linear Discriminant Analysis
+    # lda_hyper_param_space = {'solver': ['svd'],
+    #                          #'priors': np.array([0.10, 0.15, 0.60, 0.15]),
+    #                          'store_covariance': [True, False],
+    #                          'tol': [1e-3, 1e-4]}
+    # clf_params.append([LinearDiscriminantAnalysis(), lda_hyper_param_space, glob.clfType_list[8]])
 
     # # Quadratic Discriminant Analysis
     # qda_hyper_param_space = {'priors': np.array([0.10, 0.15, 0.60, 0.15]),
@@ -221,34 +230,39 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
     # clf_params.append([QuadraticDiscriminantAnalysis(), qda_hyper_param_space, glob.clfType_list[9]])
 
     # Gradient Boosting Classifier (Tree Based)
-    gbc_hyper_param_space = {'loss': ['deviance'],
-                             "learning_rate": [0.025, 0.05, 0.075, 0.1, 0.125, 0.15],
-                             "min_samples_split": np.linspace(0.1, 0.5, 12),
-                             "min_samples_leaf": np.linspace(0.1, 0.5, 12),
-                             "max_depth": [3, 5],
-                             "max_features": ["log2", "sqrt"],
-                             "criterion": ["friedman_mse", "mae"],
-                             "subsample": [0.5, 0.618, 0.8, 0.85, 0.9, 0.95, 1.0],
-                             'n_estimators': np.arange(100, 501, 50)}
-    clf_params.append([GradientBoostingClassifier(), gbc_hyper_param_space, glob.clfType_list[10]])
+    # gbc_hyper_param_space = {
+    #                          'loss': ['deviance'],
+    #                          "learning_rate": [0.025, 0.05, 0.1, 0.15],
+    #                          #"min_samples_split": np.linspace(0.1, 0.5, 12),
+    #                          #"min_samples_leaf": np.linspace(0.1, 0.5, 12),
+    #                          "max_depth": [3, 5, 7],
+    #                          "max_features": ["log2", "sqrt"],
+    #                          "criterion": ["friedman_mse"],
+    #                          "subsample": [0.5, 0.75, 1.0],
+    #                          'n_estimators': np.arange(100, 501, 100)
+    #                         }
+    # clf_params.append([GradientBoostingClassifier(), gbc_hyper_param_space, glob.clfType_list[10]])
 
     # XG Boost Classifier
-    xgbc_hyper_param_space = {"colsample_bytree": [uniform(0.7, 0.3)],
-                              "gamma": [uniform(0, 0.5)],
-                              "learning_rate": [uniform(0.03, 0.3)], # default 0.1
-                              "max_depth": [randint(2, 6)], # default 3
-                              "n_estimators": np.arange(100, 501, 50), # default 100
-                              "subsample": [uniform(0.6, 0.4)]}
+    xgbc_hyper_param_space = {
+                              "gamma": [0, 0.1, 0.5],
+                              "learning_rate": [0.025, 0.05, 0.1, 0.2], # default 0.1
+                              "max_depth": [6, 9, 12], # default 3
+                              'n_estimators': np.arange(100, 2001, 100), # default 100
+                              "subsample": [0.5, 0.75, 1.0],
+                              'lambda': [1, 1.5, 3],
+                              'alpha': [1, 1.5, 3]
+                             }
     clf_params.append([xg.XGBClassifier(), xgbc_hyper_param_space, glob.clfType_list[11]])
 
     for clf_p in clf_params:
-        print("%s: Running RandomizedSearchCV with %s: %d OF %d FEATS" % (task_name, clf_p[2], num_feats, num_feats_total))
+        print("%s: Running GridSearchCV with %s: %d OF %d FEATS" % (task_name, clf_p[2], num_feats, num_feats_total))
         if clf_p[2] in ['gbc', 'xgbc']:
             scoring = None
         else:
             scoring = performance_metric
-        clf_all.append([RandomizedSearchCV(clf_p[0], param_distributions=clf_p[1], n_jobs=-1, scoring=scoring,
-                                     cv=cv_folds, verbose=0, iid=True).fit(feat_frame_train, y_train.iloc[:, 0]),
+        clf_all.append([GridSearchCV(clf_p[0], param_grid=clf_p[1], n_jobs=-1, scoring=scoring,
+                                     cv=cv_folds, verbose=1).fit(feat_frame_train, y_train.iloc[:, 0]),
                         clf_p[2],
                         normIdx_train,
                         num_feats])
