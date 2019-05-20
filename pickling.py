@@ -1,5 +1,5 @@
 import pickle
-import glob
+import gbl
 import os
 
 
@@ -28,11 +28,11 @@ def save_data(data, reg_models=[], clr_models=[]):
         bcm.close()
     elif data == 'tfn':
         tfn = open('tfn.pkl', 'wb')
-        pickle.dump(glob.t_frame_perNorm_list, tfn, -1)
+        pickle.dump(gbl.t_frame_perNorm_list, tfn, -1)
         tfn.close()
     elif data == 'itr':
         itr = open('itr.pkl', 'wb')
-        pickle.dump(glob.iteration, itr, -1)
+        pickle.dump(gbl.iteration, itr, -1)
         itr.close()
     return
 
@@ -63,21 +63,21 @@ def load_data():
         trm = open('trm.pkl', 'rb')
         tcm = open('tcm.pkl', 'rb')
 
-        glob.iteration = pickle.load(itr)
+        gbl.iteration = pickle.load(itr)
         print("LOADED PICKLE FILE : itr.pkl")
-        glob.t_frame_perNorm_list = pickle.load(tfn)
+        gbl.t_frame_perNorm_list = pickle.load(tfn)
         print("LOADED PICKLE FILE : tfn.pkl")
-        glob.hoexter_reg_models_all = pkl_loader(hrm)
+        gbl.hoexter_reg_models_all = pkl_loader(hrm)
 
-        glob.hoexter_clr_models_all = pkl_loader(hcm)
+        gbl.hoexter_clr_models_all = pkl_loader(hcm)
 
-        glob.boedhoe_reg_models_all = pkl_loader(brm)
+        gbl.boedhoe_reg_models_all = pkl_loader(brm)
 
-        glob.boedhoe_clr_models_all = pkl_loader(bcm)
+        gbl.boedhoe_clr_models_all = pkl_loader(bcm)
 
-        glob.t_reg_models_all = pkl_loader(trm)
+        gbl.t_reg_models_all = pkl_loader(trm)
 
-        glob.t_clr_models_all = pkl_loader(tcm)
+        gbl.t_clr_models_all = pkl_loader(tcm)
 
         itr.close()
         tfn.close()

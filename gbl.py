@@ -11,7 +11,7 @@ def init_globals(frame):
     global FS_feats
     FS_feats = frame.columns.tolist()
     global t_frame_perNorm_list
-    t_frame_perNorm_list = []
+    t_frame_perNorm_list = [pd.DataFrame(), pd.DataFrame(), pd.DataFrame()]
 
     global demo_clin_feats
     demo_clin_feats = ['gender_num', 'age', 'duration', 'med']

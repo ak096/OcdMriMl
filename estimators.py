@@ -1,7 +1,7 @@
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from sklearn.linear_model import LinearRegression, ElasticNet, Lasso, Ridge, LassoLars
-import glob
+import gbl
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier, \
                              AdaBoostClassifier, \
@@ -76,12 +76,12 @@ def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tra
 
     # Random Forest Regression
     rfr_hyper_param_space = {'n_estimators': np.arange(50, 201, 50)}
-    reg_params.append([RandomForestRegressor(), rfr_hyper_param_space, glob.regType_list[0]])
+    reg_params.append([RandomForestRegressor(), rfr_hyper_param_space, gbl.regType_list[0]])
 
 
     # SVM Regression
     svmr_hyper_param_space = svm_hyper_param_space('reg')
-    reg_params.append([SVR(cache_size=2000, max_iter=10000), svmr_hyper_param_space, glob.regType_list[1]])
+    reg_params.append([SVR(cache_size=2000, max_iter=10000), svmr_hyper_param_space, gbl.regType_list[1]])
 
 
     # MLP Regression
@@ -170,11 +170,11 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
                              'warm_start': [True],
                              'class_weight': ['balanced', 'balanced_subsample']
                              }
-    clf_params.append([RandomForestClassifier(), rfc_hyper_param_space, glob.clfType_list[0]])
+    clf_params.append([RandomForestClassifier(), rfc_hyper_param_space, gbl.clfType_list[0]])
 
     # SVM Classification
     svmc_hyper_param_space = svm_hyper_param_space('clf')
-    clf_params.append([SVC(cache_size=2000, max_iter=10000), svmc_hyper_param_space, glob.clfType_list[1]])
+    clf_params.append([SVC(cache_size=2000, max_iter=10000), svmc_hyper_param_space, gbl.clfType_list[1]])
 
     # MLP Classification
     # mlpc_hyper_param_space = mlp_hyper_param_space(num_samples, 'clf')
@@ -253,7 +253,7 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
                               'lambda': [1, 1.5, 3],
                               'alpha': [1, 1.5, 3]
                              }
-    clf_params.append([xg.XGBClassifier(), xgbc_hyper_param_space, glob.clfType_list[11]])
+    clf_params.append([xg.XGBClassifier(), xgbc_hyper_param_space, gbl.clfType_list[11]])
 
     for clf_p in clf_params:
         print("%s: Running GridSearchCV with %s: %d OF %d FEATS" % (task_name, clf_p[2], num_feats, num_feats_total))

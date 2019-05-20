@@ -1,13 +1,13 @@
 from sklearn.metrics import mean_absolute_error, accuracy_score, balanced_accuracy_score
 import pandas as pd
-import glob
+import gbl
 
 
 #  best_model =  {'EstObject': , 'est_type': , 'normIdx_train': , 'num_feats': },
 def predict_report(feat_set_est_class, best_model, pat_frame_test_norm, feats, pat_frame_test_y, ec):
 
     print("Best trained model for %s is %s on normed TrainingSet type %s with %d number of features" %
-          (feat_set_est_class, best_model['est_type'], glob.normType_list[best_model['normIdx_train']],
+          (feat_set_est_class, best_model['est_type'], gbl.normType_list[best_model['normIdx_train']],
            best_model['num_feats']))
     predictions = best_model['EstObject'].predict(pat_frame_test_norm.loc[:, feats])
 
@@ -25,7 +25,7 @@ def predict_report(feat_set_est_class, best_model, pat_frame_test_norm, feats, p
 
     pr = pd.DataFrame(index=pat_frame_test_norm.index.tolist() + [scorer, 'acc_score'],
                       columns=[feat_set_est_class + '_' + best_model['est_type'] + '_' +
-                               glob.normType_list[best_model['normIdx_train']]],
+                               gbl.normType_list[best_model['normIdx_train']]],
                       data=predictions.tolist() + [pred_score, pred_score2])
 
     result = pd.DataFrame(index=pat_frame_test_y.index.tolist(),
@@ -41,7 +41,7 @@ def write_report(writer, pat_frame_test_y_clf, pat_frame_test_y_reg):
     clf_frames = []
     feat_data = {}
     param_data = {}
-    for key, value in glob.best_models_results.items():
+    for key, value in gbl.best_models_results.items():
 
         # gather prediction results
         est_class = value['est_class']
@@ -52,7 +52,7 @@ def write_report(writer, pat_frame_test_y_clf, pat_frame_test_y_reg):
             clf_frames.append(pred_results)
 
         est_type = value['best_model']['est_type']
-        normType_train = glob.normType_list[value['best_model']['normIdx_train']]
+        normType_train = gbl.normType_list[value['best_model']['normIdx_train']]
 
         # gather features
         feat_data[key + '_' + est_type + '_' + normType_train] = pd.Series(value['features'])

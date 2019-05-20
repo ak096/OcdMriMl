@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import ttest_ind
-import glob
+import gbl
 from fs_read import fs_data_collect
 from estimators import regress, classify
 from find_best_model import find_best_model
@@ -12,8 +12,7 @@ from sklearn.model_selection import train_test_split
 import time
 import pickle
 from pickling import *
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from gdrive import get_pat_stats
 import os
 import warnings
 from sklearn.exceptions import ConvergenceWarning
@@ -23,7 +22,7 @@ import random
 from sklearn.feature_selection import VarianceThreshold
 from imblearn.over_sampling import ADASYN, SMOTE, RandomOverSampler
 from sklearn.feature_selection import RFECV
-from univariate import t_compute
+from univariate import t_frame_compute
 import xgboost
 from sklearn.svm import SVC
 from numpy.random import randint
@@ -55,18 +54,18 @@ group = ['con', 'pat']
 con_frame = fs_data_collect(group[0], path_base)
 pat_frame = fs_data_collect(group[1], path_base)
 
-pd.DataFrame({'con': con_frame.columns[con_frame.columns != pat_frame.columns], 
+pd.DataFrame({'con': con_frame.columns[con_frame.columns != pat_frame.columns],
               'pat': pat_frame.columns[con_frame.columns != pat_frame.columns]})
 
-glob.init_globals(pat_frame)
-print('%d FS_FEATS READ' % len(glob.FS_feats))
+gbl.init_globals(pat_frame)
+print('%d FS_FEATS READ' % len(gbl.FS_feats))
 
 num_pats = pat_frame.shape[0]
 pat_names = pat_frame.index.tolist()
 num_cons = con_frame.shape[0]
 
-num_reg = len(glob.regType_list)
-num_clf = len(glob.clfType_list)
+num_reg = len(gbl.regType_list)
+num_clf = len(gbl.clfType_list)
 
 
 reg_scorers = ['explained_variance', 'neg_mean_absolute_error', 'neg_mean_squared_log_error', None]
@@ -81,17 +80,7 @@ clf_scorers_names = ['bac', 'ac']
 c_sc = 0
 clf_scoring = clf_scorers[c_sc]
 
-
-# get patient stats, labels, ybocs ...
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('ocdmriml_gdrive_client_secret.json', scope)
-gsclient = gspread.authorize(creds)
-pat_stats_sheet = gsclient.open("AKSHAY_pat_stats").sheet1
-
-pat_frame_stats = pd.DataFrame(pat_stats_sheet.get_all_records())
-pat_frame_stats.index = pat_frame_stats.loc[:, 'subject']
-pat_frame_stats.drop(columns=['', 'subject'], inplace=True)
-
+pat_frame_stats = get_pat_stats()
 if True in pat_frame_stats.index != pat_frame.index:
     exit("feature and target pats not same")
 
@@ -104,12 +93,12 @@ retained_mask = sel.get_support(indices=False)
 pat_frame = pat_frame.loc[:, retained_mask]
 after = pat_frame.shape[1]
 print('REMOVING %d FEATS UNDER %.2f VAR: FROM %d TO %d' % (before-after, threshold, before, after))
-glob.FS_feats = pat_frame.columns.tolist()
+gbl.FS_feats = pat_frame.columns.tolist()
 # add demo features
-glob.demo_clin_feats = ['gender_num', 'age', 'duration', 'med']
+gbl.demo_clin_feats = ['gender_num', 'age', 'duration', 'med']
 # glob.demo_clin_feats = []
 
-pat_frame = pd.concat([pat_frame, pat_frame_stats.loc[:, glob.demo_clin_feats]], axis=1, sort=False)
+pat_frame = pd.concat([pat_frame, pat_frame_stats.loc[:, gbl.demo_clin_feats]], axis=1, sort=False)
 
 iteration = {'n': [0],
              'clf_targets': ['YBOCS_class2_scorerange',
@@ -121,10 +110,10 @@ iteration = {'n': [0],
 
              }
 
-glob.feat_sets_best_train[glob.h_r] = glob.hoexter_feats_FS + glob.demo_clin_feats
-glob.feat_sets_best_train[glob.h_c] = glob.hoexter_feats_FS + glob.demo_clin_feats
-glob.feat_sets_best_train[glob.b_r] = glob.boedhoe_feats_FS + glob.demo_clin_feats
-glob.feat_sets_best_train[glob.b_c] = glob.boedhoe_feats_FS + glob.demo_clin_feats
+gbl.feat_sets_best_train[gbl.h_r] = gbl.hoexter_feats_FS + gbl.demo_clin_feats
+gbl.feat_sets_best_train[gbl.h_c] = gbl.hoexter_feats_FS + gbl.demo_clin_feats
+gbl.feat_sets_best_train[gbl.b_r] = gbl.boedhoe_feats_FS + gbl.demo_clin_feats
+gbl.feat_sets_best_train[gbl.b_c] = gbl.boedhoe_feats_FS + gbl.demo_clin_feats
 
 for clf_tgt in iteration['clf_targets']:
 
@@ -180,7 +169,7 @@ for clf_tgt in iteration['clf_targets']:
 
         for idx, over_sampler in enumerate(over_samp):
             try:
-                a, b = over_sampler.fit_resample(pat_frame_train, pat_frame_train_y_clf)
+                a, b = over_sampler.fit_resample(pat_frame_train.values, pat_frame_train_y_clf.values)
                 pat_frame_train_clf_list[idx+1] = pd.DataFrame(columns=pat_frame_train.columns, data=a)
                 pat_frame_train_y_clf_list[idx+1] = pd.DataFrame(columns=pat_frame_train_y_clf.columns, data=b)
             except:
@@ -203,7 +192,7 @@ for clf_tgt in iteration['clf_targets']:
     t_reg_models_all = []
     t_clf_models_all = []
 
-    glob.t_frame_perNorm_list = [pd.DataFrame(), pd.DataFrame(), pd.DataFrame()]
+    gbl.t_frame_perNorm_list = [pd.DataFrame(), pd.DataFrame(), pd.DataFrame()]
 
     # expert-picked-feature-based models for regression and classification
     hoexter_reg_models_all = []
@@ -215,7 +204,7 @@ for clf_tgt in iteration['clf_targets']:
 
     for n in iteration['n']: # standard, minmax, (robust-quantile-based) normalizations of input data
         t0 = time.time()
-        norm = glob.normType_list[n]
+        norm = gbl.normType_list[n]
 
         # RFECV __________________________________
         # t_frame = t_compute(pat_frame_train, con_frame, n)
@@ -244,26 +233,26 @@ for clf_tgt in iteration['clf_targets']:
         #                                   pat_frame_train_y_reg, cv_folds, reg_scoring, n, glob.h_r,
         #                                   len(glob.feat_sets_best_train[glob.h_r]))
 
-        hoexter_clf_models_all += classify(pat_frame_train_clf_norms[n][glob.feat_sets_best_train[glob.h_c]],
-                                           pat_frame_train_y_clf, cv_folds, clf_scoring, n, glob.h_c,
-                                           len(glob.feat_sets_best_train[glob.h_c]))
+        hoexter_clf_models_all += classify(pat_frame_train_clf_norms[n][gbl.feat_sets_best_train[gbl.h_c]],
+                                           pat_frame_train_y_clf, cv_folds, clf_scoring, n, gbl.h_c,
+                                           len(gbl.feat_sets_best_train[gbl.h_c]))
         # print("BOEDHOE Regression with norm " + norm)
 
         # boedhoe_reg_models_all += regress(pat_frame_train_reg_norms[n][glob.feat_sets_best_train[glob.b_r]],
         #                                   pat_frame_train_y_reg, cv_folds, reg_scoring, n, glob.b_r,
         #                                   len(glob.feat_sets_best_train[glob.b_r]))
 
-        boedhoe_clf_models_all += classify(pat_frame_train_clf_norms[n][glob.feat_sets_best_train[glob.b_c]],
-                                           pat_frame_train_y_clf, cv_folds, clf_scoring, n, glob.b_c,
-                                           len(glob.feat_sets_best_train[glob.b_c]))
+        boedhoe_clf_models_all += classify(pat_frame_train_clf_norms[n][gbl.feat_sets_best_train[gbl.b_c]],
+                                           pat_frame_train_y_clf, cv_folds, clf_scoring, n, gbl.b_c,
+                                           len(gbl.feat_sets_best_train[gbl.b_c]))
 
         print("HOEXTER and BOEDHOE EST W/ NORM %s TOOK %.2f SEC" % (norm, time.time()-t0))
 
         # compute t_feats
-        t_frame = t_compute(pat_frame_train_reg, con_frame, n, ['thickness'])
+        t_frame = t_frame_compute(pat_frame_train_reg, con_frame, n, ['thickness'])
         t_feats_all = t_frame.columns.tolist()
         t_feats_all_num = t_frame.shape[1]
-        t_feats_train_all_num = t_feats_all_num + len(glob.demo_clin_feats)
+        t_feats_train_all_num = t_feats_all_num + len(gbl.demo_clin_feats)
         print("FINISHED COMPUTING %d T VALUES" % t_feats_all_num)
 
         print(pd.DataFrame(data=t_feats_all))
@@ -273,7 +262,7 @@ for clf_tgt in iteration['clf_targets']:
             t_feats_num = idx2+1
             t_feats = t_feats_all[0:t_feats_num]
 
-            t_feats_train = t_feats + glob.demo_clin_feats
+            t_feats_train = t_feats + gbl.demo_clin_feats
             t_feats_train_num = len(t_feats_train)
 
             print("COMPUTING %d / %d FEATS W/ NORM %s" % (t_feats_train_num,
@@ -285,9 +274,9 @@ for clf_tgt in iteration['clf_targets']:
 
             t_clf_models_all += classify(pat_frame_train_clf_norms[n][t_feats_train],
                                          pat_frame_train_y_clf, cv_folds,
-                                         clf_scoring, n, glob.t_c, t_feats_train_all_num)
+                                         clf_scoring, n, gbl.t_c, t_feats_train_all_num)
 
-            print("%s: Running brfc: %d OF %d FEATS" % (glob.t_c, t_feats_train_num, t_feats_train_all_num))
+            print("%s: Running brfc: %d OF %d FEATS" % (gbl.t_c, t_feats_train_num, t_feats_train_all_num))
             brfc_models_all.append([BalancedRandomForestClassifier(n_estimators=200,
                                                                    random_state=None,
                                                                    n_jobs=-1,
@@ -303,18 +292,18 @@ for clf_tgt in iteration['clf_targets']:
     # end for n norm
 
     # find best trained models and prediction results
-    models_all = {glob.h_r: hoexter_reg_models_all, glob.h_c: hoexter_clf_models_all,
-                  glob.b_r: boedhoe_reg_models_all, glob.b_c: boedhoe_clf_models_all,
-                  glob.t_r: t_reg_models_all, glob.t_c: t_clf_models_all}
+    models_all = {gbl.h_r: hoexter_reg_models_all, gbl.h_c: hoexter_clf_models_all,
+                  gbl.b_r: boedhoe_reg_models_all, gbl.b_c: boedhoe_clf_models_all,
+                  gbl.t_r: t_reg_models_all, gbl.t_c: t_clf_models_all}
 
     models_to_results(models_all, pat_frame_test_reg_norms, pat_frame_test_clf_norms,
                       pat_frame_test_y_reg, pat_frame_test_y_clf, reg_scoring)
 
     # combine best t feats with boedhoe and hoexter
-    glob.feat_sets_best_train[glob.h_t_r] = glob.feat_sets_best_train[glob.t_r] + glob.hoexter_feats_FS
-    glob.feat_sets_best_train[glob.h_t_c] = glob.feat_sets_best_train[glob.t_c] + glob.hoexter_feats_FS
-    glob.feat_sets_best_train[glob.b_t_r] = glob.feat_sets_best_train[glob.t_r] + glob.boedhoe_feats_FS
-    glob.feat_sets_best_train[glob.b_t_c] = glob.feat_sets_best_train[glob.t_c] + glob.boedhoe_feats_FS
+    gbl.feat_sets_best_train[gbl.h_t_r] = gbl.feat_sets_best_train[gbl.t_r] + gbl.hoexter_feats_FS
+    gbl.feat_sets_best_train[gbl.h_t_c] = gbl.feat_sets_best_train[gbl.t_c] + gbl.hoexter_feats_FS
+    gbl.feat_sets_best_train[gbl.b_t_r] = gbl.feat_sets_best_train[gbl.t_r] + gbl.boedhoe_feats_FS
+    gbl.feat_sets_best_train[gbl.b_t_c] = gbl.feat_sets_best_train[gbl.t_c] + gbl.boedhoe_feats_FS
 
     hoexter_t_reg_models_all = []
     hoexter_t_clf_models_all = []
@@ -325,27 +314,27 @@ for clf_tgt in iteration['clf_targets']:
     #                                    pat_frame_train_y_reg, cv_folds, reg_scoring, n, glob.h_t_r,
     #                                    len(glob.feat_sets_best_train[glob.h_t_r]))
 
-    hoexter_t_clf_models_all = classify(pat_frame_train_clf_norms[n][glob.feat_sets_best_train[glob.h_t_c]],
-                                        pat_frame_train_y_clf, cv_folds, clf_scoring, n, glob.h_t_c,
-                                        len(glob.feat_sets_best_train[glob.h_t_c]))
+    hoexter_t_clf_models_all = classify(pat_frame_train_clf_norms[n][gbl.feat_sets_best_train[gbl.h_t_c]],
+                                        pat_frame_train_y_clf, cv_folds, clf_scoring, n, gbl.h_t_c,
+                                        len(gbl.feat_sets_best_train[gbl.h_t_c]))
     # print("BOEDHOE Regression with norm " + norm)
 
     # boedhoe_t_reg_models_all = regress(pat_frame_train_reg_norms[n][glob.feat_sets_best_train[glob.b_t_r]],
     #                                    pat_frame_train_y_reg, cv_folds, reg_scoring, n, glob.b_t_r,
     #                                    len(glob.feat_sets_best_train[glob.b_t_r]))
 
-    boedhoe_t_clf_models_all = classify(pat_frame_train_clf_norms[n][glob.feat_sets_best_train[glob.b_t_c]],
-                                        pat_frame_train_y_clf, cv_folds, clf_scoring, n, glob.b_t_c,
-                                        len(glob.feat_sets_best_train[glob.b_t_c]))
+    boedhoe_t_clf_models_all = classify(pat_frame_train_clf_norms[n][gbl.feat_sets_best_train[gbl.b_t_c]],
+                                        pat_frame_train_y_clf, cv_folds, clf_scoring, n, gbl.b_t_c,
+                                        len(gbl.feat_sets_best_train[gbl.b_t_c]))
 
-    models2_all = {glob.h_t_r: hoexter_t_reg_models_all, glob.h_t_c: hoexter_t_clf_models_all,
-                   glob.b_t_r: boedhoe_t_reg_models_all, glob.b_t_c: boedhoe_t_clf_models_all}
+    models2_all = {gbl.h_t_r: hoexter_t_reg_models_all, gbl.h_t_c: hoexter_t_clf_models_all,
+                   gbl.b_t_r: boedhoe_t_reg_models_all, gbl.b_t_c: boedhoe_t_clf_models_all}
 
     models_to_results(models2_all, pat_frame_test_reg_norms, pat_frame_test_clf_norms,
                       pat_frame_test_y_reg, pat_frame_test_y_clf, reg_scoring)
 
     # find best best brfc
-    glob.brfc_name = glob.t_c + '_2_imb_train'
+    gbl.brfc_name = gbl.t_c + '_2_imb_train'
     brfc_scores = [[b[0].score(pat_frame_test_reg_norms[n].loc[:, b[1]],
                                pat_frame_test_y_clf), idx] for idx, b in enumerate(brfc_models_all)]
     brfc_scores.sort(key=lambda x: x[0], reverse=True)
@@ -359,7 +348,7 @@ for clf_tgt in iteration['clf_targets']:
     if brfc_score != brfc_score2:
         print('BEST BRFC PRED SCORES NOT EQUAL')
     brfc_result = pd.DataFrame(index=pat_frame_test_y_clf.index.tolist() + ['acc_score'],
-                               data={glob.brfc_name: brfc_predictions.tolist() + [brfc_score],
+                               data={gbl.brfc_name: brfc_predictions.tolist() + [brfc_score],
                                      'YBOCS_target': pat_frame_test_y_clf.iloc[:, 0]})
     print(brfc_result)
     print(brfc_score)
@@ -367,11 +356,11 @@ for clf_tgt in iteration['clf_targets']:
     brfc_pr = brfc_result.drop(columns='YBOCS_target')
 
     # save best brfc feats
-    glob.feat_sets_best_train[glob.brfc_name] = brfc_best_model_with_feats[1]
+    gbl.feat_sets_best_train[gbl.brfc_name] = brfc_best_model_with_feats[1]
     # construct manually brfc models to result
     brfc_bm = {'EstObject': brfc_best_model_with_feats[0], 'est_type': 'brfc',
                'normIdx_train': n, 'num_feats': len(brfc_best_model_with_feats[1])}
-    glob.best_models_results[glob.brfc_name] = {'features': brfc_best_model_with_feats[1],
+    gbl.best_models_results[gbl.brfc_name] = {'features': brfc_best_model_with_feats[1],
                                                 'est_class': 'clf',
                                                 'best_model': brfc_bm,
                                                 'pred_results': brfc_pr,
@@ -391,15 +380,15 @@ for clf_tgt in iteration['clf_targets']:
         pass
 
     bmr = open(clf_tgt + '/' + clf_tgt + exp_description + '**bmr.pkl', 'wb')
-    pickle.dump(glob.best_models_results, bmr, -1)
+    pickle.dump(gbl.best_models_results, bmr, -1)
     bmr.close()
     try:
-        t_reg_best_score = format(round(glob.best_models_results[glob.t_c]['pred_results'].iloc[-1, 0], 2))
+        t_reg_best_score = format(round(gbl.best_models_results[gbl.t_c]['pred_results'].iloc[-1, 0], 2))
 
     except:
         t_reg_best_score = -1
     try:
-        t_clf_best_score = format(round(glob.best_models_results[glob.t_r]['pred_results'].iloc[-2, 0], 2))
+        t_clf_best_score = format(round(gbl.best_models_results[gbl.t_r]['pred_results'].iloc[-2, 0], 2))
     except:
         t_clf_best_score = -1
     # write prediction results to excel
@@ -409,8 +398,8 @@ for clf_tgt in iteration['clf_targets']:
 
     writer = pd.ExcelWriter(xlsx_name)
     write_report(writer, pat_frame_test_y_clf, pat_frame_test_y_reg)
-    for idx3, tfpNl in enumerate(glob.t_frame_perNorm_list):
-        tfpNl.to_excel(writer, 't_frame_' + glob.normType_list[idx3])
+    for idx3, tfpNl in enumerate(gbl.t_frame_perNorm_list):
+        tfpNl.to_excel(writer, 't_frame_' + gbl.normType_list[idx3])
 
     writer.save()
     print(xlsx_name)
