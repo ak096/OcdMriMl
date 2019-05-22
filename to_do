@@ -3,20 +3,22 @@
 PRIO HIGH
 ?try deniz way of checking each feature with best classification performance then collect them
 
-read understand xgboot trees to optimize parameters
+randomized search with more than 10 n_iter samplings
+
+smote is more standard
 
 other univariate tests anova f test
 
 try t test for clf on resamp set
 
-train not scaled data
+try t test between mild and severe patients
 
 understand who GBR and GBC work for presentation...also XGboost
+read understand xgboot trees to optimize parameters
 
 PRIO MID
 
 perhaps create list of feat est and loop through instead of calling classify and regress over and over
-
 
 check if GridSearchCV fully taken advantage of?
 
@@ -29,6 +31,7 @@ check t test between pat severity
 PRIO LOW
 use p_values instead? probably doesn't bring much
 write Alessandro for his preproc steps, cut down on FS_feats?
+train not scaled data
 
 #------------DONE------------#
 try more cv_folds more accuracy? -> cv10 did worse than cv5? always trying new ones

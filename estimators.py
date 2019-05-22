@@ -23,6 +23,8 @@ from imblearn.ensemble import BalancedRandomForestClassifier
 
 C = np.arange(1, 1001, 100)
 
+n_iter = 100
+
 
 def svm_hyper_param_space(est_class):
     svm_hps = {'kernel': ['linear', 'rbf'],
@@ -63,7 +65,7 @@ def mlp_hyper_param_space(num_samples, est_type):
 
 
 # return best regressors in a list with order rfr, svmr, mlpr, lr, enr, rr, lasr, laslarr
-def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_train, task_name, num_feats_total):
+def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_train, task_name, num_feats_total, t_feats_idx_subset=[]):
 
     t0 = time.time()
 
@@ -130,36 +132,37 @@ def regress(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tra
     # reg_params.append([GradientBoostingRegressor(), gbr_hyper_param_space, glob.regType_list[8]])
 
     # XG Boost Regressor
-    # xgbr_hyper_param_space = {
-    #                           "colsample_bytree": [uniform(0.7, 0.3)],
-    #                           "gamma": [uniform(0, 0.5)],
-    #                           "learning_rate": [uniform(0.03, 0.3)], # default 0.1
-    #                           "max_depth": [randint(2, 6)], # default 3
-    #                           "n_estimators": np.arange(100, 501, 50), # default 100
-    #                           "subsample": [uniform(0.6, 0.4)]
-    #                           }
-    # reg_params.append([xg.XGBRegressor(), xgbr_hyper_param_space, glob.regType_list[9]])
+    xgbr_hyper_param_space = {
+                              "colsample_bytree": [uniform(0.7, 0.3)],
+                              "gamma": [uniform(0, 0.5)],
+                              "learning_rate": [uniform(0.03, 0.3)], # default 0.1
+                              "max_depth": [randint(2, 6)], # default 3
+                              "n_estimators": np.arange(100, 501, 50), # default 100
+                              "subsample": [uniform(0.6, 0.4)]
+                              }
+    reg_params.append([xg.XGBRegressor(), xgbr_hyper_param_space, glob.regType_list[9]])
 
     for reg_p in reg_params:
-        print("%s: Running GridSearchCV with %s: %d OF %d FEATS" % (task_name, reg_p[2], num_feats, num_feats_total))
+        print("%s: Running RandomizedSearchCV with %s: %d OF %d FEATS" % (task_name, reg_p[2], num_feats, num_feats_total))
         if reg_p[2] in ['gbr', 'xgbr']:
             scoring = None
         else:
             scoring = performance_metric
-        reg_all.append([GridSearchCV(reg_p[0], param_grid=reg_p[1], n_jobs=-1, scoring=scoring,
+        reg_all.append([RandomizedSearchCV(reg_p[0], param_distributions=reg_p[1], n_iter=n_iter, n_jobs=-1, scoring=scoring,
                                      cv=cv_folds, verbose=1).fit(feat_frame_train, y_train.iloc[:, 0]),
                         reg_p[2],
                         normIdx_train,
-                        num_feats])
+                        num_feats,
+                        t_feats_idx_subset
+                        ])
     # print("REGRESS() TOOK %.2f SEC" % (time.time()-t0))
     return reg_all
 
 
 # return best classifiers in a list with order rfc, svmc, mlpc, abc, logr, knc, gpc, gnb, lda, qda
-def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_train, task_name, num_feats_total):
+def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_train, task_name, num_feats_total, t_feats_idx_subset=[]):
 
     t0 = time.time()
-
     num_samples = feat_frame_train.shape[0]
     num_feats = feat_frame_train.shape[1]
     clf_params = []
@@ -248,7 +251,7 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
                               "gamma": [0, 0.1, 0.5],
                               "learning_rate": [0.025, 0.05, 0.1, 0.2], # default 0.1
                               "max_depth": [6, 9, 12], # default 3
-                              'n_estimators': np.arange(100, 2001, 100), # default 100
+                              'n_estimators': np.arange(100, 701, 100), # default 100
                               "subsample": [0.5, 0.75, 1.0],
                               'lambda': [1, 1.5, 3],
                               'alpha': [1, 1.5, 3]
@@ -256,15 +259,17 @@ def classify(feat_frame_train, y_train, cv_folds, performance_metric, normIdx_tr
     clf_params.append([xg.XGBClassifier(), xgbc_hyper_param_space, gbl.clfType_list[11]])
 
     for clf_p in clf_params:
-        print("%s: Running GridSearchCV with %s: %d OF %d FEATS" % (task_name, clf_p[2], num_feats, num_feats_total))
+        print("%s: Running RandomizedSearchCV with %s: %d OF %d FEATS" % (task_name, clf_p[2], num_feats, num_feats_total))
         if clf_p[2] in ['gbc', 'xgbc']:
             scoring = None
         else:
             scoring = performance_metric
-        clf_all.append([GridSearchCV(clf_p[0], param_grid=clf_p[1], n_jobs=-1, scoring=scoring,
+        clf_all.append([RandomizedSearchCV(clf_p[0], param_distributions=clf_p[1], n_iter=n_iter, n_jobs=-1, scoring=scoring,
                                      cv=cv_folds, verbose=1).fit(feat_frame_train, y_train.iloc[:, 0]),
                         clf_p[2],
                         normIdx_train,
-                        num_feats])
+                        num_feats,
+                        t_feats_idx_subset
+                        ])
     # print("CLASSIFY() TOOK %.2f SEC" % (time.time()-t0))
     return clf_all

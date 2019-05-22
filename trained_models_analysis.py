@@ -1,6 +1,22 @@
 from prediction_reporting import predict_report
-from find_best_model import find_best_model
 import gbl
+
+
+def find_best_models(name, feats_estClass_models, reg_scoring):
+    # if 'reg' in name:
+    #     if 'error' in reg_scoring:
+    #         descending = False
+    #     else:
+    #         descending = True
+    # elif 'clf' in name:
+    #     descending = True
+    descending = True
+    feats_estClass_models.sort(key=lambda x: x[0].best_score_, reverse=descending)
+
+    best_models_list = [{'EstObject': elt[0], 'est_type': elt[1], 'normIdx_train': elt[2], 'num_feats': elt[3],
+                         't_feats_idx': list(elt[4])} for elt in feats_estClass_models[0:4]]
+
+    return best_models_list
 
 
 def models_to_results(models_all, pat_frame_test_reg_norms, pat_frame_test_clf_norms,
@@ -17,15 +33,16 @@ def models_to_results(models_all, pat_frame_test_reg_norms, pat_frame_test_clf_n
                 pat_frame_test_norms = pat_frame_test_clf_norms
                 pat_frame_test_y = pat_frame_test_y_clf
 
-            bm, bm5 = find_best_model(key, value, reg_scoring)
+            bm5 = find_best_models(key, value, reg_scoring)
+            bm = bm5[0]
 
             pat_frame_test_norm = pat_frame_test_norms[bm['normIdx_train']]
 
             if key == gbl.t_r:
-                gbl.feat_sets_best_train[key] = gbl.t_frame_perNorm_list[bm['normIdx_train']].columns[0:bm['num_feats'] - 4].tolist() \
+                gbl.feat_sets_best_train[key] = gbl.t_frame_global.columns[bm['t_feats_idx']].tolist() \
                                                 + gbl.demo_clin_feats
             elif key == gbl.t_c:
-                gbl.feat_sets_best_train[key] = gbl.t_frame_perNorm_list[bm['normIdx_train']].columns[0:bm['num_feats'] - 4].tolist() \
+                gbl.feat_sets_best_train[key] = gbl.t_frame_global.columns[bm['t_feats_idx']].tolist() \
                                                 + gbl.demo_clin_feats
 
             ft = gbl.feat_sets_best_train[key]
