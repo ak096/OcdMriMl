@@ -1,14 +1,18 @@
 #------------TO DO------------#
 
 PRIO HIGH-------------
-?try deniz way of checking each feature with best classification performance then collect them
+t test between mild and severe
+sklearn selectKbest, chi squared
+
+rcefv feature importance with xgboost
+
+feature importances with xgboost
+
+permutation importance
+
+feature selection and validation based on prediction performance
 
 roc_auc metric for binary classification (need class probabilities)
-
-sklearn selectKbest
-other univariate tests
-anova f test
-chi squared
 
 understand XGboost interpretable feature importances
 
