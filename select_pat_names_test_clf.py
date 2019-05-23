@@ -1,3 +1,4 @@
+from numpy.random import randint
 import random
 
 

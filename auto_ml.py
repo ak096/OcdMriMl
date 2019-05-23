@@ -10,7 +10,7 @@ from gdrive import get_pat_stats
 import time
 from sklearn.feature_selection import VarianceThreshold
 import numpy as np
-from univariate import t_frame_compute
+from feat_select import t_frame_compute
 import autosklearn.classification
 import autosklearn.regression
 

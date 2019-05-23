@@ -1,22 +1,24 @@
 #------------TO DO------------#
 
-PRIO HIGH
+PRIO HIGH-------------
 ?try deniz way of checking each feature with best classification performance then collect them
 
-randomized search with more than 10 n_iter samplings
+roc_auc metric for binary classification (need class probabilities)
 
-smote is more standard
+sklearn selectKbest
+other univariate tests
+anova f test
+chi squared
 
-other univariate tests anova f test
+understand XGboost interpretable feature importances
 
-try t test for clf on resamp set
+PRIO MID-------------
 
-try t test between mild and severe patients
+t test
+for clf on resamp set
+between mild and severe patients
 
-understand who GBR and GBC work for presentation...also XGboost
-read understand xgboot trees to optimize parameters
-
-PRIO MID
+make dataset class like sklearn to call it up for different analyses
 
 perhaps create list of feat est and loop through instead of calling classify and regress over and over
 
@@ -28,12 +30,12 @@ Free Surfer Group Analysis
 
 check t test between pat severity
 
-PRIO LOW
-use p_values instead? probably doesn't bring much
-write Alessandro for his preproc steps, cut down on FS_feats?
-train not scaled data
+PRIO LOW-------------
+run bash fs_gen_tables in python with parameters desikan destrieux all volume area thickness
 
 #------------DONE------------#
+randomized search with more than 10 n_iter samplings
+smote is more standard
 try more cv_folds more accuracy? -> cv10 did worse than cv5? always trying new ones
 try data augmentation with repeating samples -> seems to work best out of SMOTE and ADASYN
 median class split wo univariate classification -> broke into 2 classes and changed to 0, 1, ... instead of 1,2,3 ...more sklearn style

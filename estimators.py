@@ -29,7 +29,9 @@ n_iter = 100
 def svm_hyper_param_space(est_class):
     svm_hps = {'kernel': ['linear', 'rbf'],
                'C': C,
-               'gamma': ['auto']}
+               'gamma': ['auto'],
+               'probability': [True]
+               }
 
     if est_class == 'reg':
         svm_hps['epsilon'] = [0.3, 0.5, 0.7, 0.9]

@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def init_globals(frame):
+def init_globals():
     global regType_list
     regType_list = ['rfr', 'svmr', 'mlpr', 'lr', 'enr', 'rr', 'lasr', 'laslarr', 'gbr', 'xgbr']
     global clfType_list
@@ -9,7 +9,7 @@ def init_globals(frame):
     global normType_list
     normType_list = ['std', 'minMax', 'robust']
     global FS_feats
-    FS_feats = frame.columns.tolist()
+    FS_feats = []
     global t_frame_global
     t_frame_global = [pd.DataFrame()]
 
