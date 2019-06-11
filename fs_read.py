@@ -15,15 +15,21 @@ def fs_data_collect(group, path_base):
 
         table = pd.read_table(table_file.path, index_col=0)
 
-        # specify feature set (columns)
-        if '.aseg.vol.' in table_file.name:
+        # feature renaming (sub-parameters: 'thickness', 'area', 'volume')
+
+        # two main cases of features : aseg/wmparc features ||
+        #                              aparc(Desikan Atlas)/aparc.a2009s(Destreaux Atlas) x lh/rh features
+        if '.aseg.vol.' or '.wmparc.vol.' in table_file.name:
             suffix = 'volume'
         elif '.aseg.area.' in table_file.name:
             suffix = 'area'
+        # 'thickness' sub-parameter NOT available in sub-cortical (aseg) measurements
         elif '.aparc.a2009s.' in table_file.name:
             suffix = 'aparc.a2009s'
         else:
             suffix = 'aparc'
+        # 'area', 'volume', 'thickness' already in aparc(.a2009s.) feature names
+
         table.columns = [n + '**' + suffix if (n != 'BrainSegVolNotVent' and n != 'eTIV') else n for n in table.columns]
 
         table.columns = [s.replace('_and_', '&') for s in table.columns]

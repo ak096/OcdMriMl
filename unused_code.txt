@@ -1,0 +1,220 @@
+from main.py
+
+
+
+reg_scorers = ['explained_variance', 'neg_mean_absolute_error', 'neg_mean_squared_log_error', 'root_mean_squared_error', None]
+reg_scorers_names = ['ev', 'nmae', 'nmsle', 'rmse', 'None']
+r_sc = 1
+reg_scoring = reg_scorers[r_sc]
+
+clf_scorers = ['balanced_accuracy', 'accuracy']
+clf_scorers_names = ['bac', 'ac']
+c_sc = 0
+clf_scoring = clf_scorers[c_sc]
+
+gbl.feat_sets_best_train[gbl.h_r] = gbl.hoexter_feats_FS + gbl.demo_clin_feats
+gbl.feat_sets_best_train[gbl.h_c] = gbl.hoexter_feats_FS + gbl.demo_clin_feats
+gbl.feat_sets_best_train[gbl.b_r] = gbl.boedhoe_feats_FS + gbl.demo_clin_feats
+gbl.feat_sets_best_train[gbl.b_c] = gbl.boedhoe_feats_FS + gbl.demo_clin_feats
+
+        iteration = {#'n': [0], 'targets':...}
+        ...
+        t_reg_models_all = []
+        t_clf_models_all = []
+
+        # expert-picked-feature-based models for regression and classification
+        hoexter_reg_models_all = []
+        hoexter_clf_models_all = []
+        boedhoe_reg_models_all = []
+        boedhoe_clf_models_all = []
+
+        brfc_models_all = []
+        ...
+        for n in iteration['n']: # standard, minmax, (robust-quantile-based) normalizations of input data
+        ...
+        # feat_pool_idx_powerset = powerset(range(t_feats_all_num))  # powerset of indices without empty set
+        feat_pool_idx_subsequentset = subsequentset(range(t_feats_all_num))
+        # print('COMPUTING %d SUBSETS of T_FEATS' % len(t_feats_idx_powerset))
+        print('COMPUTING %d SUBSETS of T_FEATS' % len(t_feats_idx_subsequentset))
+
+
+        for t_feats_idx_subset in t_feats_idx_subsequentset:
+            t0 = time.time()
+            t_feats_subset = [t_feats_all[i] for i in t_feats_idx_subset]
+            t_feats_train = t_feats_subset + gbl.demo_clin_feats
+            t_feats_train_num = len(t_feats_train)
+
+            print("COMPUTING %d / %d FEATS W/ NORM %s" % (t_feats_train_num,
+                                                          t_feats_train_all_num,
+                                                          norm))
+            # t_reg_models_all += regress(subs.pat_frame_train_reg_norms[n][t_feats_train],
+            #                             subs.pat_frame_train_y_reg, cv_folds,
+            #                             reg_scoring, n, glob.t_r, t_feats_train_all_num, t_feats_idx_subset)
+
+            t_clf_models_all += classify(subs.pat_frame_train_clf_norms[n][t_feats_train],
+                                         subs.pat_frame_train_y_clf, cv_folds,
+                                         clf_scoring, n, gbl.t_c, t_feats_train_all_num, t_feats_idx_subset)
+
+            print("%s: Running brfc: %d OF %d FEATS" % (gbl.t_c, t_feats_train_num, t_feats_train_all_num))
+            brfc_models_all.append([BalancedRandomForestClassifier(n_estimators=500,
+                                                                   random_state=np.random.RandomState(),
+                                                                   n_jobs=-1,
+                                                                   class_weight='balanced').fit(subs.pat_frame_train_reg_norms[n][t_feats_train],
+                                                                                                subs.pat_frame_train_y_clf_list[0]),
+                                    t_feats_train
+                                    ])
+            print("FINISHED %d / %d FEATS W/ NORM %s TOOK %.2f SEC" % (t_feats_train_num,
+                                                                       t_feats_train_all_num,
+                                                                       norm,
+                                                                       time.time() - t0))
+
+        # end for t_feats
+
+
+        print("HOEXTER Regression with norm " + norm)
+
+        # hoexter_reg_models_all += regress(pat_frame_train_reg_norms[n][glob.feat_sets_best_train[glob.h_r]],
+        #                                   pat_frame_train_y_reg, cv_folds, reg_scoring, n, glob.h_r,
+        #                                   len(glob.feat_sets_best_train[glob.h_r]))
+
+        hoexter_clf_models_all += classify(subs.pat_frame_train_clf_norms[n][gbl.feat_sets_best_train[gbl.h_c]],
+                                           subs.pat_frame_train_y_clf, cv_folds, clf_scoring, n, gbl.h_c,
+                                           len(gbl.feat_sets_best_train[gbl.h_c]))
+        # print("BOEDHOE Regression with norm " + norm)
+
+        # boedhoe_reg_models_all += regress(pat_frame_train_reg_norms[n][glob.feat_sets_best_train[glob.b_r]],
+        #                                   pat_frame_train_y_reg, cv_folds, reg_scoring, n, glob.b_r,
+        #                                   len(glob.feat_sets_best_train[glob.b_r]))
+
+        boedhoe_clf_models_all += classify(subs.pat_frame_train_clf_norms[n][gbl.feat_sets_best_train[gbl.b_c]],
+                                           subs.pat_frame_train_y_clf, cv_folds, clf_scoring, n, gbl.b_c,
+                                           len(gbl.feat_sets_best_train[gbl.b_c]))
+
+        print("HOEXTER and BOEDHOE EST W/ NORM %s TOOK %.2f SEC" % (norm, time.time()-t1))
+
+        # end for n norm
+
+        ...
+
+        # find best trained models and prediction results
+        models_all = {gbl.h_r: hoexter_reg_models_all, gbl.h_c: hoexter_clf_models_all,
+                  gbl.b_r: boedhoe_reg_models_all, gbl.b_c: boedhoe_clf_models_all,
+                  gbl.t_r: t_reg_models_all, gbl.t_c: t_clf_models_all}
+
+        models_to_results(models_all, subs.pat_frame_test_reg_norms, subs.pat_frame_test_clf_norms,
+                      subs.pat_frame_test_y_reg, subs.pat_frame_test_y_clf, reg_scoring)
+
+        # combine best t feats with boedhoe and hoexter
+        gbl.feat_sets_best_train[gbl.h_t_r] = gbl.feat_sets_best_train[gbl.t_r] + gbl.hoexter_feats_FS
+        gbl.feat_sets_best_train[gbl.h_t_c] = gbl.feat_sets_best_train[gbl.t_c] + gbl.hoexter_feats_FS
+        gbl.feat_sets_best_train[gbl.b_t_r] = gbl.feat_sets_best_train[gbl.t_r] + gbl.boedhoe_feats_FS
+        gbl.feat_sets_best_train[gbl.b_t_c] = gbl.feat_sets_best_train[gbl.t_c] + gbl.boedhoe_feats_FS
+
+        hoexter_t_reg_models_all = []
+        hoexter_t_clf_models_all = []
+        boedhoe_t_reg_models_all = []
+        boedhoe_t_clf_models_all = []
+
+        # hoexter_t_reg_models_all = regress(pat_frame_train_reg_norms[n][glob.feat_sets_best_train[glob.h_t_r]],
+        #                                    pat_frame_train_y_reg, cv_folds, reg_scoring, n, glob.h_t_r,
+        #                                    len(glob.feat_sets_best_train[glob.h_t_r]))
+
+        hoexter_t_clf_models_all = classify(subs.pat_frame_train_clf_norms[n][gbl.feat_sets_best_train[gbl.h_t_c]],
+                                            subs.pat_frame_train_y_clf, cv_folds, clf_scoring, n, gbl.h_t_c,
+                                            len(gbl.feat_sets_best_train[gbl.h_t_c]))
+        # print("BOEDHOE Regression with norm " + norm)
+
+        # boedhoe_t_reg_models_all = regress(pat_frame_train_reg_norms[n][glob.feat_sets_best_train[glob.b_t_r]],
+        #                                    pat_frame_train_y_reg, cv_folds, reg_scoring, n, glob.b_t_r,
+        #                                    len(glob.feat_sets_best_train[glob.b_t_r]))
+
+        boedhoe_t_clf_models_all = classify(subs.pat_frame_train_clf_norms[n][gbl.feat_sets_best_train[gbl.b_t_c]],
+                                            subs.pat_frame_train_y_clf, cv_folds, clf_scoring, n, gbl.b_t_c,
+                                            len(gbl.feat_sets_best_train[gbl.b_t_c]))
+
+        models2_all = {gbl.h_t_r: hoexter_t_reg_models_all, gbl.h_t_c: hoexter_t_clf_models_all,
+                       gbl.b_t_r: boedhoe_t_reg_models_all, gbl.b_t_c: boedhoe_t_clf_models_all}
+
+        models_to_results(models2_all, subs.pat_frame_test_reg_norms, subs.pat_frame_test_clf_norms,
+                          subs.pat_frame_test_y_reg, subs.pat_frame_test_y_clf, reg_scoring)
+
+        # find best best brfc
+        gbl.brfc_name = gbl.t_c + '_2_imb_train'
+        brfc_scores = [[b[0].score(subs.pat_frame_test_reg_norms[n].loc[:, b[1]],
+                                   subs.pat_frame_test_y_clf), idx] for idx, b in enumerate(brfc_models_all)]
+        brfc_scores.sort(key=lambda x: x[0], reverse=True)
+        brfc_best5_models_with_feats = brfc_models_all[brfc_scores[0][1]]
+        brfc_predictions = brfc_best5_models_with_feats[0].predict(
+            subs.pat_frame_test_reg_norms[n].loc[:, brfc_best5_models_with_feats[1]])
+
+        brfc_score = brfc_best5_models_with_feats[0].score(subs.pat_frame_test_reg_norms[n].loc[:, brfc_best5_models_with_feats[1]],
+                                                           subs.pat_frame_test_y_clf)
+        brfc_score2 = brfc_scores[0][0]
+        if brfc_score != brfc_score2:
+            print('BEST BRFC PRED SCORES NOT EQUAL')
+        brfc_result = pd.DataFrame(index=subs.pat_frame_test_y_clf.index.tolist() + ['acc_score'],
+                                   data={gbl.brfc_name: brfc_predictions.tolist() + [brfc_score],
+                                         'YBOCS_target': subs.pat_frame_test_y_clf.iloc[:, 0]})
+        print(brfc_result)
+        print(brfc_score)
+
+        brfc_pr = brfc_result.drop(columns='YBOCS_target')
+
+        # save best brfc feats
+        gbl.feat_sets_best_train[gbl.brfc_name] = brfc_best5_models_with_feats[1]
+        # construct manually brfc models to result
+        brfc_bm = {'EstObject': brfc_best5_models_with_feats[0], 'est_type': 'brfc',
+                   'normIdx_train': n, 'num_feats': len(brfc_best5_models_with_feats[1])}
+        gbl.best_models_results[gbl.brfc_name] = {'features': brfc_best5_models_with_feats[1],
+                                                  'est_class': 'clf',
+                                                  'best_model': brfc_bm,
+                                                  'pred_results': brfc_pr,
+                                                  'bm5': ''}
+
+from gbl.py
+
+...
+    #global regType_list
+    #regType_list = ['rfr', 'svmr', 'mlpr', 'lr', 'enr', 'rr', 'lasr', 'laslarr', 'gbr', 'xgbr']
+    #global clfType_list
+    #clfType_list = ['rfc', 'svmc', 'mlpc', 'abc', 'logr', 'knc', 'gpc', 'gnb', 'lda', 'qda', 'gbc', 'xgbc', 'brfc']
+...
+    # for get_features mostly
+    global h_r
+    h_r = 'hoexter_reg'
+    global h_c
+    h_c = 'hoexter_clf'
+    global b_r
+    b_r = 'boedhoe_reg'
+    global b_c
+    b_c = 'boedhoe_clf'
+    global t_r
+    t_r = 't_reg'
+    global t_c
+    t_c = 't_clf'
+    global h_t_r
+    h_t_r = 'hoexter_t_reg'
+    global h_t_c
+    h_t_c = 'hoexter_t_clf'
+    global b_t_r
+    b_t_r = 'boedhoe_t_reg'
+    global b_t_c
+    b_t_c = 'boedhoe_t_clf'
+    global brfc_name
+    brfc_name = t_c + '_2_imb_train'
+
+...
+
+
+    global feat_sets_best_train
+    feat_sets_best_train = {h_r: [], h_c: [], b_r: [], b_c: [], t_r: [], t_c: [],
+                            h_t_r: [], h_t_c: [], b_t_r: [], b_t_c: []}
+
+    # best_models_results[key] = {'features': [list],
+    #                             'est_class': 'reg'||'clf',
+    #                             'best_model': {'EstObject': , 'est_type': , 'normIdx_train': , 'num_feats': },
+    #                             'pred_results': prediction_frame
+    #                             'bm5': top 5 best scoring models for confidence interval comparison
+    #                            }
+    global best_models_results
+    best_models_results = {}

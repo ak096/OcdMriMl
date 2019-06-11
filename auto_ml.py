@@ -1,5 +1,5 @@
 from fs_read import fs_data_collect
-from select_pat_names_test_clf import select_pat_names_test_clf
+from select_pat_names_test_clf import select_pat_names_test
 import os
 import warnings
 from sklearn.exceptions import ConvergenceWarning
@@ -10,7 +10,7 @@ from gdrive import get_pat_stats
 import time
 from sklearn.feature_selection import VarianceThreshold
 import numpy as np
-from feat_select import t_frame_compute
+from feat_pool_univar import t_frame_compute
 import autosklearn.classification
 import autosklearn.regression
 
@@ -71,7 +71,7 @@ num_classes = len(np.unique(y_clf))
 # extract train and test set names
 t_s = 0.19
 
-pat_names_test = select_pat_names_test_clf(y_clf, clf_tgt, t_s, num_classes)
+pat_names_test = select_pat_names_test(y_clf, clf_tgt, t_s, num_classes)
 pat_names_train = [name for name in pat_names if name not in pat_names_test]
 overlap = any(elem in pat_names_train for elem in pat_names_test)
 print(overlap)

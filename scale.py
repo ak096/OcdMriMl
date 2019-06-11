@@ -15,7 +15,7 @@ def scale(frame):
     return frame_norms, scalers
 
 
-def testSet_scale(frame, scalers):
+def test_set_scale(frame, scalers):
 
     columns = frame.columns
     index = frame.index

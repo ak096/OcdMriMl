@@ -1,43 +1,72 @@
 #------------TO DO------------#
 
 PRIO HIGH-------------
-t test between mild and severe
-sklearn selectKbest, chi squared
 
-rcefv feature importance with xgboost
+new pipeline:
+1.feature pool :per task: pool union of t test between mild and severe, p_value based f_scores, and mutual information
+2.feature subset collection from pool, forward permutation importance backward rfecv reporting on held out test set and
+compared with hoexter and boedhoe sets
+-(further work) include more subsets by taking not just best but perhaps best 5
+3.frequent item set analysis
+4. perhaps NB explanation this week
 
-feature importances with xgboost
+to understand :
+good idea to do univariate feature analysis on augmented OR vanilla training set?
 
-permutation importance
+to do :
+add prediction confidence scores
 
-feature selection and validation based on prediction performance
+understand
+XGboost parameters,
+mutual info
+how perm importance during cv
 
-roc_auc metric for binary classification (need class probabilities)
 
-understand XGboost interpretable feature importances
+
+
+
+PAPER:
+contribution is perhaps new pipeline (also for paper) over clf reg supervised learning tasks over various objectives...
+(2, 3, 4 class)
+# non-ocd (0-9) mild (10-20), moderate (21-30), severe (31-40) Okasha et. al. (2000)
+feature set loop
+hyperparameter loop
+cross validation loop
+for each feature set report best scoring model (with hyperparameters)...
+
+lsvm one v rest and not one vs one
+roc_auc_score binary classification lsvc is weighted average for imbalanced classes
+
+always strategy from infinite space with statistical strategies to narrow down space
+-menze with t test
+-rankings..
+
+Boedhoe no cortical thickness or area correlations in severity?  maybe i find something different
+
+
 
 PRIO MID-------------
 
-t test
-for clf on resamp set
-between mild and severe patients
 
-make dataset class like sklearn to call it up for different analyses
+create cross validation loop with correction of covariates, resampling, and other desired transformatinos like
+permutation importance, rfe strategies
 
-perhaps create list of feat est and loop through instead of calling classify and regress over and over
-
-check if GridSearchCV fully taken advantage of?
-
-try some other scoring metrics
-
-Free Surfer Group Analysis
-
-check t test between pat severity
+add in smart hyperparameter search using bayesion methods
 
 PRIO LOW-------------
 run bash fs_gen_tables in python with parameters desikan destrieux all volume area thickness
 
+Free Surfer Group Analysis
+
+
 #------------DONE------------#
+look at best loss functions for each estimator, roc_auc metric for binary classification (need class probabilities)
+dont understand why cv_folds isn't calculated s.t. in each training fold, est sees same number of each class -> greater...
+cv_folds smaller val set with few of each class and greater train set with more of all classes
+self programmed permutation importance holding fixed control variables
+is it the same to take the best rfecv and perm tested models and the forward prediction training models -> yes (what?)
+make dataset class like sklearn to call it up for different analyses
+check if GridSearchCV fully taken advantage of?
 randomized search with more than 10 n_iter samplings
 smote is more standard
 try more cv_folds more accuracy? -> cv10 did worse than cv5? always trying new ones
@@ -90,3 +119,6 @@ scalability concept in concrete design example
 strong dependency: variablization : i.e. making size of list in for loop dependent on input size
 instead of hard coding its size like l = [] for i in l2: do l.append[something i] instead of
 l = [, ,] for idx, i in l2 : do l[idx], automatically scaled with growth or shrinking of l2 ..
+
+change naming convention from related objects, distinguishing name in front (DE principle), e.g. l_feat_sel, instead of
+feat_sel_l, distinguishing thing easier to get first serves function

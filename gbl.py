@@ -1,63 +1,80 @@
 import pandas as pd
+import numpy as np
+from random import uniform, randint
+from sklearn.model_selection import ParameterGrid, ParameterSampler
+
+
+def svm_hyper_param_space(est_class):
+    svm_hps = {
+               'C': np.arange(1, 1001, 99),
+               }
+    # if est_class == 'reg':
+    #     svm_hps['epsilon'] = [0.3, 0.5, 0.7, 0.9]
+    if est_class == 'clf':
+        svm_hps['class_weight'] = ['balanced']
+    return svm_hps
+
+
+def xgb_hyper_param_space(est_class):
+    return {  #learning task parameters : objective, eval, ...
+              #'objective': ,
+              #'eval_meas': ,
+              #booster tree parameters
+              #1.set init values, comp less expensive for initial look
+              #for highly imbalanced classes
+              'scale_pos_weight': 1,
+              #2.most impact these two
+              'min_child_weight': randint(1,6),  #default:1
+              "max_depth": randint(3, 8), # default:6
+              #3.carry on with gamma
+              "min_split_loss": uniform(0, 0.3, 0.1),  # alias:gamma, default:0 should be tuned according to loss function
+              #4.these two around 0.8
+              "subsample": uniform(0.5, 0, 9, 0.05),  # default
+              'colsample_bytree': uniform(0.5, 0.9, 0.05),
+              #5.regularization parameters : model complexity and performance and under/over fitting?
+              'reg_lambda': [1], #alias:lambda (L2), default:1
+              'reg_alpha': [0, 0.001, 0.005, 0.01, 0.05], #alias:alpha (L1), default:0
+              #6.decrease learning rate and increase number of trees
+              "learning_rate": [0.1, 0.2],  # alias:eta, default:0.3
+              'n_estimators': np.arange(100, 701, 100),  # default:100
+            }
 
 
 def init_globals():
-    global regType_list
-    regType_list = ['rfr', 'svmr', 'mlpr', 'lr', 'enr', 'rr', 'lasr', 'laslarr', 'gbr', 'xgbr']
-    global clfType_list
-    clfType_list = ['rfc', 'svmc', 'mlpc', 'abc', 'logr', 'knc', 'gpc', 'gnb', 'lda', 'qda', 'gbc', 'xgbc', 'brfc']
+
     global normType_list
     normType_list = ['std', 'minMax', 'robust']
     global FS_feats
     FS_feats = []
-    global t_frame_global
-    t_frame_global = [pd.DataFrame()]
-
     global demo_clin_feats
     demo_clin_feats = ['gender_num', 'age', 'duration', 'med']
 
-    # for get_features mostly
-    global h_r
-    h_r = 'hoexter_reg'
-    global h_c
-    h_c = 'hoexter_clf'
-    global b_r
-    b_r = 'boedhoe_reg'
-    global b_c
-    b_c = 'boedhoe_clf'
-    global t_r
-    t_r = 't_reg'
-    global t_c
-    t_c = 't_clf'
-    global h_t_r
-    h_t_r = 'hoexter_t_reg'
-    global h_t_c
-    h_t_c = 'hoexter_t_clf'
-    global b_t_r
-    b_t_r = 'boedhoe_t_reg'
-    global b_t_c
-    b_t_c = 'boedhoe_t_clf'
-    global brfc_name
-    brfc_name = t_c + '_2_imb_train'
+    global param_grid_lsvc
+    param_grid_lsvc = list(ParameterGrid(svm_hyper_param_space('clf')))
+    global param_grid_lsvr
+    param_grid_lsvr = list(ParameterGrid(svm_hyper_param_space('reg')))
+    global param_grid_xgb
+    param_grid_xgb = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
+    # param_grid_xgbr = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
 
     # Hoexter et al 2013 (CSTC)
-    # volumetric data:
-    # right rostral anteriorcingulate
-    # left rostral anteriorcingulate
-    # right thalamus
-    # left thalamus
-    # right medial orbitofrontal
-    # right lateral orbitofrontal
-    # left medial orbitofrontal
-    # left lateral orbitofrontal
-    # right accumbens area (?)
-    # right pallidum
-    # right putamen
-    # right caudate
-    # left accumbens area (?)
-    # left pallidum
-    # left putamen
-    # left caudate
+        # volumetric data:
+        # right rostral anteriorcingulate
+        # left rostral anteriorcingulate
+        # right thalamus
+        # left thalamus
+        # right medial orbitofrontal
+        # right lateral orbitofrontal
+        # left medial orbitofrontal
+        # left lateral orbitofrontal
+        # right accumbens area (?)
+        # right pallidum
+        # right putamen
+        # right caudate
+        # left accumbens area (?)
+        # left pallidum
+        # left putamen
+        # left caudate
     global hoexter_feats_FS
     hoexter_feats_FS = [
         'lh_rostralanteriorcingulate_volume**aparc',
@@ -93,18 +110,5 @@ def init_globals():
         'Left-Hippocampus**volume',
         'Right-Hippocampus**volume'
     ]
-
-    global feat_sets_best_train
-    feat_sets_best_train = {h_r: [], h_c: [], b_r: [], b_c: [], t_r: [], t_c: [],
-                            h_t_r: [], h_t_c: [], b_t_r: [], b_t_c: []}
-
-    # best_models_results[key] = {'features': [list],
-    #                             'est_class': 'reg'||'clf',
-    #                             'best_model': {'EstObject': , 'est_type': , 'normIdx_train': , 'num_feats': },
-    #                             'pred_results': prediction_frame
-    #                             'bm5': top 5 best scoring models for confidence interval comparison
-    #                            }
-    global best_models_results
-    best_models_results = {}
 
     return

@@ -7,3 +7,10 @@ def powerset(iterable):
     return list(chain.from_iterable(combinations(s, r) for r in range(1, len(s)+1)))
 
 
+def subsequentset(iterable):
+    sset = []
+    s = list(iterable)
+    for idx, i in enumerate(s):
+        sset.append(s[0:idx+1])
+    return sset
+

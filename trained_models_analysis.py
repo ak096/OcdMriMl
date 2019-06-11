@@ -13,8 +13,12 @@ def find_best_models(name, feats_estClass_models, reg_scoring):
     descending = True
     feats_estClass_models.sort(key=lambda x: x[0].best_score_, reverse=descending)
 
-    best_models_list = [{'EstObject': elt[0], 'est_type': elt[1], 'normIdx_train': elt[2], 'num_feats': elt[3],
-                         't_feats_idx': list(elt[4])} for elt in feats_estClass_models[0:4]]
+    best_models_list = [
+        {'EstObject': elt[0], 'est_type': elt[1], 'normIdx_train': elt[2], 'num_feats': elt[3],
+         't_feats_idx': list(elt[4])}
+
+        for elt in feats_estClass_models[0:5]
+    ]
 
     return best_models_list
 
@@ -49,6 +53,7 @@ def models_to_results(models_all, pat_frame_test_reg_norms, pat_frame_test_clf_n
             print(ft)
             pr = predict_report(key, bm, pat_frame_test_norm, ft, pat_frame_test_y, ec)
 
-            gbl.best_models_results[key] = {'features': ft, 'est_class': ec, 'best_model': bm, 'pred_results': pr, 'bm5': bm5}
+            gbl.best_models_results[key] = {'features': ft, 'est_class': ec, 'best_model': bm, 'pred_results': pr,
+                                            'bm5': bm5}
 
     return
