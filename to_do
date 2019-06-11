@@ -21,7 +21,7 @@ XGboost parameters,
 mutual info
 how perm importance during cv
 
-
+tommorrow ask bjoern if need to base on prediction values, can just use best val_scores
 
 
 

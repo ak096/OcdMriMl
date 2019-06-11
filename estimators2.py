@@ -67,6 +67,7 @@ def pred(est_type, task, est5, X, y):
                 pred_frames[i].insert(1, 'Confidence', est.predict_proba(X))
 
         perm_imp.append(perm_imp_test(est=est, base_score=ps, X=X, y=y, n_iter=20))
+
     return pred_frames, pred_scores, perm_imp
 
 
@@ -80,3 +81,4 @@ def perm_imp_test(est, base_score, X, y, n_iter=15):
             score_diff += base_score - est.score(X_dum, y)
         perm_imp.at['perm_imp', column] = score_diff/n_iter
     return perm_imp
+

@@ -25,11 +25,12 @@ from dataset import Subs
 start_time = time.time()
 from collections import Counter
 from copy import copy, deepcopy
-from results import TargetResults
+from results import TargetResults, LearnedFeatureSets
 from estimators2 import train, pred
 from sklearn.metrics import roc_auc_score, roc_curve, log_loss, mean_absolute_error
 from scipy.stats import sem, t
 from scipy import mean
+import datetime
 
 
 warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
@@ -63,6 +64,8 @@ targets = [
           ]
 
 tgt_results = TargetResults()
+
+lrn_feat_sets = LearnedFeatureSets()
 
 for idx, tgt_name in enumerate(targets):
     zeit = time.time()
@@ -146,6 +149,7 @@ for idx, tgt_name in enumerate(targets):
                     'hoexter': [gbl.hoexter_feats_FS, gbl.hoexter_feats_FS],
                     'boedhoe': [gbl.boedhoe_feats_FS, gbl.boedhoe_feats_FS]
                     }
+
     for k, v in feat_subsets.items():
         zeit = time.time()
         l_feat_train = v[0] + gbl.demo_clin_feats
@@ -186,8 +190,15 @@ for idx, tgt_name in enumerate(targets):
                                                                      'est5': nl_est5,
                                                                      'train_scores': nl_val_scores
                                                                      })
+
+        tgt_results.targets[tgt_name][k].est_type['lsvm'].est5.sort_prune_pred()
+        tgt_results.targets[tgt_name][k].est_type['xgb'].est5.sort_prune_pred()
         print('training and prediction computation took %.2f' % time.time() - zeit)
 
+        # end feat_set loop
+
+    if tgt_results.targets[tgt_name]['learned'].est_type['lsvm'].est5['pred_scores']:
+        lrn_feat_sets.linear.append()
     # frequent item set mining
 
 
