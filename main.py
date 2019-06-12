@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from numpy.random import randint
 import gbl
-from estimators import regress, classify
+from estimators_old import regress, classify
 from prediction_reporting import predict_report, write_report
 from pat_sets import *
 import time
@@ -22,17 +22,18 @@ from trained_models_analysis import models_to_results
 from set_operations import powerset, subsequentset
 from feat_selection_ml import rfe_cv
 from dataset import Subs
-start_time = time.time()
 from collections import Counter
 from copy import copy, deepcopy
 from results import TargetResults, LearnedFeatureSets
-from estimators2 import train, pred
+from estimators import train, pred
 from sklearn.metrics import roc_auc_score, roc_curve, log_loss, mean_absolute_error
 from scipy.stats import sem, t
 from scipy import mean
 import datetime
+from mlxtend.frequent_patterns import apriori
+from mlxtend.preprocessing import TransactionEncoder
 
-
+start_time = time.time()
 warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
 
 if not sys.warnoptions:
@@ -88,11 +89,11 @@ for idx, tgt_name in enumerate(targets):
     # univariate feature pool computation:
     # compute t_feats
     if subs.resampled: # use .iloc
-        a = subs.pat_frame_train.iloc[subs.pat_names_train_bins[0], :]
-        b = subs.pat_frame_train.iloc[subs.pat_names_train_bins[subs.num_bins-1], :]
+        a = subs.pat_frame_train.iloc[subs.pat_names_train_bins[subs.bin_keys[0]], :]
+        b = subs.pat_frame_train.iloc[subs.pat_names_train_bins[subs.bin_keys[-1]], :]
     else: # use .loc
-        a = subs.pat_frame_train.loc[subs.pat_names_train_bins[0], :],
-        b = subs.pat_frame_train.loc[subs.pat_names_train_bins[subs.num_bins-1], :]
+        a = subs.pat_frame_train.loc[subs.pat_names_train_bins[subs.bin_keys[0]], :],
+        b = subs.pat_frame_train.loc[subs.pat_names_train_bins[subs.bin_keys[-1]], :]
 
     t_frame = t_frame_compute(a, b, feat_filter=[])  # ['thickness', 'volume'])
     t_feats = t_frame.columns.tolist()
@@ -171,7 +172,6 @@ for idx, tgt_name in enumerate(targets):
         nl_pred_frames, nl_pred_scores, nl_perm_imp = pred(est5=nl_est5, X=subs.pat_frame_test_norms[0],
                                                            y=subs.pat_frame_test_y)
 
-
         tgt_results.targets[tgt_name][k].est_type['lsvm'].est5.update({
                                                                      'feat_sel': v[0],
                                                                      'pred_frames': l_pred_frames,
@@ -195,56 +195,69 @@ for idx, tgt_name in enumerate(targets):
         tgt_results.targets[tgt_name][k].est_type['xgb'].est5.sort_prune_pred()
         print('training and prediction computation took %.2f' % time.time() - zeit)
 
-        # end feat_set loop
+        # end feat_subsets loop
 
     if tgt_results.targets[tgt_name]['learned'].est_type['lsvm'].est5['pred_scores']:
-        lrn_feat_sets.linear.append()
-    # frequent item set mining
+        lrn_feat_sets.linear.append(l_feat_select)
+    if tgt_results.targets[tgt_name]['learned'].est_type['xgb'] .est5['pred_scores']:
+        lrn_feat_sets.non_linear.append([nl_feat_select])
+    # end tgt loop
 
 
+# frequent item set mining
+lrn_feat_sets.combine()
+dataset = lrn_feat_sets.all
+te = TransactionEncoder()
+te_ary = te.fit(dataset).transform(dataset)
+df = pd.DataFrame(te_ary, columns=te.columns_)
 
 
-    # SAVE RESULTS
-    print('SAVING RESULTS')
-    # str(t_s) + \
-    exp_description = '**balRandTest'+str(t_s)+'_RegTrainRest_ClfTrain' + over_samp_names[o_s] + '_' + norm + '_' \
-                      + reg_scorers_names[r_sc] + '_' + clf_scorers_names[c_sc] + '_' + \
-                      'cvFolds' + str(cv_folds) + \
-                      '**t_allRegTrain_DesikanThickVolFeats_TorP'
-
-    try:
-        os.mkdir(tgt_name)
-    except FileExistsError:
-        pass
-
-    bmr = open(tgt_name + '/' + tgt_name + exp_description + '**bmr.pkl', 'wb')
-    pickle.dump(gbl.best_models_results, bmr, -1)
-    bmr.close()
-    try:
-        t_reg_best_score = format(round(gbl.best_models_results[gbl.t_c]['pred_results'].iloc[-1, 0], 2))
-    except:
-        t_reg_best_score = -1
-    try:
-        t_clf_best_score = format(round(gbl.best_models_results[gbl.t_r]['pred_results'].iloc[-2, 0], 2))
-    except:
-        t_clf_best_score = -1
-    # write prediction results to excel
-    xlsx_name = tgt_name + '/' + tgt_name + exp_description + '**results**' + \
-                'tclf:' + str(t_clf_best_score) +'_' +\
-                'treg:' + str(t_reg_best_score) +'.xlsx'
-
-    writer = pd.ExcelWriter(xlsx_name)
-    write_report(writer, subs.pat_frame_test_y_clf, subs.pat_frame_test_y_reg)
-    frame_name_suffix = '_non-resampled' # SMOTE, ROS, ADASYN
-    gbl.t_frame_global.to_excel(writer, 't_frame' + frame_name_suffix)
-    gbl.f_frame_global.to_excel(writer, 'f_frame' + frame_name_suffix)
-    gbl.mi_frame_global.to_excel(writer, 'mi_frame' + frame_name_suffix)
-    feat_pool_counts_frame.to_excel(writer, 'feat_pool_counts')
-    writer.save()
-    print('SAVED %s' % xlsx_name)
-
-# end for tgt
-t_feats_pats_cons_all = t_frame_compute(subs.pat_frame_train, subs.con_frame, []) # ['thickness', 'volume'])
-writer = pd.ExcelWriter('t_frame_pats_v_cons' + frame_name_suffix)
-gbl.t_frame_global.to_excel(writer)
-print("TOTAL TIME %.2f" % (time.time()-start_time))
+min_support=0.6
+freq_item_sets_frame = apriori(df, min_support=min_support)
+#
+#
+#
+# # SAVE RESULTS
+# print('SAVING RESULTS')
+# # str(t_s) + \
+# exp_description = '**balRandTest'+str(t_s)+'_RegTrainRest_ClfTrain' + over_samp_names[o_s] + '_' + norm + '_' \
+#                   + reg_scorers_names[r_sc] + '_' + clf_scorers_names[c_sc] + '_' + \
+#                   'cvFolds' + str(cv_folds) + \
+#                   '**t_allRegTrain_DesikanThickVolFeats_TorP'
+#
+# try:
+#     os.mkdir(tgt_name)
+# except FileExistsError:
+#     pass
+#
+# bmr = open(tgt_name + '/' + tgt_name + exp_description + '**bmr.pkl', 'wb')
+# pickle.dump(gbl.best_models_results, bmr, -1)
+# bmr.close()
+# try:
+#     t_reg_best_score = format(round(gbl.best_models_results[gbl.t_c]['pred_results'].iloc[-1, 0], 2))
+# except:
+#     t_reg_best_score = -1
+# try:
+#     t_clf_best_score = format(round(gbl.best_models_results[gbl.t_r]['pred_results'].iloc[-2, 0], 2))
+# except:
+#     t_clf_best_score = -1
+# # write prediction results to excel
+# xlsx_name = tgt_name + '/' + tgt_name + exp_description + '**results**' + \
+#             'tclf:' + str(t_clf_best_score) +'_' +\
+#             'treg:' + str(t_reg_best_score) +'.xlsx'
+#
+# writer = pd.ExcelWriter(xlsx_name)
+# write_report(writer, subs.pat_frame_test_y_clf, subs.pat_frame_test_y_reg)
+# frame_name_suffix = '_non-resampled' # SMOTE, ROS, ADASYN
+# gbl.t_frame_global.to_excel(writer, 't_frame' + frame_name_suffix)
+# gbl.f_frame_global.to_excel(writer, 'f_frame' + frame_name_suffix)
+# gbl.mi_frame_global.to_excel(writer, 'mi_frame' + frame_name_suffix)
+# feat_pool_counts_frame.to_excel(writer, 'feat_pool_counts')
+# writer.save()
+# print('SAVED %s' % xlsx_name)
+#
+#
+# t_feats_pats_cons_all = t_frame_compute(subs.pat_frame_train, subs.con_frame, []) # ['thickness', 'volume'])
+# writer = pd.ExcelWriter('t_frame_pats_v_cons' + frame_name_suffix)
+# gbl.t_frame_global.to_excel(writer)
+# print("TOTAL TIME %.2f" % (time.time()-start_time))

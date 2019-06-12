@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Results2():
+class Results2:
     def __init__(self):
         self.est5 = {
                     'feat_sel': [],
@@ -24,7 +24,7 @@ class Results2():
         self.est5['train_scores'] = [self.est5['train_scores'][i] for i in idx]
 
 
-class Results1():
+class Results1:
     def __init__(self):
         self.est_type = {
                          'lsvm': Results2(),
@@ -32,7 +32,7 @@ class Results1():
                         }
 
 
-class TargetResults():
+class TargetResults:
     def __init__(self):
         self.targets = {}
 
@@ -48,8 +48,11 @@ class TargetResults():
                                 }
 
 
-class LearnedFeatureSets():
+class LearnedFeatureSets:
     def __init__(self):
         self.linear = []
         self.non_linear = []
         self.all = []
+
+    def combine(self):
+        self.all = self.linear + self.non_linear

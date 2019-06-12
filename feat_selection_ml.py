@@ -7,7 +7,7 @@ from xgboost import XGBClassifier, XGBRegressor
 
 import pandas as pd
 
-from yellowbrick.features import RFECV as yb.RFECV
+from yellowbrick.features import RFECV
 
 from random import randint
 
@@ -23,7 +23,7 @@ def rfe_cv(task, feat_pool, X, y, cv_folds):
         return None
     feat_select = []
     for est in estimators:
-        sel = yb.RFECV(est, min_features_to_select=10, cv=cv_folds, n_jobs=-1, step=1, verbose=2)
+        sel = RFECV(est, min_features_to_select=10, cv=cv_folds, n_jobs=-1, step=1, verbose=2)
         sel.fit(X.loc[:, feat_pool], y)
         feat_select.append(feat_pool[sel.support_])
     return feat_select[0], feat_select[1]

@@ -15,22 +15,22 @@ def svm_hyper_param_space(est_class):
     return svm_hps
 
 
-def xgb_hyper_param_space(est_class):
+def xgb_hyper_param_space():
     return {  #learning task parameters : objective, eval, ...
               #'objective': ,
               #'eval_meas': ,
               #booster tree parameters
               #1.set init values, comp less expensive for initial look
               #for highly imbalanced classes
-              'scale_pos_weight': 1,
+              'scale_pos_weight': [1],
               #2.most impact these two
-              'min_child_weight': randint(1,6),  #default:1
-              "max_depth": randint(3, 8), # default:6
+              'min_child_weight': [1, 2, 3, 4, 5, 6],  #default:1
+              "max_depth": [3, 4, 5, 6, 7, 8], # default:6
               #3.carry on with gamma
-              "min_split_loss": uniform(0, 0.3, 0.1),  # alias:gamma, default:0 should be tuned according to loss function
+              "min_split_loss": [0, 0.1, 0.2, 0.3],  # alias:gamma, default:0 should be tuned according to loss function
               #4.these two around 0.8
-              "subsample": uniform(0.5, 0, 9, 0.05),  # default
-              'colsample_bytree': uniform(0.5, 0.9, 0.05),
+              "subsample": [0.5, 0.6, 0.7, 0.8, 0.9],  # default
+              'colsample_bytree': [0.5, 0.6, 0.7, 0.8, 0.9],
               #5.regularization parameters : model complexity and performance and under/over fitting?
               'reg_lambda': [1], #alias:lambda (L2), default:1
               'reg_alpha': [0, 0.001, 0.005, 0.01, 0.05], #alias:alpha (L1), default:0
@@ -46,8 +46,8 @@ def init_globals():
     normType_list = ['std', 'minMax', 'robust']
     global FS_feats
     FS_feats = []
-    global demo_clin_feats
-    demo_clin_feats = ['gender_num', 'age', 'duration', 'med']
+    global clin_demog_feats
+    clin_demog_feats = ['gender_num', 'age', 'duration', 'med']
 
     global param_grid_lsvc
     param_grid_lsvc = list(ParameterGrid(svm_hyper_param_space('clf')))

@@ -56,7 +56,7 @@ class Subs:
         self.pat_frame_stats = get_pat_stats()
         if True in self.pat_frame_stats.index != self.pat_frame.index:
             exit("feature and target pats not same")
-        self.pat_frame = pd.concat([self.pat_frame, self.pat_frame_stats.loc[:, gbl.demo_clin_feats]], axis=1,
+        self.pat_frame = pd.concat([self.pat_frame, self.pat_frame_stats.loc[:, gbl.clin_demog_feats]], axis=1,
                                    sort=False)
 
         # read in target vector according to tgt variable
@@ -67,7 +67,7 @@ class Subs:
         else:
             self.tgt_task = 'reg'
 
-            y_strat_name = 'YBOCS_class4_scorerange'
+            y_strat_name = 'YBOCS_class3_scorerange'
             self.y_strat = pd.DataFrame({y_strat_name: self.pat_frame_stats.loc[:, y_strat_name]})
 
         # extract train and test set names
@@ -79,12 +79,14 @@ class Subs:
         self.pat_names_bins = {}
         self.pat_names_test_bins = {}
         self.pat_names_train_bins = {}
-        self.num_bins = len(np.unique(self.y_strat.iloc[:, 0]))
+        self.bin_keys = np.unique(self.y_strat.iloc[:, 0])
+        self.num_bins = len(self.bin_keys)
         self.multiclass = False
         if self.tgt_task is 'clf' and self.num_bins > 2:
             self.multiclass = True
 
-        self.pat_names_test, self.pat_names_train = split_test_train_names(self.y_strat, self.test_size, self.num_bins)
+        self.pat_names_test, self.pat_names_train = self.split_test_train_names(self.y_strat, self.test_size,
+                                                                                self.num_bins)
 
         # check if test and train names are mutually exclusive and add up to total observations
         result = any(elem in self.pat_names_train for elem in self.pat_names_test)
@@ -138,7 +140,7 @@ class Subs:
             try:
                 a, b = o_sampler.fit_resample(self.pat_frame_train.values, self.pat_frame_train_y.values)
 
-            except:
+            except():
                 print('oversampling failed')
                 return
 
