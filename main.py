@@ -158,9 +158,10 @@ for idx, tgt_name in enumerate(targets):
         xgb_params = {}
 
     # linear non-linear loop
-    iteration = {gbl.linear_: {'params': lsvm_params, 'scoring': lsvm_scoring}}#,
-                 #gbl.non_linear: {'params': xgb_params, 'scoring': xgb_scoring}
-                 #}
+    iteration = {
+                gbl.linear_: {'params': lsvm_params, 'scoring': lsvm_scoring},
+                gbl.non_linear_: {'params': xgb_params, 'scoring': xgb_scoring}
+                }
 
     for est_type, value in iteration.items():
         # ml feature selection computation
@@ -178,10 +179,10 @@ for idx, tgt_name in enumerate(targets):
         print('%s/%s : feat_sel RFECV computation took %.2f' % (tgt_name, est_type, time.time() - zeit))
 
         feat_sels = feat_sels_rfecv # potential freq_item_set mining function, include support?
-        # naming convention/concept as feat_selections until put into data structure as feature sets
+        # naming convention/concept : feat_selections until put into data structure as feature sets
         # (along with hoexter, boedhoe)
         for fsel in feat_sels:
-            all_tgt_results[tgt_name][est_type]['feat_set_' + str(feat_sets_count)] = FeatSetResults(fsel)
+            all_tgt_results[tgt_name][est_type]['featset_' + str(feat_sets_count)] = FeatSetResults(fsel)
             feat_sets_count += 1
         all_tgt_results[tgt_name][est_type]['boedhoe'] = FeatSetResults(gbl.boedhoe_feats_Desikan)
         all_tgt_results[tgt_name][est_type]['hoexter'] = FeatSetResults(gbl.hoexter_feats_Desikan)
@@ -246,45 +247,19 @@ freq_item_sets_list = freq_item_sets_frame.loc[:, 'itemsets'].apply(lambda x: li
 #
 # # SAVE RESULTS
 # print('SAVING RESULTS')
-# # str(t_s) + \
+
 # exp_description = '**balRandTest'+str(t_s)+'_RegTrainRest_ClfTrain' + over_samp_names[o_s] + '_' + norm + '_' \
 #                   + reg_scorers_names[r_sc] + '_' + clf_scorers_names[c_sc] + '_' + \
 #                   'cvFolds' + str(cv_folds) + \
 #                   '**t_allRegTrain_DesikanThickVolFeats_TorP'
 #
-# try:
-#     os.mkdir(tgt_name)
-# except FileExistsError:
-#     pass
 #
-# bmr = open(tgt_name + '/' + tgt_name + exp_description + '**bmr.pkl', 'wb')
-# pickle.dump(gbl.best_models_results, bmr, -1)
-# bmr.close()
-# try:
-#     t_reg_best_score = format(round(gbl.best_models_results[gbl.t_c]['pred_results'].iloc[-1, 0], 2))
-# except:
-#     t_reg_best_score = -1
-# try:
-#     t_clf_best_score = format(round(gbl.best_models_results[gbl.t_r]['pred_results'].iloc[-2, 0], 2))
-# except:
-#     t_clf_best_score = -1
 # # write prediction results to excel
-# xlsx_name = tgt_name + '/' + tgt_name + exp_description + '**results**' + \
-#             'tclf:' + str(t_clf_best_score) +'_' +\
-#             'treg:' + str(t_reg_best_score) +'.xlsx'
+# xlsx_name =
 #
 # writer = pd.ExcelWriter(xlsx_name)
-# write_report(writer, subs.pat_frame_test_y_clf, subs.pat_frame_test_y_reg)
-# frame_name_suffix = '_non-resampled' # SMOTE, ROS, ADASYN
-# gbl.t_frame_global.to_excel(writer, 't_frame' + frame_name_suffix)
-# gbl.f_frame_global.to_excel(writer, 'f_frame' + frame_name_suffix)
-# gbl.mi_frame_global.to_excel(writer, 'mi_frame' + frame_name_suffix)
 # feat_pool_counts_frame.to_excel(writer, 'feat_pool_counts')
 # writer.save()
 # print('SAVED %s' % xlsx_name)
-#
-#
-# t_feats_pats_cons_all = t_frame_compute(subs.pat_frame_train, subs.con_frame, []) # ['thickness', 'volume'])
-# writer = pd.ExcelWriter('t_frame_pats_v_cons' + frame_name_suffix)
 
-# print("TOTAL TIME %.2f" % (time.time()-start_time))
+print("TOTAL TIME %.2f" % (time.time()-start_time))
