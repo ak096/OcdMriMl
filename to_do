@@ -2,28 +2,13 @@
 
 PRIO HIGH-------------
 
-new pipeline:
-1.feature pool :per task: pool union of t test between mild and severe, p_value based f_scores, and mutual information
-2.feature subset collection from pool, forward permutation importance backward rfecv reporting on held out test set and
-compared with hoexter and boedhoe sets
--(further work) include more subsets by taking not just best but perhaps best 5
-3.frequent item set analysis
-4. perhaps NB explanation this week
+to do :
+adding permutation importance ranking of features at end
+
 
 to understand :
-good idea to do univariate feature analysis on augmented OR vanilla training set?
-
-to do :
-add prediction confidence scores
-
-understand
 XGboost parameters,
 mutual info
-how perm importance during cv
-
-tommorrow ask bjoern if need to base on prediction values, can just use best val_scores
-
-
 
 PAPER:
 contribution is perhaps new pipeline (also for paper) over clf reg supervised learning tasks over various objectives...
@@ -34,6 +19,11 @@ hyperparameter loop
 cross validation loop
 for each feature set report best scoring model (with hyperparameters)...
 
+double up on atlas to
+1.include more features
+2.perhaps account for error in freesurfer for area
+
+
 lsvm one v rest and not one vs one
 roc_auc_score binary classification lsvc is weighted average for imbalanced classes
 
@@ -43,15 +33,45 @@ always strategy from infinite space with statistical strategies to narrow down s
 
 Boedhoe no cortical thickness or area correlations in severity?  maybe i find something different
 
+section on (main purpose is to have measure of power for feature subset
+proposal for new pipeline RFECV over grid remove extraneous feats and differences between two atlases
+with freq_item_set mining with relatively high support
+retrain on grid, find best5 est and predictions and assign these prediction values as importance/power to
+freq item sets with perm importances for ests with predictions over 0.5 sorted
+but would have for each class target many subsets (+2 boedhoe, hoexter) with same under data structures,
+! computational complexity increases by how much - calculate...
+how to summarize over targets and sets?  to create final score for comparison?
 
+factors of set's power
+number of times set occurs over tgts
+prediction performance
+-> simple multiplication of the two
+can compute also permutation importance over feats from all remaining feat sets
+
+
+new pipeline:
+1.feature pool :per task: pool union of t test between mild and severe, p_value based f_scores, and mutual information
+2.feature subset collection from pool, forward permutation importance backward rfecv reporting on held out test set and
+compared with hoexter and boedhoe sets
+-(further work) include more subsets by taking not just best but perhaps best 5
+3.frequent item set analysis
+4. perhaps NB explanation this week
 
 PRIO MID-------------
 
+make dataset Subs class for just one type of group: so pat = Subs(...group='pat') con = Subs(...group='con')
+rename to train_frame, train_norm_frame pat.train_norm_frame...(Naming Guideline: Important Things First, Type Hint last)
+check for feat sort and name compatibility with function in class pat.check(con)...
+make Subs invariant to resample() w.r.t random features already in there, but don't need for pipeline
 
 create cross validation loop with correction of covariates, resampling, and other desired transformatinos like
 permutation importance, rfe strategies
 
 add in smart hyperparameter search using bayesion methods
+
+implement scrum board
+-keep track what to do next
+-what done stack
 
 PRIO LOW-------------
 run bash fs_gen_tables in python with parameters desikan destrieux all volume area thickness
@@ -59,7 +79,19 @@ run bash fs_gen_tables in python with parameters desikan destrieux all volume ar
 Free Surfer Group Analysis
 
 
-#------------DONE------------#
+#------------DONE STACK------------#
+good idea to do univariate feature analysis on augmented OR vanilla training set? augmented, because at least
+the f and mi correlate with targets, and better when balanced targets (and more) also statistical view aligns with
+data trained on, so...
+
+ask bjoern if need to base on prediction values, can just use best val_scores : bjoern looked at pipeline and didnt say
+anything knowing ocd data set not so good with prediction...
+
+understand how rfe in the cv, thanks to bjoern : feature set candle sticks (created from cv loops)
+on curve of features to performance, choose 1 std dev above mean at given feat set point
+and draw horizontal line backwards and reduce to intersect point feature set with same performance
+
+add prediction confidence scores
 look at best loss functions for each estimator, roc_auc metric for binary classification (need class probabilities)
 dont understand why cv_folds isn't calculated s.t. in each training fold, est sees same number of each class -> greater...
 cv_folds smaller val set with few of each class and greater train set with more of all classes
@@ -122,3 +154,22 @@ l = [, ,] for idx, i in l2 : do l[idx], automatically scaled with growth or shri
 
 change naming convention from related objects, distinguishing name in front (DE principle), e.g. l_feat_sel, instead of
 feat_sel_l, distinguishing thing easier to get first serves function
+
+Donnerstag 13. Juni 2019
+Einfall nach meiner Frage Björn Rückmeldung
+pipeline advice:
+add random features in the beginning of pipeline and use along the way to compare with original features, cut-offs and
+interpretation
+testing pipeline on well known regression targets
+
+Freitag 14. Juni 2019
+organize pipeline concept loops so for testing the quickest run made through all the parts to the end result
+then repeat with other larger more complex inputs
+
+Montag 17. Juni 2019
+import convention
+python native
+
+packages
+
+self made packages

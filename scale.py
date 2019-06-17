@@ -7,21 +7,23 @@ def scale(frame):
     columns = frame.columns
     index = frame.index
     frame_norms = []
-    scalers = [StandardScaler(), MinMaxScaler()]#, RobustScaler()]
+    scalers = [StandardScaler()] #,MinMaxScaler(), RobustScaler()]
 
     for s in scalers:
         frame_norms.append(pd.DataFrame(index=index, columns=columns, data=s.fit_transform(frame)))
 
-    return frame_norms, scalers
+    return frame_norms[0], scalers[0]
 
 
 def test_set_scale(frame, scalers):
 
     columns = frame.columns
     index = frame.index
-    frame_norms = []
+    frame_norm = []
+    try:
+        for s in scalers:
+            frame_norm.append(pd.DataFrame(index=index, columns=columns, data=s.transform(frame)))
+    except TypeError as te:
+        frame_norm.append(pd.DataFrame(index=index, columns=columns, data=scalers.transform(frame)))
 
-    for s in scalers:
-        frame_norms.append(pd.DataFrame(index=index, columns=columns, data=s.transform(frame)))
-
-    return frame_norms
+    return frame_norm[0]

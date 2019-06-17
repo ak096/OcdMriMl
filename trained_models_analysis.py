@@ -44,10 +44,10 @@ def models_to_results(models_all, pat_frame_test_reg_norms, pat_frame_test_clf_n
 
             if key == gbl.t_r:
                 gbl.feat_sets_best_train[key] = gbl.t_frame_global.columns[bm['t_feats_idx']].tolist() \
-                                                + gbl.demo_clin_feats
+                                                    + gbl.demo_clin_feats
             elif key == gbl.t_c:
                 gbl.feat_sets_best_train[key] = gbl.t_frame_global.columns[bm['t_feats_idx']].tolist() \
-                                                + gbl.demo_clin_feats
+                                                    + gbl.demo_clin_feats
 
             ft = gbl.feat_sets_best_train[key]
             print(ft)

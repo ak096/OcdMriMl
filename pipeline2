@@ -1,0 +1,26 @@
+
+results_frame = pd.DataFrame(
+index: ['feat_set', l_freq', best_pred', best_est, best_target, pred_avg, pred_std, conf_interval
+columns: [feat_set_0, .... boedhoe]
+probably to combine l and nl
+
+individual_feat_columns feat
+linear_perm_imp
+non-linear_perm_imp
+together... running avg. ((!=linear_perm+non-linear_perm_imp)/2)
+
+
+non_linear_freq, ])
+feat_sel = []
+for grid_point in gbl.lsvm_grid_points:
+feat_sel.append(rfecv(gridpoint))
+
+dataset = feat_sel
+freq_item_set
+for feature_set in freq_item_set:
+train over grid
+predict
+
+update_results(feature_set)
+if feat_set == any feat_set in results_frame
+update entry

@@ -3,7 +3,7 @@ import warnings
 from sklearn.exceptions import ConvergenceWarning
 import sys
 import pandas as pd
-import gbl
+import global_
 import time
 import numpy as np
 import autosklearn.classification

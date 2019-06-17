@@ -20,18 +20,18 @@ from sklearn.svm import SVC
 from imblearn.ensemble import BalancedRandomForestClassifier
 from trained_models_analysis import models_to_results
 from set_operations import powerset, subsequentset
-from feat_selection_ml import rfe_cv
+from feat_selection_ml import rfe_cv, freq_item_sets
 from dataset import Subs
 from collections import Counter
 from copy import copy, deepcopy
-from results import TargetResults, LearnedFeatureSets
-from estimators import train, pred
+from results import FeatSetResults
+from train_predict import train, pred
 from sklearn.metrics import roc_auc_score, roc_curve, log_loss, mean_absolute_error
 from scipy.stats import sem, t
 from scipy import mean
 import datetime
-from mlxtend.frequent_patterns import apriori
-from mlxtend.preprocessing import TransactionEncoder
+
+from scorers_ import RegScorer, ClfScorer
 
 start_time = time.time()
 warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
@@ -40,7 +40,7 @@ if not sys.warnoptions:
     warnings.simplefilter("ignore")
     os.environ["PYTHONWARNINGS"] = "ignore" # Also affect subprocesses
 
-gbl.init_globals()
+pd.options.mode.use_inf_as_na = True
 
 # seed = 7
 # np.random.seed(seed)
@@ -57,19 +57,23 @@ def conf_interval(data):
 
 targets = [
            'YBOCS',
-           'YBOCS_class2_scorerange',
-            #'obs_class3_scorerange',
-            #'com_class3_scorerange',
-           'YBOCS_class3_scorerange',
-           'YBOCS_class4_scorerange'
+           'YBOCS_class2',
+            #'obs_class3',
+            #'com_class3',
+           'YBOCS_class3',
+           'YBOCS_class4'
           ]
 
-tgt_results = TargetResults()
+all_tgt_results = {}
 
-lrn_feat_sets = LearnedFeatureSets()
+lrn_feat_sets = {gbl.linear_: [], gbl.non_linear_: []}
+
+clf_scorer = ClfScorer()
+reg_scorer = RegScorer()
+
+feat_sets_count = 0
 
 for idx, tgt_name in enumerate(targets):
-    zeit = time.time()
 
     if '_ROS' in tgt_name:
         subs.resample(over_sampler='ROS')
@@ -84,136 +88,159 @@ for idx, tgt_name in enumerate(targets):
     n = 0
     norm = gbl.normType_list[n]
 
-    tgt_results.add_target(tgt_name=tgt_name)
+    all_tgt_results[tgt_name] = {
+                                't_frame': None,
+                                'f_frame': None,
+                                'mi_frame': None,
+                                'feat_count_frame': None,
+                                gbl.linear_: {},
+                                gbl.non_linear_: {}
+                                }
+
 
     # univariate feature pool computation:
+    print('%s : starting feat_pool computation'% (tgt_name))
+    zeit = time.time()
     # compute t_feats
     if subs.resampled: # use .iloc
         a = subs.pat_frame_train.iloc[subs.pat_names_train_bins[subs.bin_keys[0]], :]
         b = subs.pat_frame_train.iloc[subs.pat_names_train_bins[subs.bin_keys[-1]], :]
     else: # use .loc
-        a = subs.pat_frame_train.loc[subs.pat_names_train_bins[subs.bin_keys[0]], :],
+        a = subs.pat_frame_train.loc[subs.pat_names_train_bins[subs.bin_keys[0]], :]
         b = subs.pat_frame_train.loc[subs.pat_names_train_bins[subs.bin_keys[-1]], :]
 
     t_frame = t_frame_compute(a, b, feat_filter=[])  # ['thickness', 'volume'])
     t_feats = t_frame.columns.tolist()
     t_feats_num = len(t_feats)
-    print("FINISHED COMPUTING %d T VALUES" % t_feats_num)
+    print("computed %d T feats" % t_feats_num)
 
     # compute f_feats
-    f_frame = f_frame_compute(subs.pat_frame_train, subs.pat_frame_train_y, subs.tgt_task, feat_filter=[])
+    f_frame = f_frame_compute(frame=subs.pat_frame_train, y_tgt=subs.pat_frame_train_y,
+                              task=subs.tgt_task, feat_filter=[])
     f_feats = f_frame.columns.tolist()
     f_feats_num = len(f_feats)
-    print("FINISHED COMPUTING %d F VALUES" % f_feats_num)
+    print("computed %d F feats" % f_feats_num)
     # compute mi_feats
-    mi_frame = mi_frame_compute(subs.pat_frame_train, subs.pat_frame_train_y, subs.tgt_task, feat_filter=[])
+    mi_frame = mi_frame_compute(frame=subs.pat_frame_train, y_tgt=subs.pat_frame_train_y,
+                                task=subs.tgt_task, feat_filter=[])
     mi_feats = mi_frame.columns.tolist()
     mi_feats_num = len(mi_feats)
-    print("FINISHED COMPUTING %d MI VALUES" % mi_feats_num)
+    print("computed %d MI feats" % mi_feats_num)
 
-    # feat pool
     feat_pool_all = t_feats + f_feats + mi_feats
-    feat_pool_counts_frame = pd.DataFrame(Counter(feat_pool_all))
-    print(feat_pool_counts_frame)
+    feat_pool_counts_frame = pd.DataFrame(index=['count'], data=dict(Counter(deepcopy(feat_pool_all))))
+    feat_pool_counts_frame.sort_values(by='count', axis=1, ascending=False, inplace=True)
 
-    feat_pool = list(set(feat_pool_all))
+    feat_pool_set = list(set(feat_pool_counts_frame.columns.tolist()))
+    print('computed %d pool feats' % len(feat_pool_set))
+    all_tgt_results[tgt_name].update({
+                                        't_frame': t_frame.transpose(),
+                                        'f_frame': f_frame.transpose(),
+                                        'mi_frame': mi_frame.transpose(),
+                                        'feat_count_frame': feat_pool_counts_frame.transpose()
+                                     })
+    print('%s : feat_pool computation took %.2f' % (tgt_name, time.time() - zeit))
 
-    tgt_results.targets[tgt_name].update({
-                                            't_frame': t_frame.transpose,
-                                            'f_frame': f_frame.transpose,
-                                            'mi_frame': mi_frame.transpose,
-                                            'feat_pool_counts_frame': feat_pool_counts_frame.transpose
-                                          })
-    print('feat_pool computation took %.2f' % time.time() - zeit)
-    # ml feature selection computation
-    zeit = time.time()
-    l_feat_select, nl_feat_select = rfe_cv(task=subs.tgt_task, feat_pool=feat_pool, X=subs.pat_frame_train_norms[0],
-                                           y=subs.pat_frame_train_y, cv_folds=subs.cv_folds)
-    print('feat_selection RFECV computation took %.2f' % time.time() - zeit)
-    lsvm_scoring=None
+    # choose training loss and evaluation metric
+    xgb_scoring = None
     if subs.tgt_task is 'clf':
         if subs.num_bins is 2:
             lsvm_params = {}
-            lsvm_scoring = roc_auc_score(average='weighted')
+            lsvm_scoring = clf_scorer.balanced_accuracy
             xgb_params = {'objective': 'binary:logistic', 'eval_metric':'auc'}
         elif subs.num_bins > 2:
             lsvm_params = {}
-            lsvm_scoring = log_loss()
+            lsvm_scoring = clf_scorer.balanced_accuracy
             xgb_params = {'objective': 'multi:softmax', 'num_class': subs.num_bins, 'eval_metric': 'mlogloss'}
     elif subs.tgt_task is 'reg':
         lsvm_params = {}
-        lsvm_scoring = mean_absolute_error()
+        lsvm_scoring = reg_scorer.neg_mean_square_error
         xgb_params = {}
 
-    feat_subsets = {
-                    'learned': [l_feat_select, nl_feat_select],
-                    'hoexter': [gbl.hoexter_feats_FS, gbl.hoexter_feats_FS],
-                    'boedhoe': [gbl.boedhoe_feats_FS, gbl.boedhoe_feats_FS]
-                    }
+    # linear non-linear loop
+    iteration = {gbl.linear_: {'params': lsvm_params, 'scoring': lsvm_scoring}}#,
+                 #gbl.non_linear: {'params': xgb_params, 'scoring': xgb_scoring}
+                 #}
 
-    for k, v in feat_subsets.items():
+    for est_type, value in iteration.items():
+        # ml feature selection computation
         zeit = time.time()
-        l_feat_train = v[0] + gbl.demo_clin_feats
-        nl_feat_train = v[1] + gbl.demo_clin_feats
+        print('%s/%s : starting feat sel RFECV computation' % (tgt_name, est_type))
+        feat_sels_rfecv = []
+        n_min_feat_rfecv = 10
+        # n_max_feat_rfecv = 25
+        # potential grid point rfecv loop
+        feat_sels_rfecv.append(rfe_cv(est_type=est_type, task=subs.tgt_task, feat_pool=feat_pool_set,
+                                      X=subs.pat_frame_train_norm, y=subs.pat_frame_train_y,
+                                      cv_folds=subs.cv_folds, n_min_feat=n_min_feat_rfecv,
+                                      n_max_feat=None, params=value['params'], scoring=value['scoring']))
 
-        l_est5, l_val_scores = train(est_type='linear', task=subs.tgt_task, params=lsvm_params,
-                                     X=subs.pat_frame_train_norms[0].loc[:, l_feat_train],
+        print('%s/%s : feat_sel RFECV computation took %.2f' % (tgt_name, est_type, time.time() - zeit))
+
+        feat_sels = feat_sels_rfecv # potential freq_item_set mining function, include support?
+        # naming convention/concept as feat_selections until put into data structure as feature sets
+        # (along with hoexter, boedhoe)
+        for fsel in feat_sels:
+            all_tgt_results[tgt_name][est_type]['feat_set_' + str(feat_sets_count)] = FeatSetResults(fsel)
+            feat_sets_count += 1
+        all_tgt_results[tgt_name][est_type]['boedhoe'] = FeatSetResults(gbl.boedhoe_feats_Desikan)
+        all_tgt_results[tgt_name][est_type]['hoexter'] = FeatSetResults(gbl.hoexter_feats_Desikan)
+
+        # train predict loop for each feat set
+        for fset, fresults in all_tgt_results[tgt_name][est_type].items():
+            zeit = time.time()
+            print('%s/%s/%s : beginning training' % (tgt_name, est_type, fset))
+            feat_train = fresults.data['feat_set_list'] + gbl.clin_demog_feats
+
+            est5, val_scores = train(est_type=est_type, task=subs.tgt_task, params=value['params'],
+                                     X=subs.pat_frame_train_norm.loc[:, feat_train],
                                      y=subs.pat_frame_train_y,
-                                     scoring=lsvm_scoring
+                                     cv_folds=subs.cv_folds,
+                                     scoring=value['scoring']
                                      )
+            print('%s/%s/%s : beginning prediction' % (tgt_name, est_type, fset))
+            pred_frames, pred_scores, perm_imps = pred(est_type=est_type, task=subs.tgt_task, est5=est5,
+                                                       X=subs.pat_frame_test_norm.loc[:, feat_train],
+                                                       y=subs.pat_frame_test_y.iloc[:, 0],
+                                                       scoring=value['scoring'])
 
-        l_pred_frames, l_pred_scores, l_perm_imp = pred(est5=l_est5, X=subs.pat_frame_test_norms[0],
-                                                        y=subs.pat_frame_test_y)
+            all_tgt_results[tgt_name][est_type][fset].data.update({
+                                                                         'pred_frames': pred_frames,
+                                                                         'pred_scores': pred_scores,
+                                                                         'conf_interval': conf_interval(pred_scores),
+                                                                         'feat_imp_frames': perm_imps,
+                                                                         'est5': est5,
+                                                                         'train_scores': val_scores
+                                                                          })
+            all_tgt_results[tgt_name][est_type][fset].sort_prune_pred(thresh=0.5)
 
-        nl_est5, nl_val_scores = train(est_type='non-linear', task=subs.tgt_task, params=xgb_params,
-                                       X=subs.pat_frame_train_norms[0].loc[:, nl_feat_train],
-                                       y=subs.pat_frame_train_y)
+            #if no predictions above 0.5 score remove feat set
+            # if not all_tgt_results[tgt_name][est_type][fset].data['pred_scores']:
+            #     del all_tgt_results[tgt_name][est_type][fset]
+            print('%s/%s/%s: training and prediction computation took %.2f' % (tgt_name, est_type, fset,
+                                                                               time.time() - zeit))
 
-        nl_pred_frames, nl_pred_scores, nl_perm_imp = pred(est5=nl_est5, X=subs.pat_frame_test_norms[0],
-                                                           y=subs.pat_frame_test_y)
+            if all_tgt_results[tgt_name][est_type][fset].data['pred_scores']:
+                lrn_feat_sets[est_type].append(all_tgt_results[tgt_name][est_type][fset].data['feat_set_list'])
 
-        tgt_results.targets[tgt_name][k].est_type['lsvm'].est5.update({
-                                                                     'feat_sel': v[0],
-                                                                     'pred_frames': l_pred_frames,
-                                                                     'pred_scores': l_pred_scores,
-                                                                     'conf_interval': conf_interval(l_pred_scores),
-                                                                     'feat_imp_frames': l_perm_imp,
-                                                                     'est5': l_est5,
-                                                                     'train_scores': l_val_scores
-                                                                      })
-        tgt_results.targets[tgt_name][k].est_type['xgb'].est5.update({
-                                                                     'feat_sel': v[1],
-                                                                     'pred_frames': nl_pred_frames,
-                                                                     'pred_scores': nl_pred_scores,
-                                                                     'conf_interval': conf_interval(nl_pred_scores),
-                                                                     'feat_imp_frames': nl_perm_imp,
-                                                                     'est5': nl_est5,
-                                                                     'train_scores': nl_val_scores
-                                                                     })
+            # end train predict loop for each feat set
 
-        tgt_results.targets[tgt_name][k].est_type['lsvm'].est5.sort_prune_pred()
-        tgt_results.targets[tgt_name][k].est_type['xgb'].est5.sort_prune_pred()
-        print('training and prediction computation took %.2f' % time.time() - zeit)
+        # end linear non-linear loop
 
-        # end feat_subsets loop
-
-    if tgt_results.targets[tgt_name]['learned'].est_type['lsvm'].est5['pred_scores']:
-        lrn_feat_sets.linear.append(l_feat_select)
-    if tgt_results.targets[tgt_name]['learned'].est_type['xgb'] .est5['pred_scores']:
-        lrn_feat_sets.non_linear.append([nl_feat_select])
     # end tgt loop
 
+# feature set mining, frequent item set mining
+dataset = lrn_feat_sets[gbl.linear_] + lrn_feat_sets[gbl.non_linear_]
+freq_item_sets_frame = freq_item_sets(dataset)
+freq_item_sets_list = freq_item_sets_frame.loc[:, 'itemsets'].apply(lambda x: list(x)).tolist()
 
-# frequent item set mining
-lrn_feat_sets.combine()
-dataset = lrn_feat_sets.all
-te = TransactionEncoder()
-te_ary = te.fit(dataset).transform(dataset)
-df = pd.DataFrame(te_ary, columns=te.columns_)
+# collate permutation importance rankings
+#feat_all = list(set([item for item in fis for fis in freq_item_set_list]))
 
+#for f in feat_all: for tgt in targets: for
+#
+#
 
-min_support=0.6
-freq_item_sets_frame = apriori(df, min_support=min_support)
 #
 #
 #
@@ -259,5 +286,5 @@ freq_item_sets_frame = apriori(df, min_support=min_support)
 #
 # t_feats_pats_cons_all = t_frame_compute(subs.pat_frame_train, subs.con_frame, []) # ['thickness', 'volume'])
 # writer = pd.ExcelWriter('t_frame_pats_v_cons' + frame_name_suffix)
-# gbl.t_frame_global.to_excel(writer)
+
 # print("TOTAL TIME %.2f" % (time.time()-start_time))

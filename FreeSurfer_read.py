@@ -3,34 +3,34 @@ import subprocess
 import os
 
 
-def fs_data_collect(group, path_base):
+def FreeSurfer_data_collect(group, path_base):
 
     #subprocess.Popen(['/home/bran/PycharmProjects/OcdMriMl/bash_scripts/fs_gen_tables.sh %s' % group], \
     #                 shell=True, executable="/bin/bash")
     group_frame = pd.DataFrame()
-
+    repeats = ['BrainSegVolNotVent','eTIV', 'Right-Accumbens-area', 'Left-Accumbens-area']
     # concat fs table files into one data frame
     for table_file in os.scandir(path_base + '/' + group + '/' + group + '_tables/'):
-        print("reading %s" % table_file.path)
+        #print("reading %s" % table_file.path)
 
         table = pd.read_table(table_file.path, index_col=0)
 
         # feature renaming (sub-parameters: 'thickness', 'area', 'volume')
 
-        # two main cases of features : aseg/wmparc features ||
-        #                              aparc(Desikan Atlas)/aparc.a2009s(Destreaux Atlas) x lh/rh features
-        if '.aseg.vol.' or '.wmparc.vol.' in table_file.name:
-            suffix = 'volume'
+        # two main cases of features : aseg/wmparc for which sub-parameters lacks in name,
+        #                              aparc(Desikan Atlas)/aparc.a2009s(Destreaux Atlas) which must be distinguished
+        if any(s in table_file.name for s in ['.aseg.vol.', '.wmparc.vol.']):
+            suffix = '_volume'
         elif '.aseg.area.' in table_file.name:
-            suffix = 'area'
+            suffix = '_area'
         # 'thickness' sub-parameter NOT available in sub-cortical (aseg) measurements
         elif '.aparc.a2009s.' in table_file.name:
-            suffix = 'aparc.a2009s'
+            suffix = '**a2009s'
         else:
-            suffix = 'aparc'
-        # 'area', 'volume', 'thickness' already in aparc(.a2009s.) feature names
+            suffix = '**aparc'
+        # '_area', '_volume', '_thickness' already suffixed in aparc(.a2009s.) feature names
 
-        table.columns = [n + '**' + suffix if (n != 'BrainSegVolNotVent' and n != 'eTIV') else n for n in table.columns]
+        table.columns = [n + suffix if n not in repeats else n for n in table.columns]
 
         table.columns = [s.replace('_and_', '&') for s in table.columns]
 
@@ -48,7 +48,7 @@ def fs_data_collect(group, path_base):
 
     # remove constant features (f.e. all 0's)
     # group_frame = group_frame.loc[:, group_frame.nunique() != 1]
-    writer1 = pd.ExcelWriter('FS_features.xlsx')
-    group_frame.to_excel(writer1, 'FS_feats')
+    writer1 = pd.ExcelWriter('FreeSurfer_features.xlsx')
+    group_frame.to_excel(writer1, 'FreeSurfer_feats')
     writer1.save()
     return group_frame

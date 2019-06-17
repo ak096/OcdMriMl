@@ -1,7 +1,12 @@
+import os
+
 import pandas as pd
 import numpy as np
-from random import uniform, randint
 from sklearn.model_selection import ParameterGrid, ParameterSampler
+from sklearn.feature_selection import VarianceThreshold
+
+from FreeSurfer_read import FreeSurfer_data_collect
+from gdrive import get_pat_stats
 
 
 def svm_hyper_param_space(est_class):
@@ -40,75 +45,130 @@ def xgb_hyper_param_space():
             }
 
 
-def init_globals():
+def _add_rand_feats(frame):
+    # add some rand feat (randomly permuted features) to original data frame before train/test
 
-    global normType_list
-    normType_list = ['std', 'minMax', 'robust']
-    global FS_feats
-    FS_feats = []
-    global clin_demog_feats
-    clin_demog_feats = ['gender_num', 'age', 'duration', 'med']
+    rand_feats = list(np.random.choice(frame.columns.tolist(), n_rand_feat, replace=False))
+    for i in np.arange(n_rand_feat):
+        rand_feat_name = 'RANDOM_' + str(i) + '_' + rand_feats[i]
+        frame[rand_feat_name] = np.random.permutation(frame.loc[:, rand_feats[i]])
+    return frame
+# def init_globals():
 
-    global param_grid_lsvc
-    param_grid_lsvc = list(ParameterGrid(svm_hyper_param_space('clf')))
-    global param_grid_lsvr
-    param_grid_lsvr = list(ParameterGrid(svm_hyper_param_space('reg')))
-    global param_grid_xgb
-    param_grid_xgb = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
-    # param_grid_xgbr = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
+normType_list = ['std', 'minMax', 'robust']
 
-    # Hoexter et al 2013 (CSTC)
-        # volumetric data:
-        # right rostral anteriorcingulate
-        # left rostral anteriorcingulate
-        # right thalamus
-        # left thalamus
-        # right medial orbitofrontal
-        # right lateral orbitofrontal
-        # left medial orbitofrontal
-        # left lateral orbitofrontal
-        # right accumbens area (?)
-        # right pallidum
-        # right putamen
-        # right caudate
-        # left accumbens area (?)
-        # left pallidum
-        # left putamen
-        # left caudate
-    global hoexter_feats_FS
-    hoexter_feats_FS = [
-        'lh_rostralanteriorcingulate_volume**aparc',
-        'rh_rostralanteriorcingulate_volume**aparc',
+clin_demog_feats = ['gender_num', 'age', 'duration', 'med']
 
-        'Right-Thalamus-Proper**volume',
-        'Left-Thalamus-Proper**volume',
+linear_ = 'linear'
+non_linear_ = 'non_linear'
 
-        'rh_medialorbitofrontal_volume**aparc',
-        'lh_medialorbitofrontal_volume**aparc',
+clf = 'clf'
+reg = 'reg'
 
-        'rh_lateralorbitofrontal_volume**aparc',
-        'lh_lateralorbitofrontal_volume**aparc',
+param_grid_lsvc = list(ParameterGrid(svm_hyper_param_space('clf')))
 
-        'Left-Accumbens-area**volume',
-        'Right-Accumbens-area**volume',
+param_grid_lsvr = list(ParameterGrid(svm_hyper_param_space('reg')))
 
-        'Left-Pallidum**volume',
-        'Right-Pallidum**volume',
+param_grid_xgb = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
+# param_grid_xgbr = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
 
-        'Right-Putamen**volume',
-        'Left-Putamen**volume',
+# Hoexter et al 2013 (CSTC)
+# volumetric data:
+# right rostral anteriorcingulate
+# left rostral anteriorcingulate
+# right thalamus
+# left thalamus
+# right medial orbitofrontal
+# right lateral orbitofrontal
+# left medial orbitofrontal
+# left lateral orbitofrontal
+# right accumbens area (?)
+# right pallidum
+# right putamen
+# right caudate
+# left accumbens area (?)
+# left pallidum
+# left putamen
+# left caudate
 
-        'Left-Caudate**volume',
-        'Right-Caudate**volume'
-    ]
+hoexter_feats_Desikan = [
+                        'lh_rostralanteriorcingulate_volume**aparc',
+                        'rh_rostralanteriorcingulate_volume**aparc',
 
-    # Boedhoe et al 2016 (Pallidum, Hippocampus)
-    global boedhoe_feats_FS
-    boedhoe_feats_FS = [
-        'Left-Pallidum**volume',
-        'Right-Pallidum**volume',
-        'Left-Hippocampus**volume',
-        'Right-Hippocampus**volume'
-    ]
+                        'Right-Thalamus-Proper_volume',
+                        'Left-Thalamus-Proper_volume',
 
-    return
+                        'rh_medialorbitofrontal_volume**aparc',
+                        'lh_medialorbitofrontal_volume**aparc',
+
+                        'rh_lateralorbitofrontal_volume**aparc',
+                        'lh_lateralorbitofrontal_volume**aparc',
+
+                        'Left-Accumbens-area',
+                        'Right-Accumbens-area',
+
+                        'Left-Pallidum_volume',
+                        'Right-Pallidum_volume',
+
+                        'Right-Putamen_volume',
+                        'Left-Putamen_volume',
+
+                        'Left-Caudate_volume',
+                        'Right-Caudate_volume'
+                        ]
+
+# Boedhoe et al 2016 (Pallidum, Hippocampus)
+
+boedhoe_feats_Desikan = [
+                        'Left-Pallidum_volume',
+                        'Right-Pallidum_volume',
+                        'Left-Hippocampus_volume',
+                        'Right-Hippocampus_volume'
+                        ]
+
+# get data from FreeSurfer stats
+path_base = os.path.abspath('Desktop/FS_SUBJ_ALL').replace('PycharmProjects/OcdMriMl/', '')
+print('reading in pat and con frames from FreeSurfer')
+pat_frame = FreeSurfer_data_collect('pat', path_base)
+con_frame = FreeSurfer_data_collect('con', path_base)
+
+if pat_frame.columns.tolist() == con_frame.columns.tolist():
+    print('pat and con frames have equals columns')
+
+# remove low variance features
+before = pat_frame.shape[1]
+threshold = 0.01
+sel = VarianceThreshold(threshold=threshold)
+sel.fit(pat_frame)
+retained_mask = sel.get_support(indices=False)
+pat_frame = pat_frame.loc[:, retained_mask]
+after = pat_frame.shape[1]
+print('REMOVING %d FEATS UNDER %.2f VAR: FROM %d TO %d' % (before - after, threshold, before, after))
+
+# remove features less than 90% populated
+before = pat_frame.shape[1]
+ratio = 1.00
+threshold = round(ratio * pat_frame.shape[0])
+pat_frame.dropna(axis='columns', thresh=threshold, inplace=True)
+after = pat_frame.shape[1]
+print('REMOVING %d FEATS LESS THAN %.2f PERCENT FILLED: FROM %d TO %d' %
+      (before - after, (threshold / pat_frame.shape[0]) * 100, before, after))
+
+# add some random features (permuted original features)
+before = pat_frame.shape[1]
+n_rand_feat = 3
+pat_frame = _add_rand_feats(pat_frame)
+after = pat_frame.shape[1]
+print('ADDING %d RAND FEATS: FROM %d TO %d' % (n_rand_feat, before, after))
+
+FreeSurfer_feats = pat_frame.columns.tolist()
+
+# add clin demo features
+pat_frame_stats = get_pat_stats()
+pat_frame.sort_index(inplace=True)
+pat_frame_stats.sort_index(inplace=True)
+if pat_frame_stats.index.tolist() != pat_frame.index.tolist():
+    exit("feature and target pats not same")
+pat_frame = pd.concat([pat_frame, pat_frame_stats.loc[:, clin_demog_feats]], axis=1, sort=False)
+
+

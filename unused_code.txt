@@ -1,16 +1,6 @@
-from main.py
+from main.py ----------------------------------------------
+...
 
-
-
-reg_scorers = ['explained_variance', 'neg_mean_absolute_error', 'neg_mean_squared_log_error', 'root_mean_squared_error', None]
-reg_scorers_names = ['ev', 'nmae', 'nmsle', 'rmse', 'None']
-r_sc = 1
-reg_scoring = reg_scorers[r_sc]
-
-clf_scorers = ['balanced_accuracy', 'accuracy']
-clf_scorers_names = ['bac', 'ac']
-c_sc = 0
-clf_scoring = clf_scorers[c_sc]
 
 gbl.feat_sets_best_train[gbl.h_r] = gbl.hoexter_feats_FS + gbl.demo_clin_feats
 gbl.feat_sets_best_train[gbl.h_c] = gbl.hoexter_feats_FS + gbl.demo_clin_feats
@@ -170,8 +160,49 @@ gbl.feat_sets_best_train[gbl.b_c] = gbl.boedhoe_feats_FS + gbl.demo_clin_feats
                                                   'best_model': brfc_bm,
                                                   'pred_results': brfc_pr,
                                                   'bm5': ''}
+# str(t_s) + \
+exp_description = '**balRandTest'+str(t_s)+'_RegTrainRest_ClfTrain' + over_samp_names[o_s] + '_' + norm + '_' \
+                  + reg_scorers_names[r_sc] + '_' + clf_scorers_names[c_sc] + '_' + \
+                  'cvFolds' + str(cv_folds) + \
+                  '**t_allRegTrain_DesikanThickVolFeats_TorP'
 
-from gbl.py
+try:
+    os.mkdir(tgt_name)
+except FileExistsError:
+    pass
+
+bmr = open(tgt_name + '/' + tgt_name + exp_description + '**bmr.pkl', 'wb')
+pickle.dump(gbl.best_models_results, bmr, -1)
+bmr.close()
+try:
+    t_reg_best_score = format(round(gbl.best_models_results[gbl.t_c]['pred_results'].iloc[-1, 0], 2))
+except:
+    t_reg_best_score = -1
+try:
+    t_clf_best_score = format(round(gbl.best_models_results[gbl.t_r]['pred_results'].iloc[-2, 0], 2))
+except:
+    t_clf_best_score = -1
+# write prediction results to excel
+xlsx_name = tgt_name + '/' + tgt_name + exp_description + '**results**' + \
+            'tclf:' + str(t_clf_best_score) +'_' +\
+            'treg:' + str(t_reg_best_score) +'.xlsx'
+
+writer = pd.ExcelWriter(xlsx_name)
+write_report(writer, subs.pat_frame_test_y_clf, subs.pat_frame_test_y_reg)
+frame_name_suffix = '_non-resampled' # SMOTE, ROS, ADASYN
+gbl.t_frame_global.to_excel(writer, 't_frame' + frame_name_suffix)
+gbl.f_frame_global.to_excel(writer, 'f_frame' + frame_name_suffix)
+gbl.mi_frame_global.to_excel(writer, 'mi_frame' + frame_name_suffix)
+feat_pool_counts_frame.to_excel(writer, 'feat_pool_counts')
+writer.save()
+print('SAVED %s' % xlsx_name)
+
+
+t_feats_pats_cons_all = t_frame_compute(subs.pat_frame_train, subs.con_frame, []) # ['thickness', 'volume'])
+writer = pd.ExcelWriter('t_frame_pats_v_cons' + frame_name_suffix)
+
+
+from gbl.py----------------------------------------------
 
 ...
     #global regType_list
@@ -218,3 +249,17 @@ from gbl.py
     #                            }
     global best_models_results
     best_models_results = {}
+
+
+
+dataset.py
+Subs():..
+
+    def remove_rand_feats(self):
+        # based on data_struct invariant: operate on most outward train/test frames (norm frames) AND
+        # assume train/test have same set of columns
+        # remove all rand features from invariant (i.e. named 'RANDOM_'... )
+        for column in self.pat_frame_train_norm:
+            if 'RANDOM_' in column:
+                self.pat_frame_train_norm.drop(columns=column, inplace=True)
+                self.pat_frame_test_norm.drop(columns=column, inplace=True)
