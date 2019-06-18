@@ -42,11 +42,10 @@ def rfe_cv(est_type, task, feat_pool, X, y, cv_folds, n_min_feat=None, n_max_fea
     return feat_sel
 
 
-def freq_item_sets(dataset): #expects list of lists, returns pandas DataFrame
+def freq_item_sets(dataset, min_support=0.6): #expects list of lists, returns pandas DataFrame
     te = TransactionEncoder()
     te_ary = te.fit(dataset).transform(dataset)
     df = pd.DataFrame(te_ary, columns=te.columns_)
-    min_support = 0.6
     freq_item_sets_frame = apriori(df, min_support=min_support, use_colnames=True)
     freq_item_sets_frame.sort_values(by='support', axis=0, ascending=False, inplace=True)
     freq_item_sets_frame['length'] = freq_item_sets_frame['itemsets'].apply(lambda x: len(x))

@@ -42,7 +42,9 @@ def train(est_type, task, params, X, y, cv_folds, scoring=None):
     est_gp_fits = []
     est5 = []
     val_scores5 = []
-    print('training with cross_validation')
+    print('training with cross_validation using scorer: %s' % scoring)
+
+    # !!assumption val scores greater the better
     for idx, grid_point in enumerate(param_grid):
         grid_point.update(params)
         est.set_params(**grid_point)
@@ -50,12 +52,20 @@ def train(est_type, task, params, X, y, cv_folds, scoring=None):
         scores = cross_validate(est, X, y, groups=None, scoring=scoring, cv=cv_folds, n_jobs=-1, verbose=0,
                                 fit_params=None, return_train_score=False, return_estimator=True,
                                 error_score='raise-deprecating')
+        # print('cv val scores for grid point are')
+        # print(scores['test_score'])
+        # print('choosing and storing best: index %d, score %.2f' % (np.argmax(scores['test_score']),
+        #                                                            np.max(scores['test_score'])))
 
         est_gp_fits.append({'est': scores['estimator'][np.argmax(scores['test_score'])],
                             'val_score': np.max(scores['test_score'])
                            })
-    # !!assumption test scores are positive greater the better
+
     est_gp_fits.sort(reverse=True, key=sort_criterion)
+    # print('sorted best val scores over grid points')
+    # for elt in est_gp_fits:
+    #     print(elt['val_score'])
+    print('choosing top 5 estimators per val scores')
     est_gp_fits_top5 = est_gp_fits[0:5]
     for egpf in est_gp_fits_top5:
         est5.append(egpf['est'])
@@ -68,6 +78,7 @@ def pred(est_type, task, est5, X, y, scoring=None):
     pred_frames = []
     pred_scores = []
     perm_imps = []
+    print('prediction scores for best 5 estimators using scoring: %s' % scoring)
     for i, est in enumerate(est5):
         if scoring:
             scorer = get_scorer(scoring)
@@ -87,6 +98,7 @@ def pred(est_type, task, est5, X, y, scoring=None):
 
         perm_imps.append(perm_imp_test(est=est, base_score=ps, X=X, y=y, n_iter=3, scoring=scoring))
 
+    print(pred_scores)
     return pred_frames, pred_scores, perm_imps
 
 

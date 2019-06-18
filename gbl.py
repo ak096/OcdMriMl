@@ -13,8 +13,8 @@ def svm_hyper_param_space(est_class):
     svm_hps = {
                'C': np.arange(1, 1001, 99),
                }
-    # if est_class == 'reg':
-    #     svm_hps['epsilon'] = [0.3, 0.5, 0.7, 0.9]
+    if est_class == 'reg':
+        svm_hps['epsilon'] = [0.3, 0.5, 0.7, 0.9]
     if est_class == 'clf':
         svm_hps['class_weight'] = ['balanced']
     return svm_hps
@@ -69,7 +69,7 @@ param_grid_lsvc = list(ParameterGrid(svm_hyper_param_space('clf')))
 
 param_grid_lsvr = list(ParameterGrid(svm_hyper_param_space('reg')))
 
-param_grid_xgb = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
+param_grid_xgb = list(ParameterSampler(xgb_hyper_param_space(), n_iter=40))
 # param_grid_xgbr = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
 
 # Hoexter et al 2013 (CSTC)
