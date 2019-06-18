@@ -1,9 +1,3 @@
-
-results_frame = pd.DataFrame(
-index: ['feat_set', l_freq', pred_avg, pred_best', best_est, best_target,  conf_interval
-columns: [feat_set_0, .... boedhoe]
-probably to combine l and nl
-
 individual_feat_columns feat
 linear_perm_imp
 non-linear_perm_imp
