@@ -55,6 +55,7 @@ def _add_rand_feats(frame):
     return frame
 # def init_globals():
 
+
 normType_list = ['std', 'minMax', 'robust']
 
 clin_demog_feats = ['gender_num', 'age', 'duration', 'med']

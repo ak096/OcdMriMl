@@ -118,13 +118,11 @@ for idx, tgt_name in enumerate(targets):
         feat_sels_rfecv = []
         n_min_feat_rfecv = 10
         # n_max_feat_rfecv = 25
-        # potential grid point rfecv loop
-        feat_sel = rfe_cv(est_type=est_type, task=subs.tgt_task, feat_pool=feat_pool_set,
-                          X=subs.pat_frame_train_norm, y=subs.pat_frame_train_y,
-                          cv_folds=subs.cv_folds, n_min_feat=n_min_feat_rfecv,
-                          n_max_feat=None, params=value['params'], scoring=scoring)
-        print('rfecv returns %d feats' % len(feat_sel))
-        feat_sels_rfecv.append(feat_sel)
+        # grid point rfecv loop
+        feat_sels_rfecv = rfe_cv(est_type=est_type, task=subs.tgt_task, feat_pool=feat_pool_set,
+                                 X=subs.pat_frame_train_norm, y=subs.pat_frame_train_y,
+                                 cv_folds=subs.cv_folds, n_min_feat=n_min_feat_rfecv,
+                                 n_max_feat=None, params=value['params'], scoring=scoring)
 
         print('%s/%s : feat_sel RFECV computation took %.2f' % (tgt_name, est_type, time.time() - zeit))
 
