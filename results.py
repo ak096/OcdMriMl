@@ -2,6 +2,7 @@ import numpy as np
 import gbl
 from scorers_ import ClfScorer, RegScorer
 
+
 class FeatSetResults:
     def __init__(self, feat_set_list):
         self.data = {

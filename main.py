@@ -61,6 +61,13 @@ reg_scorer = RegScorer()
 
 feat_sets_count = 0
 
+feat_sets_results_clf_frame = pd.DataFrame(index=['freq', 'pred_best', 'pred_avg', 'pred_ci', 'tgt_best', 'est_type_best'])
+feat_sets_results_clf_est_pred = {}
+
+feat_sets_results_reg_frame = pd.DataFrame(index=['freq', 'pred_best', 'pred_avg', 'pred_ci', 'tgt_best', 'est_type_best'])
+feat_sets_results_reg_est_pred = {}
+
+
 for idx, tgt_name in enumerate(targets):
     print('init dataset subs')
     if '_ROS' in tgt_name:
@@ -115,7 +122,7 @@ for idx, tgt_name in enumerate(targets):
         # ml feature selection computation
         zeit = time.time()
         print('%s/%s : starting feat sel RFECV computation' % (tgt_name, est_type))
-        feat_sels_rfecv = []
+
         n_min_feat_rfecv = 10
         # n_max_feat_rfecv = 25
         # grid point rfecv loop
@@ -126,7 +133,11 @@ for idx, tgt_name in enumerate(targets):
 
         print('%s/%s : feat_sel RFECV computation took %.2f' % (tgt_name, est_type, time.time() - zeit))
 
-        feat_sels = feat_sels_rfecv # potential freq_item_set mining function, include support?
+        # feature set mining, frequent item set mining
+        dataset = feat_sels_rfecv
+        freq_item_sets_frame = freq_item_sets(dataset, min_support=0.8)
+        freq_item_sets_list = freq_item_sets_frame.loc[:, 'itemsets'].apply(lambda x: list(x).sort()).tolist()
+        feat_sels = freq_item_sets_list # potential freq_item_set mining function, include support?
         # naming convention/concept : feat_selections until put into data structure as feature sets
         # (along with hoexter, boedhoe)
         for fsel in feat_sels:
@@ -165,13 +176,18 @@ for idx, tgt_name in enumerate(targets):
                                                                   })
             if subs.tgt_task is gbl.clf:
                 all_tgt_results[tgt_name][est_type][fset].sort_prune_pred(pred_score_thresh=0.5)
+                feat_sets_clf_frame
+
             elif subs.tgt_task is gbl.reg:
                 all_tgt_results[tgt_name][est_type][fset].sort_prune_pred(pred_score_thresh=-10.0)
             print('%s/%s/%s: training and prediction computation took %.2f' % (tgt_name, est_type, fset,
                                                                                time.time() - zeit))
 
-            if all_tgt_results[tgt_name][est_type][fset].data['pred_scores']:
-                lrn_feat_sets[est_type].append(all_tgt_results[tgt_name][est_type][fset].data['feat_set_list'])
+
+
+
+            #if all_tgt_results[tgt_name][est_type][fset].data['pred_scores']:
+            #    lrn_feat_sets[est_type].append(all_tgt_results[tgt_name][est_type][fset].data['feat_set_list'])
 
             # end train predict loop for each feat set
 
@@ -179,10 +195,6 @@ for idx, tgt_name in enumerate(targets):
 
     # end tgt loop
 
-# feature set mining, frequent item set mining
-dataset = lrn_feat_sets[gbl.linear_] + lrn_feat_sets[gbl.non_linear_]
-freq_item_sets_frame = freq_item_sets(dataset, min_support=0.6)
-freq_item_sets_list = freq_item_sets_frame.loc[:, 'itemsets'].apply(lambda x: list(x)).tolist()
 
 # collate permutation importance rankings
 #feat_all = list(set([item for item in fis for fis in freq_item_set_list]))
