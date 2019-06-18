@@ -13,7 +13,7 @@ from scipy import mean
 
 #from pickling import *
 from feat_pool_univar import feat_pool_compute
-from feat_selection_ml import rfe_cv, freq_item_sets
+from feat_selection_ml import grid_rfe_cv, freq_item_sets
 from dataset import Subs
 from results import FeatSetResults
 from train_predict import train, pred
@@ -126,10 +126,10 @@ for idx, tgt_name in enumerate(targets):
         n_min_feat_rfecv = 10
         # n_max_feat_rfecv = 25
         # grid point rfecv loop
-        feat_sels_rfecv = rfe_cv(est_type=est_type, task=subs.tgt_task, feat_pool=feat_pool_set,
-                                 X=subs.pat_frame_train_norm, y=subs.pat_frame_train_y,
-                                 cv_folds=subs.cv_folds, n_min_feat=n_min_feat_rfecv,
-                                 n_max_feat=None, params=value['params'], scoring=scoring)
+        feat_sels_rfecv = grid_rfe_cv(est_type=est_type, task=subs.tgt_task, feat_pool=feat_pool_set,
+                                      X=subs.pat_frame_train_norm, y=subs.pat_frame_train_y,
+                                      cv_folds=subs.cv_folds, n_min_feat=n_min_feat_rfecv,
+                                      n_max_feat=None, params=value['params'], scoring=scoring)
 
         print('%s/%s : feat_sel RFECV computation took %.2f' % (tgt_name, est_type, time.time() - zeit))
 

@@ -19,7 +19,7 @@ from mlxtend.frequent_patterns import apriori
 from mlxtend.preprocessing import TransactionEncoder
 
 
-def rfe_cv(est_type, task, feat_pool, X, y, cv_folds, n_min_feat=None, n_max_feat=None, params=None, scoring=None):
+def grid_rfe_cv(est_type, task, feat_pool, X, y, cv_folds, n_min_feat=None, n_max_feat=None, params=None, scoring=None):
 
     if n_min_feat is not None:
         if len(feat_pool) <= n_min_feat:
