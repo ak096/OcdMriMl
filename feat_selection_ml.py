@@ -37,7 +37,6 @@ def grid_rfe_cv(est_type, task, feat_pool, X, y, cv_folds, n_min_feat=None, n_ma
         sel.fit(X.loc[:, feat_pool], y)
 
         feat_sel = [feat_pool[i] for i in np.where(sel.support_)[0]]
-        feat_sel.sort()
         print('rfecv returns %d feats' % len(feat_sel))
         feat_sels_rfecv.append(feat_sel)
 

@@ -5,6 +5,7 @@ import pickle
 import datetime
 import os
 
+import numpy as np
 import pandas as pd
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import roc_auc_score, roc_curve, log_loss, mean_absolute_error
@@ -61,11 +62,13 @@ reg_scorer = RegScorer()
 
 feat_sets_count = 0
 
-feat_sets_results_clf_frame = pd.DataFrame(index=['freq', 'pred_best', 'pred_avg', 'pred_ci', 'tgt_best', 'est_type_best'])
-feat_sets_results_clf_est_pred = {}
+feat_sets_results_list = ['freq', 'pred_best', 'tgt_best', 'est_type_best', 'pred_avg', 'pred_ci']
 
-feat_sets_results_reg_frame = pd.DataFrame(index=['freq', 'pred_best', 'pred_avg', 'pred_ci', 'tgt_best', 'est_type_best'])
-feat_sets_results_reg_est_pred = {}
+all_fsets_results_clf_frame = pd.DataFrame(index=feat_sets_results_list)
+all_fsets_results_clf_dict = {}
+
+all_fsets_results_reg_frame = pd.DataFrame(index=feat_sets_results_list)
+all_fsets_results_reg_dict = {}
 
 
 for idx, tgt_name in enumerate(targets):
@@ -135,8 +138,8 @@ for idx, tgt_name in enumerate(targets):
 
         # feature set mining, frequent item set mining
         dataset = feat_sels_rfecv
-        freq_item_sets_frame = freq_item_sets(dataset, min_support=0.8)
-        freq_item_sets_list = freq_item_sets_frame.loc[:, 'itemsets'].apply(lambda x: list(x).sort()).tolist()
+        freq_item_sets_frame = freq_item_sets(dataset, min_support=0.75)
+        freq_item_sets_list = freq_item_sets_frame.loc[:, 'itemsets'].apply(lambda x: list(x)).tolist()
         feat_sels = freq_item_sets_list # potential freq_item_set mining function, include support?
         # naming convention/concept : feat_selections until put into data structure as feature sets
         # (along with hoexter, boedhoe)
@@ -146,10 +149,11 @@ for idx, tgt_name in enumerate(targets):
         all_tgt_results[tgt_name][est_type]['boedhoe'] = FeatSetResults(gbl.boedhoe_feats_Desikan)
         all_tgt_results[tgt_name][est_type]['hoexter'] = FeatSetResults(gbl.hoexter_feats_Desikan)
 
+
         # train predict loop for each feat set
         for fset, fresults in all_tgt_results[tgt_name][est_type].items():
             zeit = time.time()
-            print('%s/%s/%s : beginning training' % (tgt_name, est_type, fset))
+            print('%s/%s/%s : training' % (tgt_name, est_type, fset))
             feat_train = fresults.data['feat_set_list'] + gbl.clin_demog_feats
 
             est5, val_scores = train(est_type=est_type, task=subs.tgt_task,
@@ -159,35 +163,67 @@ for idx, tgt_name in enumerate(targets):
                                      params=value['params'],
                                      scoring=scoring
                                      )
-            print('%s/%s/%s : beginning prediction' % (tgt_name, est_type, fset))
+            print('%s/%s/%s : predicting' % (tgt_name, est_type, fset))
             pred_frames, pred_scores, perm_imps = pred(est_type=est_type, task=subs.tgt_task, est5=est5,
                                                        X=subs.pat_frame_test_norm.loc[:, feat_train],
                                                        y=subs.pat_frame_test_y.iloc[:, 0],
                                                        scoring=scoring)
 
-            all_tgt_results[tgt_name][est_type][fset].data.update({
-                                                                 'pred_frames': pred_frames,
-                                                                 'pred_scores': pred_scores,
-                                                                 'scoring': scoring,
-                                                                 'conf_interval': conf_interval(pred_scores),
-                                                                 'feat_imp_frames': perm_imps,
-                                                                 'est5': est5,
-                                                                 'train_scores': val_scores
-                                                                  })
+            fresults.data.update({
+                                 'pred_frames': pred_frames,
+                                 'pred_scores': pred_scores,
+                                 'scoring': scoring,
+                                 'conf_interval': conf_interval(pred_scores),
+                                 'feat_imp_frames': perm_imps,
+                                 'est5': est5,
+                                 'train_scores': val_scores
+                                  })
+
             if subs.tgt_task is gbl.clf:
-                all_tgt_results[tgt_name][est_type][fset].sort_prune_pred(pred_score_thresh=0.5)
-                feat_sets_clf_frame
-
+                fresults.sort_prune_pred(pred_score_thresh=0.5)
+                if fresults.data['pred_scores']:
+                    exists = False
+                    for k, v in all_fsets_results_clf_dict.items():
+                        if fresults.data['feat_set_list'] == v['feat_set_list']:
+                            all_fsets_results_clf_frame.loc['freq', k] += 1
+                            all_fsets_results_clf_dict[k]['preds'].append(fresults.data['pred_scores'][0])
+                            if fresults.data['pred_scores'][0] > all_fsets_results_clf_frame.loc['pred_best', k]:
+                                all_fsets_results_clf_frame.loc['pred_best', k] = fresults.data['pred_scores'][0]
+                                all_fsets_results_clf_frame.loc['tgt_best', k] = tgt_name
+                                all_fsets_results_clf_frame.loc['est_type_best', k] = est_type
+                            exists = True
+                            break
+                    if not exists: # add fset into results
+                        all_fsets_results_clf_frame[fset] = [1, fresults.data['pred_scores'][0], tgt_name, est_type,
+                                                             -1, -1]
+                        all_fsets_results_clf_dict[fset] = {'feat_set_list': fresults.data['feat_set_list'],
+                                                            'est_best': fresults.data['est5'][0],
+                                                            'pred_frame_best': fresults.data['pred_frames'][0],
+                                                            'preds': [fresults.data['pred_scores'][0]]}
             elif subs.tgt_task is gbl.reg:
-                all_tgt_results[tgt_name][est_type][fset].sort_prune_pred(pred_score_thresh=-10.0)
-            print('%s/%s/%s: training and prediction computation took %.2f' % (tgt_name, est_type, fset,
+                fresults.sort_prune_pred(pred_score_thresh=-7.0)
+                if fresults.data['pred_scores']:
+                    exists = False
+                    for k, v in all_fsets_results_reg_dict.items():
+                        if fresults.data['feat_set_list'] == v['feat_set_list']:
+                            all_fsets_results_reg_frame.loc['freq', k] += 1
+                            all_fsets_results_reg_dict[k]['preds'].append(fresults.data['pred_scores'][0])
+                            if fresults.data['pred_scores'][0] > all_fsets_results_reg_frame.loc['pred_best', k]:
+                                all_fsets_results_reg_frame.loc['pred_best', k] = fresults.data['pred_scores'][0]
+                                all_fsets_results_reg_frame.loc['tgt_best', k] = tgt_name
+                                all_fsets_results_reg_frame.loc['est_type_best', k] = est_type
+                            exists = True
+                            break
+                    if not exists:  # add fset into results
+                        all_fsets_results_reg_frame[fset] = [1, fresults.data['pred_scores'][0], tgt_name, est_type,
+                                                             -1, -1]
+                        all_fsets_results_reg_dict[fset] = {'feat_set_list': fresults.data['feat_set_list'],
+                                                            'est_best': fresults.data['est5'][0],
+                                                            'pred_frame_best': fresults.data['pred_frames'][0],
+                                                            'preds': [fresults.data['pred_scores'][0]]}
+
+            print('%s/%s/%s: train and predict took %.2f' % (tgt_name, est_type, fset,
                                                                                time.time() - zeit))
-
-
-
-
-            #if all_tgt_results[tgt_name][est_type][fset].data['pred_scores']:
-            #    lrn_feat_sets[est_type].append(all_tgt_results[tgt_name][est_type][fset].data['feat_set_list'])
 
             # end train predict loop for each feat set
 
@@ -197,11 +233,10 @@ for idx, tgt_name in enumerate(targets):
 
 
 # collate permutation importance rankings
+# purge all
 #feat_all = list(set([item for item in fis for fis in freq_item_set_list]))
 
 #for f in feat_all: for tgt in targets: for
-
-#
 
 #
 #
