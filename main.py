@@ -184,7 +184,7 @@ for idx, tgt_name in enumerate(targets):
                 if fresults.data['pred_scores']:
                     exists = False
                     for k, v in all_fsets_results_clf_dict.items():
-                        if fresults.data['feat_set_list'] == v['feat_set_list']:
+                        if fresults.data['feat_set_list'].sort() == v['feat_set_list'].sort():
                             all_fsets_results_clf_frame.loc['freq', k] += 1
                             all_fsets_results_clf_dict[k]['preds'].append(fresults.data['pred_scores'][0])
                             if fresults.data['pred_scores'][0] > all_fsets_results_clf_frame.loc['pred_best', k]:
@@ -205,7 +205,7 @@ for idx, tgt_name in enumerate(targets):
                 if fresults.data['pred_scores']:
                     exists = False
                     for k, v in all_fsets_results_reg_dict.items():
-                        if fresults.data['feat_set_list'] == v['feat_set_list']:
+                        if fresults.data['feat_set_list'].sort() == v['feat_set_list'].sort():
                             all_fsets_results_reg_frame.loc['freq', k] += 1
                             all_fsets_results_reg_dict[k]['preds'].append(fresults.data['pred_scores'][0])
                             if fresults.data['pred_scores'][0] > all_fsets_results_reg_frame.loc['pred_best', k]:

@@ -6,7 +6,7 @@ from scorers_ import ClfScorer, RegScorer
 class FeatSetResults():
     def __init__(self, feat_set_list):
         self.data = {
-                    'feat_set_list': feat_set_list.sort(),
+                    'feat_set_list': feat_set_list,
                     'pred_frames': [],
                     'pred_scores': [],
                     'scoring': '',

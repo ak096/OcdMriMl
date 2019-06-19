@@ -23,6 +23,7 @@ double up on atlas to
 1.include more features
 2.perhaps account for error in freesurfer for area
 
+analysis of complexity savings
 
 lsvm one v rest and not one vs one
 roc_auc_score binary classification lsvc is weighted average for imbalanced classes
