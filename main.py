@@ -44,14 +44,14 @@ lrn_feat_sets = {gbl.linear_: [], gbl.non_linear_: []}
 clf_scorer = ClfScorer()
 reg_scorer = RegScorer()
 
-feat_sets_count = 0
+fsets_count = 1
 
-feat_sets_results_list = ['freq', 'pred_best', 'tgt_best', 'est_type_best', 'pred_avg', 'pred_ci']
+fsets_results_frame_idx = ['freq', 'pred_best', 'tgt_best', 'est_type_best', 'pred_avg', 'pred_ci']
 
-all_fsets_results_clf_frame = pd.DataFrame(index=feat_sets_results_list)
+all_fsets_results_clf_frame = pd.DataFrame(index=fsets_results_frame_idx)
 all_fsets_results_clf_dict = {}
 
-all_fsets_results_reg_frame = pd.DataFrame(index=feat_sets_results_list)
+all_fsets_results_reg_frame = pd.DataFrame(index=fsets_results_frame_idx)
 all_fsets_results_reg_dict = {}
 
 
@@ -62,7 +62,7 @@ for idx, tgt_name in enumerate(targets):
     elif '_SVMSMOTE' in tgt_name:
         subs.resample(over_sampler='SVMSMOTE')
     else:
-        print('%s : initialize dataset (subs): ' % (tgt_name))
+        print('%s: initialize dataset (subs): ' % (tgt_name))
         subs = Subs(tgt_name=tgt_name, test_size=0.15)
         if subs.imbalanced_classes:
             targets.insert(idx+1, tgt_name + '_ROS')
@@ -85,7 +85,7 @@ for idx, tgt_name in enumerate(targets):
                                 gbl.non_linear_: {}
                                 }
 
-    print('%s : computed feat_pool: %d' % (tgt_name, feat_pool_set_num))
+    print('%s: computed feat_pool: %d' % (tgt_name, feat_pool_set_num))
 
     # choose training loss and evaluation metric
     lsvm_params = {}
@@ -108,9 +108,9 @@ for idx, tgt_name in enumerate(targets):
     for est_type, params in iteration.items():
         # ml feature selection computation
         zeit = time.time()
-        print('%s/%s : RFECV starting' % (tgt_name, est_type))
+        print('%s/%s: RFECV starting with feat pool:' % (tgt_name, est_type), feat_pool_set_num)
 
-        n_min_feat_rfecv = 1
+        n_min_feat_rfecv = 5
         n_max_feat_rfecv = None
         # grid point rfecv loop
         feat_sels_rfecv = grid_rfe_cv(tgt_name=tgt_name, est_type=est_type, task=subs.tgt_task, feat_pool=feat_pool_set,
@@ -118,43 +118,45 @@ for idx, tgt_name in enumerate(targets):
                                       cv_folds=subs.cv_folds, n_min_feat=n_min_feat_rfecv,
                                       n_max_feat=n_max_feat_rfecv, params=params['params'], scoring=scoring)
 
-        print('%s/%s : RFECV took %.2f sec' % (tgt_name, est_type, time.time() - zeit))
-
+        print('%s/%s: RFECV took %.2f sec' % (tgt_name, est_type, time.time() - zeit))
         # frequent item set mining
-        print('%s/%s : FIS starting' % (tgt_name, est_type))
-        freq_item_sets_list = freq_item_sets_compute(feat_sels_rfecv, min_sup=0.100)
-        freq_item_sets_list = [fis for fis in freq_item_sets_list if len(fis) >= 2]
-        print('%s/%s : FIS resulted in %d sets' % (tgt_name, est_type, len(freq_item_sets_list)))
+        print('%s/%s: FIS starting' % (tgt_name, est_type))
+        freq_item_sets_list = freq_item_sets_compute(feat_sels_rfecv, min_sup=0.90)
+        #freq_item_sets_list = [fis for fis in freq_item_sets_list if len(fis) >= 2]
+        print('%s/%s: FIS resulted in %d sets' % (tgt_name, est_type, len(freq_item_sets_list)))
+
         feat_sels = freq_item_sets_list
+
         # naming convention/concept : feat_selections until put into data structure as feature sets
         # (along with hoexter, boedhoe)
         for fsel in feat_sels:
-            all_tgt_results[tgt_name][est_type]['fset_' + str(feat_sets_count)] = FeatSetResults(fsel)
-            feat_sets_count += 1
-        all_tgt_results[tgt_name][est_type]['boedhoe'] = FeatSetResults(gbl.boedhoe_feats_Desikan)
-        all_tgt_results[tgt_name][est_type]['hoexter'] = FeatSetResults(gbl.hoexter_feats_Desikan)
-        fsets_num = len(all_tgt_results[tgt_name][est_type])
+            all_tgt_results[tgt_name][est_type]['fset_' + str(fsets_count)] = FeatSetResults(fsel)
+            fsets_count += 1
+        all_tgt_results[tgt_name][est_type]['boedhoe_' + str(fsets_count)] = FeatSetResults(gbl.boedhoe_feats_Desikan)
+        fsets_count += 1
+        all_tgt_results[tgt_name][est_type]['hoexter_' + str(fsets_count)] = FeatSetResults(gbl.hoexter_feats_Desikan)
+
         # train predict loop for each feat set
         for fset, fset_results in all_tgt_results[tgt_name][est_type].items():
             zeit = time.time()
-            print('%s/%s/%s/%d : scoring: ' % (tgt_name, est_type, fset, fsets_num), scoring)
+            print('%s/%s/%s/%d: scoring used:' % (tgt_name, est_type, fset, fsets_count), scoring)
 
             feat_train = fset_results.data['fset_list'] + gbl.clin_demog_feats
 
-            est5, val_scores = train(est_type=est_type, task=subs.tgt_task,
-                                     X=subs.pat_frame_train_norm.loc[:, feat_train],
-                                     y=subs.pat_frame_train_y,
-                                     cv_folds=subs.cv_folds,
-                                     params=params['params'],
-                                     scoring=scoring
-                                     )
-            print('%s/%s/%s/%d : trained cv over grid: ' % (tgt_name, est_type, fset, fsets_num), val_scores)
+            ests, train_scores = train(est_type=est_type, task=subs.tgt_task,
+                                       X=subs.pat_frame_train_norm.loc[:, feat_train],
+                                       y=subs.pat_frame_train_y,
+                                       cv_folds=subs.cv_folds,
+                                       params=params['params'],
+                                       scoring=scoring
+                                       )
+            print('%s/%s/%s/%d: trained cv over grid:' % (tgt_name, est_type, fset, fsets_count), train_scores)
 
-            pred_frames, pred_scores, perm_imps = pred(est_type=est_type, task=subs.tgt_task, est5=est5,
+            pred_frames, pred_scores, perm_imps = pred(est_type=est_type, task=subs.tgt_task, est5=ests,
                                                        X=subs.pat_frame_test_norm.loc[:, feat_train],
                                                        y=subs.pat_frame_test_y.iloc[:, 0],
                                                        scoring=scoring)
-            print('%s/%s/%s/%d : predicted: ' % (tgt_name, est_type, fset, fsets_num), pred_scores)
+            print('%s/%s/%s/%d: predicted:' % (tgt_name, est_type, fset, fsets_count), pred_scores)
 
             fset_results.data.update({
                                  'pred_frames': pred_frames,
@@ -162,27 +164,30 @@ for idx, tgt_name in enumerate(targets):
                                  'scoring': scoring,
                                  'conf_interval': conf_interval(pred_scores)[1],
                                  'feat_imp_frames': perm_imps,
-                                 'est5': est5,
-                                 'train_scores': val_scores
+                                 'ests': ests,
+                                 'train_scores': train_scores
                                   })
 
             if subs.tgt_task is gbl.clf:
                 fset_results.sort_prune_pred(pred_score_thresh=0.5)
-                all_fsets_results_clf_frame, all_fsets_results_clf_dict = update_results(tgt_name, est_type, fset,
-                                                                                         fset_results,
+                print('%s/%s/%s/%d: sorted and pruned to:' % (tgt_name, est_type, fset, fsets_count),
+                      fset_results.data['pred_scores'])
+                all_fsets_results_clf_frame, all_fsets_results_clf_dict = update_results(tgt_name, est_type, fsets_count,
+                                                                                         fset, fset_results,
                                                                                          all_fsets_results_clf_frame,
                                                                                          all_fsets_results_clf_dict)
             elif subs.tgt_task is gbl.reg:
-                fset_results.sort_prune_pred(pred_score_thresh=-7.0)
-                all_fsets_results_reg_frame, all_fsets_results_reg_dict = update_results(tgt_name, est_type, fset,
-                                                                                         fset_results,
+                fset_results.sort_prune_pred(pred_score_thresh=-gbl.YBOCS_std)
+                print('%s/%s/%s/%d: sorted and pruned to:' % (tgt_name, est_type, fset, fsets_count),
+                      fset_results.data['pred_scores'])
+                all_fsets_results_reg_frame, all_fsets_results_reg_dict = update_results(tgt_name, est_type, fsets_count,
+                                                                                         fset, fset_results,
                                                                                          all_fsets_results_reg_frame,
                                                                                          all_fsets_results_reg_dict)
-            print('%s/%s/%s/%d: sorted and pruned to: ' % (tgt_name, est_type, fset, fsets_num),
-                  fset_results.data[pred_scores])
 
-            print('%s/%s/%s/%d: train and predict took %.2f' % (tgt_name, est_type, fset, fsets_num,
+            print('%s/%s/%s/%d: train and predict took %.2f' % (tgt_name, est_type, fset, fsets_count,
                                                                 time.time() - zeit))
+            print()
 
             # end train predict loop for each feat set
 

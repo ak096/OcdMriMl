@@ -1,5 +1,5 @@
 from random import randint
-
+from collections import OrderedDict
 import numpy as np
 import pandas as pd
 from sklearn.feature_selection import RFECV
@@ -11,11 +11,11 @@ import pyfpgrowth
 from train_predict import set_paramgrid_est, conf_interval
 
 
-def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=None, n_max_feat=None, params=None, scoring=None):
+def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=1, n_max_feat=None, params=None,
+                scoring=None):
 
-    if n_min_feat is not None:
-        if len(feat_pool) <= n_min_feat:
-            return feat_pool
+    if len(feat_pool) <= n_min_feat:
+        return feat_pool
     param_grid, est = set_paramgrid_est(est_type, task)
 
     # if params is not None:
@@ -29,15 +29,25 @@ def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=
         sel.fit(X.loc[:, feat_pool], y)
 
         feat_sel = [feat_pool[i] for i in np.where(sel.support_)[0]]
-        print('%s/%s : RFECV %d/%d computed %d feats' % (tgt_name, est_type, idx, len(param_grid), len(feat_sel)))
+        print('%s/%s: RFECV %d/%d computed %d feats' % (tgt_name, est_type, idx+1, len(param_grid), len(feat_sel)))
+        for a, b, c in zip(feat_sel[::3], feat_sel[1::3], feat_sel[2::3]):
+            print('{:<30}{:<30}{:<}'.format(a, b, c))
         feat_sels_rfecv.append(feat_sel)
 
     return feat_sels_rfecv
 
 
-def freq_item_sets_compute(dataset, min_sup=0.6):
-    return [list(l) for l in pyfpgrowth.find_frequent_patterns(dataset, round(min_sup*len(dataset))).keys()]
-
+def freq_item_sets_compute(dataset, min_sup=1.0):
+    freq_item_sets = {}
+    patterns = pyfpgrowth.find_frequent_patterns(dataset, round(min_sup*len(dataset)))
+    if len(patterns) > 0:
+        for k, v in patterns.items():
+            freq_item_sets.setdefault(v, []).append(list(k))
+        max_key = max(freq_item_sets, key=int)
+        print('%d freq item sets of max size %d' % (len(freq_item_sets[max_key]), max_key))
+        return freq_item_sets[max_key]
+    else:
+        return dataset
 
 # def freq_item_sets(dataset, min_support=0.6): #expects list of lists, returns pandas DataFrame
 #     te = TransactionEncoder()
@@ -52,7 +62,7 @@ def freq_item_sets_compute(dataset, min_sup=0.6):
 
 def feat_perm_imp_compute(all_tgt_results, all_fsets_results, task):
     delete = []
-    feat_all = list(set([f for f in [fs['feat_set_list'] for fs in all_fsets_results.values()]]))
+    feat_all = list(set([f for f in [fs['fset_list'] for fs in all_fsets_results.values()]]))
     fimp_collect = {}
     for f in feat_all:
         fimp_collect[f] = []
@@ -72,7 +82,7 @@ def feat_perm_imp_compute(all_tgt_results, all_fsets_results, task):
                           'perm_imp_high': np.max(fimp_collect[k]),
                           'perm_imp_avg': conf_interval(fimp_collect[k])[0],
                           'perm_imp_low': np.min(fimp_collect[k]),
-                          'perm_imp_ci':conf_interval(fimp_collect[k])[1]
+                          'perm_imp_ci': conf_interval(fimp_collect[k])[1]
                          }
 
     return fimp_result, delete

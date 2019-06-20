@@ -60,7 +60,7 @@ def _add_rand_feats(frame):
 
 normType_list = ['std', 'minMax', 'robust']
 
-clin_demog_feats = ['gender_num', 'age', 'duration', 'med']
+clin_demog_feats_names = ['gender_num', 'age', 'duration', 'med']
 
 linear_ = 'linear'
 non_linear_ = 'non_linear'
@@ -68,7 +68,7 @@ non_linear_ = 'non_linear'
 clf = 'clf'
 reg = 'reg'
 
-grid_space_size = 25
+grid_space_size = 10
 
 param_grid_lsvc = list(ParameterSampler(svm_hyper_param_space('clf'), n_iter=grid_space_size))
 
@@ -96,7 +96,7 @@ param_grid_xgb = list(ParameterSampler(xgb_hyper_param_space(), n_iter=grid_spac
 # left putamen
 # left caudate
 
-hoexter_feats_Desikan = [
+hoexter_feats_Desikan_names = [
                         'lh_rostralanteriorcingulate_volume**aparc',
                         'rh_rostralanteriorcingulate_volume**aparc',
 
@@ -124,7 +124,7 @@ hoexter_feats_Desikan = [
 
 # Boedhoe et al 2016 (Pallidum, Hippocampus)
 
-boedhoe_feats_Desikan = [
+boedhoe_feats_Desikan_names = [
                         'Left-Pallidum_volume',
                         'Right-Pallidum_volume',
                         'Left-Hippocampus_volume',
@@ -167,7 +167,7 @@ pat_frame = _add_rand_feats(pat_frame)
 after = pat_frame.shape[1]
 print('PreProc: %d feats. (rand.) added: %d to %d' % (n_rand_feat, before, after))
 
-FreeSurfer_feats = pat_frame.columns.tolist()
+FreeSurfer_feats_names = pat_frame.columns.tolist()
 
 # add clin demo features
 pat_frame_stats = get_pat_stats()
@@ -175,6 +175,19 @@ pat_frame.sort_index(inplace=True)
 pat_frame_stats.sort_index(inplace=True)
 if pat_frame_stats.index.tolist() != pat_frame.index.tolist():
     exit("PreProc: feature and target pats not same!")
-pat_frame = pd.concat([pat_frame, pat_frame_stats.loc[:, clin_demog_feats]], axis=1, sort=False)
+pat_frame = pd.concat([pat_frame, pat_frame_stats.loc[:, clin_demog_feats_names]], axis=1, sort=False)
+
+all_feat_names = pat_frame.columns.tolist()
+
+pat_frame.columns = np.arange(len(pat_frame.columns.tolist()))
+
+hoexter_feats_Desikan = [all_feat_names.index(f) for f in hoexter_feats_Desikan_names]
+boedhoe_feats_Desikan = [all_feat_names.index(f) for f in boedhoe_feats_Desikan_names]
+
+FreeSurfer_feats = [all_feat_names.index(f) for f in FreeSurfer_feats_names]
+clin_demog_feats = [all_feat_names.index(f) for f in clin_demog_feats_names]
+
+#get std of YBOCS
+YBOCS_std = np.std(pat_frame_stats.loc[:, 'YBOCS_reg'])
 
 

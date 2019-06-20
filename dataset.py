@@ -56,10 +56,10 @@ class Subs:
 
         # check if test and train names are mutually exclusive and add up to total observations
         result = any(elem in self.pat_names_train for elem in self.pat_names_test)
-        print('%s : test/train %d/%d from %d' % (self.tgt_name, len(self.pat_names_test), len(self.pat_names_train),
-                                                 self.y_strat.shape[0]))
+        print('%s: test/train %d/%d from %d' % (self.tgt_name, len(self.pat_names_test), len(self.pat_names_train),
+                                                self.y_strat.shape[0]))
         if not set(self.pat_names) == set(self.pat_names_test + self.pat_names_train) or result:
-            print('%s : error separating train test' % (tgt_name))
+            print('%s: error separating train test' % (tgt_name))
             exit()
 
         self.cv_folds = 10
@@ -78,7 +78,7 @@ class Subs:
         self.pat_frame_train_norm, self.pat_train_scaler = scale(self.pat_frame_train)
         self.pat_frame_test_norm = test_set_scale(self.pat_frame_test, self.pat_train_scaler)
 
-        # if self.tgt_task == 'reg' leave it else
+        # if self.tgt_task == 'reg' leave it else check if imbalanced classes
         self.imbalanced_classes = False
         if self.tgt_task == 'clf':
             # check if any classes have more than 1 std away from mean number of observations per class
@@ -92,29 +92,28 @@ class Subs:
     def resample(self, over_sampler='None'):
         self.over_sampler = over_sampler
         if self.tgt_task is not 'clf':
-            print('%s : cannot resample for non-classification task' % self.tgt_name)
+            print('%s: cannot resample for non-classification task' % self.tgt_name)
             return
         elif not self.imbalanced_classes:
-            print('%s : classes not imbalanced, not resampling' % self.tgt_name)
+            print('%s: classes not imbalanced, not resampling' % self.tgt_name)
             self.over_sampler = 'None'
             return
         else:
             if self.over_sampler == 'None':
-                print('%s : not resampling, None given' % self.tgt_name)
+                print('%s: not resampling, None given' % self.tgt_name)
                 return
             elif self.over_sampler == 'ROS':
                 o_sampler = RandomOverSampler(random_state=random.randint(1, 101))
             elif self.over_sampler == 'SVMSMOTE':
                 o_sampler = SVMSMOTE(random_state=random.randint(1, 101))
             else:
-                print('%s : over_sampler not supported' % self.tgt_name)
+                print('%s: over_sampler not supported' % self.tgt_name)
                 return
 
             try:
                 a, b = o_sampler.fit_resample(self._pat_frame_train_base.values, self._pat_frame_train_y_base.values)
-
             except():
-                print('%s : oversampling failed' % self.tgt_name)
+                print('%s: oversampling failed' % self.tgt_name)
                 return
 
             self.pat_frame_train = pd.DataFrame(columns=self._pat_frame_train_base.columns, data=a)
@@ -130,7 +129,7 @@ class Subs:
             self.pat_frame_train_norm, self.pat_train_scaler = scale(self.pat_frame_train)
             self.pat_frame_test_norm = test_set_scale(self.pat_frame_test, self.pat_train_scaler)
             self.resampled = True
-            print('%s : pat_frame_train over-sampled by %s from %d to %d' % (self.tgt_name, self.over_sampler,
+            print('%s: pat_frame_train over-sampled by %s from %d to %d' % (self.tgt_name, self.over_sampler,
                                                                              self.num_pats-len(self.pat_names_test),
                                                                              self.pat_frame_train.shape[0]))
             self.tgt_name += '_' + self.over_sampler
@@ -156,7 +155,3 @@ class Subs:
         pat_names_test = sum(self.pat_names_test_bins.values(), [])
         pat_names_train = sum(self.pat_names_train_bins.values(), [])
         return pat_names_test, pat_names_train
-
-
-    def check_nan_finite(self):
-        pass

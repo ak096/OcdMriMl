@@ -40,8 +40,8 @@ def train(est_type, task, params, X, y, cv_folds, scoring=None):
     param_grid, est = set_paramgrid_est(est_type, task)
 
     est_gp_fits = []
-    est5 = []
-    val_scores5 = []
+    ests = []
+    train_scores = []
 
     # !!assumption val scores greater the better
     for idx, grid_point in enumerate(param_grid):
@@ -67,10 +67,10 @@ def train(est_type, task, params, X, y, cv_folds, scoring=None):
 
     est_gp_fits_top5 = est_gp_fits[0:5]
     for egpf in est_gp_fits_top5:
-        est5.append(egpf['est'])
-        val_scores5.append(egpf['val_score'])
-
-    return est5, val_scores5
+        ests.append(egpf['est'])
+        train_scores.append(egpf['val_score'])
+    train_scores = [round(elt, 3) for elt in train_scores]
+    return ests, train_scores
 
 
 def pred(est_type, task, est5, X, y, scoring=None):
