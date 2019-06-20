@@ -22,8 +22,7 @@ class FeatSetResults():
 
         enum = [[i, v] for i, v in enumerate(self.data['pred_scores'])]
         idx = [i[0] for i in sorted(enum, key=lambda k:k[1], reverse=True) if i[1] > pred_score_thresh]
-        print('sorting pruning pred results, only left')
-        print(idx)
+
         self.data['pred_frames'] = [self.data['pred_frames'][i] for i in idx]
         self.data['pred_scores'] = [self.data['pred_scores'][i] for i in idx]
         self.data['feat_imp_frames'] = [self.data['feat_imp_frames'][i] for i in idx]

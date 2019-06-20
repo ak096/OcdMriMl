@@ -11,7 +11,7 @@ import pyfpgrowth
 from train_predict import set_paramgrid_est, conf_interval
 
 
-def grid_rfe_cv(est_type, task, feat_pool, X, y, cv_folds, n_min_feat=None, n_max_feat=None, params=None, scoring=None):
+def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=None, n_max_feat=None, params=None, scoring=None):
 
     if n_min_feat is not None:
         if len(feat_pool) <= n_min_feat:
@@ -29,13 +29,13 @@ def grid_rfe_cv(est_type, task, feat_pool, X, y, cv_folds, n_min_feat=None, n_ma
         sel.fit(X.loc[:, feat_pool], y)
 
         feat_sel = [feat_pool[i] for i in np.where(sel.support_)[0]]
-        print('rfecv returns %d feats' % len(feat_sel))
+        print('%s/%s : RFECV %d/%d computed %d feats' % (tgt_name, est_type, idx, len(param_grid), len(feat_sel)))
         feat_sels_rfecv.append(feat_sel)
 
     return feat_sels_rfecv
 
 
-def freq_item_sets(dataset, min_sup=0.6):
+def freq_item_sets_compute(dataset, min_sup=0.6):
     return [list(l) for l in pyfpgrowth.find_frequent_patterns(dataset, round(min_sup*len(dataset))).keys()]
 
 

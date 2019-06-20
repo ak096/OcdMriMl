@@ -68,11 +68,13 @@ non_linear_ = 'non_linear'
 clf = 'clf'
 reg = 'reg'
 
-param_grid_lsvc = list(ParameterSampler(svm_hyper_param_space('clf'), n_iter=30))
+grid_space_size = 25
 
-param_grid_lsvr = list(ParameterSampler(svm_hyper_param_space('reg'), n_iter=30))
+param_grid_lsvc = list(ParameterSampler(svm_hyper_param_space('clf'), n_iter=grid_space_size))
 
-param_grid_xgb = list(ParameterSampler(xgb_hyper_param_space(), n_iter=30))
+param_grid_lsvr = list(ParameterSampler(svm_hyper_param_space('reg'), n_iter=grid_space_size))
+
+param_grid_xgb = list(ParameterSampler(xgb_hyper_param_space(), n_iter=grid_space_size))
 # param_grid_xgbr = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
 
 # Hoexter et al 2013 (CSTC)
@@ -131,12 +133,13 @@ boedhoe_feats_Desikan = [
 
 # get data from FreeSurfer stats
 path_base = os.path.abspath('Desktop/FS_SUBJ_ALL').replace('PycharmProjects/OcdMriMl/', '')
-print('reading in pat and con frames from FreeSurfer')
+print('PreProc: FreeSurfer read: pat and con')
 pat_frame = FreeSurfer_data_collect('pat', path_base)
 con_frame = FreeSurfer_data_collect('con', path_base)
 
-if pat_frame.columns.tolist() == con_frame.columns.tolist():
-    print('pat and con frames have equals columns')
+if not pat_frame.columns.tolist() == con_frame.columns.tolist():
+    print('PreProc: FreeSurfer read: pat and con frame not equal!')
+    exit()
 
 # remove low variance features
 before = pat_frame.shape[1]
@@ -146,7 +149,7 @@ sel.fit(pat_frame)
 retained_mask = sel.get_support(indices=False)
 pat_frame = pat_frame.loc[:, retained_mask]
 after = pat_frame.shape[1]
-print('REMOVING %d FEATS UNDER %.2f VAR: FROM %d TO %d' % (before - after, threshold, before, after))
+print('PreProc: %d feats. removed: under %.2f var: %d to %d' % (before - after, threshold, before, after))
 
 # remove features less than 90% populated
 before = pat_frame.shape[1]
@@ -154,7 +157,7 @@ ratio = 1.00
 threshold = round(ratio * pat_frame.shape[0])
 pat_frame.dropna(axis='columns', thresh=threshold, inplace=True)
 after = pat_frame.shape[1]
-print('REMOVING %d FEATS LESS THAN %.2f PERCENT FILLED: FROM %d TO %d' %
+print('PreProc: %d feats. removed: less than %.2f percent filled: %d to %d' %
       (before - after, (threshold / pat_frame.shape[0]) * 100, before, after))
 
 # add some random features (permuted original features)
@@ -162,7 +165,7 @@ before = pat_frame.shape[1]
 n_rand_feat = 3
 pat_frame = _add_rand_feats(pat_frame)
 after = pat_frame.shape[1]
-print('ADDING %d RAND FEATS: FROM %d TO %d' % (n_rand_feat, before, after))
+print('PreProc: %d feats. (rand.) added: %d to %d' % (n_rand_feat, before, after))
 
 FreeSurfer_feats = pat_frame.columns.tolist()
 
@@ -171,7 +174,7 @@ pat_frame_stats = get_pat_stats()
 pat_frame.sort_index(inplace=True)
 pat_frame_stats.sort_index(inplace=True)
 if pat_frame_stats.index.tolist() != pat_frame.index.tolist():
-    exit("feature and target pats not same")
+    exit("PreProc: feature and target pats not same!")
 pat_frame = pd.concat([pat_frame, pat_frame_stats.loc[:, clin_demog_feats]], axis=1, sort=False)
 
 

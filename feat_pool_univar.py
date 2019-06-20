@@ -98,7 +98,7 @@ def mi_frame_compute(frame, y_tgt, task, feat_filter=[]):
     return mi_frame
 
 
-def feat_pool_compute(subs, feat_filter=[]):
+def feat_pool_compute(tgt_name, subs, feat_filter=[]):
 
     # compute t_feats
     if subs.resampled:  # use .iloc
@@ -111,20 +111,20 @@ def feat_pool_compute(subs, feat_filter=[]):
     t_frame = t_frame_compute(a, b, feat_filter=[])  # ['thickness', 'volume'])
     t_feats = t_frame.columns.tolist()
     t_feats_num = len(t_feats)
-    print("computed %d T feats" % t_feats_num)
+    print('%s : computed %d T feats' % (tgt_name, t_feats_num))
 
     # compute f_feats
     f_frame = f_frame_compute(frame=subs.pat_frame_train, y_tgt=subs.pat_frame_train_y,
                               task=subs.tgt_task, feat_filter=[])
     f_feats = f_frame.columns.tolist()
     f_feats_num = len(f_feats)
-    print("computed %d F feats" % f_feats_num)
+    print('%s : computed %d F feats' % (tgt_name, f_feats_num))
     # compute mi_feats
     mi_frame = mi_frame_compute(frame=subs.pat_frame_train, y_tgt=subs.pat_frame_train_y,
                                 task=subs.tgt_task, feat_filter=[])
     mi_feats = mi_frame.columns.tolist()
     mi_feats_num = len(mi_feats)
-    print("computed %d MI feats" % mi_feats_num)
+    print('%s : computed %d MI feats' % (tgt_name, mi_feats_num))
 
     feat_pool_all = t_feats + f_feats + mi_feats
     feat_pool_counts_frame = pd.DataFrame(index=['count'], data=dict(Counter(deepcopy(feat_pool_all))))

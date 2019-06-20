@@ -42,7 +42,6 @@ def train(est_type, task, params, X, y, cv_folds, scoring=None):
     est_gp_fits = []
     est5 = []
     val_scores5 = []
-    print('training with cross_validation using scorer: %s' % scoring)
 
     # !!assumption val scores greater the better
     for idx, grid_point in enumerate(param_grid):
@@ -65,7 +64,7 @@ def train(est_type, task, params, X, y, cv_folds, scoring=None):
     # print('sorted best val scores over grid points')
     # for elt in est_gp_fits:
     #     print(elt['val_score'])
-    print('choosing top 5 estimators per val scores')
+
     est_gp_fits_top5 = est_gp_fits[0:5]
     for egpf in est_gp_fits_top5:
         est5.append(egpf['est'])
@@ -78,7 +77,6 @@ def pred(est_type, task, est5, X, y, scoring=None):
     pred_frames = []
     pred_scores = []
     perm_imps = []
-    print('prediction scores for best 5 estimators using scoring: %s' % scoring)
     for i, est in enumerate(est5):
         if scoring:
             scorer = get_scorer(scoring)
@@ -97,8 +95,7 @@ def pred(est_type, task, est5, X, y, scoring=None):
         #         pred_frames[i].insert(1, 'Confidence', est.predict_proba(X))
 
         perm_imps.append(perm_imp_test(est=est, base_score=ps, X=X, y=y, n_iter=3, scoring=scoring))
-
-    print(pred_scores)
+    pred_scores = [round(elt, 3) for elt in pred_scores]
     return pred_frames, pred_scores, perm_imps
 
 
@@ -106,7 +103,6 @@ def perm_imp_test(est, base_score, X, y, n_iter=3, scoring=None):
     perm_imp_frame = pd.DataFrame(index=['perm_imp'], columns=[c for c in X.columns.tolist() if c not in gbl.clin_demog_feats])
 
     for column in perm_imp_frame:
-
         X_col = deepcopy(X.loc[:, column])
         score_diff = 0.0
         for _ in np.arange(n_iter):

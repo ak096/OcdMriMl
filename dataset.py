@@ -14,7 +14,7 @@ class Subs:
         self.test_size = test_size
         self.over_sampler = 'None'
         self.resampled = False
-
+        self.tgt_name = tgt_name
         self.pat_frame = gbl.pat_frame.copy()
         self.con_frame = gbl.con_frame.copy()
 
@@ -56,10 +56,11 @@ class Subs:
 
         # check if test and train names are mutually exclusive and add up to total observations
         result = any(elem in self.pat_names_train for elem in self.pat_names_test)
-        print(result)
-        print('%d pat_names_test' % len(self.pat_names_test))
-        print('%d pat_names_train' % len(self.pat_names_train))
-        print(set(self.pat_names) == set(self.pat_names_test + self.pat_names_train))
+        print('%s : test/train %d/%d from %d' % (self.tgt_name, len(self.pat_names_test), len(self.pat_names_train),
+                                                 self.y_strat.shape[0]))
+        if not set(self.pat_names) == set(self.pat_names_test + self.pat_names_train) or result:
+            print('%s : error separating train test' % (tgt_name))
+            exit()
 
         self.cv_folds = 10
         # assign train and test
@@ -91,29 +92,29 @@ class Subs:
     def resample(self, over_sampler='None'):
         self.over_sampler = over_sampler
         if self.tgt_task is not 'clf':
-            print('cannot resample for non-classification task')
+            print('%s : cannot resample for non-classification task' % self.tgt_name)
             return
         elif not self.imbalanced_classes:
-            print('classes not imbalanced, not resampling')
+            print('%s : classes not imbalanced, not resampling' % self.tgt_name)
             self.over_sampler = 'None'
             return
         else:
             if self.over_sampler == 'None':
-                print('not resampling, None given')
+                print('%s : not resampling, None given' % self.tgt_name)
                 return
             elif self.over_sampler == 'ROS':
                 o_sampler = RandomOverSampler(random_state=random.randint(1, 101))
             elif self.over_sampler == 'SVMSMOTE':
                 o_sampler = SVMSMOTE(random_state=random.randint(1, 101))
             else:
-                print('over_sampler not supported')
+                print('%s : over_sampler not supported' % self.tgt_name)
                 return
 
             try:
                 a, b = o_sampler.fit_resample(self._pat_frame_train_base.values, self._pat_frame_train_y_base.values)
 
             except():
-                print('oversampling failed')
+                print('%s : oversampling failed' % self.tgt_name)
                 return
 
             self.pat_frame_train = pd.DataFrame(columns=self._pat_frame_train_base.columns, data=a)
@@ -129,9 +130,10 @@ class Subs:
             self.pat_frame_train_norm, self.pat_train_scaler = scale(self.pat_frame_train)
             self.pat_frame_test_norm = test_set_scale(self.pat_frame_test, self.pat_train_scaler)
             self.resampled = True
-            print("pat_frame_train over-sampled by %s from %d to %d" % (self.over_sampler,
-                                                                        self.num_pats-len(self.pat_names_test),
-                                                                        self.pat_frame_train.shape[0]))
+            print('%s : pat_frame_train over-sampled by %s from %d to %d' % (self.tgt_name, self.over_sampler,
+                                                                             self.num_pats-len(self.pat_names_test),
+                                                                             self.pat_frame_train.shape[0]))
+            self.tgt_name += '_' + self.over_sampler
 
     def _split_test_train_names(self, y_strat, test_size, num_bins):
         random.seed(random.randint(1, 101), version=2)
