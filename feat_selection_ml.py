@@ -11,8 +11,6 @@ import pyfpgrowth
 from train_predict import set_paramgrid_est, conf_interval
 
 
-
-
 def grid_rfe_cv(est_type, task, feat_pool, X, y, cv_folds, n_min_feat=None, n_max_feat=None, params=None, scoring=None):
 
     if n_min_feat is not None:

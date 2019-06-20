@@ -1,9 +1,0 @@
-individual_feat_columns feat
-linear_perm_imp
-non-linear_perm_imp
-together... running avg. ((!=linear_perm+non-linear_perm_imp)/2)
-
-
-update_results(feature_set)
-if feat_set == any feat_set in results_frame
-update entry
