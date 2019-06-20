@@ -4,7 +4,8 @@ PRIO HIGH-------------
 
 to do :
 adding permutation importance ranking of features at end
-
+switch to index storage of features from pat_frame sys.getsizeof(object) reveals typical feature strings more
+than 2x larger...
 
 to understand :
 XGboost parameters,
@@ -129,48 +130,3 @@ use only severe YBOCS pats for t feat selection
 graph model scores against num of features?
 run meta analysis on them? which features seen the most?
 deep learning on original images
-
-#------------LEARNING------------#
-ml experience : learning : can build up insights for further more focused analysis i.e. t feats inform further learning
-or simple clustering informs what features to focus on ... and reduces much searchin in hypothesis space
-
-implies doing experiments in steps for faster feedback and informing next ecps instead of doing many experiments at a time...
-
-using only severe YBOCS for t test seems to make accuracy worse
-
-using hand picked balanced
-
-mathe ist sehen dass
-t_feats_num_total = t_frame.shape[1]
-
-t_feats_list = t_frame.columns.tolist()
-gleich werte sind, also sich gleichen. aber andere konzepten sind mit unterschiedleich folgen und werten unter
-anderen Bedingungen
-
-Sonntag 05.05.2019
-scalability concept in concrete design example
-strong dependency: variablization : i.e. making size of list in for loop dependent on input size
-instead of hard coding its size like l = [] for i in l2: do l.append[something i] instead of
-l = [, ,] for idx, i in l2 : do l[idx], automatically scaled with growth or shrinking of l2 ..
-
-change naming convention from related objects, distinguishing name in front (DE principle), e.g. l_feat_sel, instead of
-feat_sel_l, distinguishing thing easier to get first serves function
-
-Donnerstag 13. Juni 2019
-Einfall nach meiner Frage Björn Rückmeldung
-pipeline advice:
-add random features in the beginning of pipeline and use along the way to compare with original features, cut-offs and
-interpretation
-testing pipeline on well known regression targets
-
-Freitag 14. Juni 2019
-organize pipeline concept loops so for testing the quickest run made through all the parts to the end result
-then repeat with other larger more complex inputs
-
-Montag 17. Juni 2019
-import convention
-python native
-
-packages
-
-self made packages

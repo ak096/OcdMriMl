@@ -1,14 +1,14 @@
-from sklearn.model_selection import cross_validate
-from sklearn.svm import LinearSVR, LinearSVC, SVC
-from sklearn.base import BaseEstimator
-
-from xgboost import XGBRegressor, XGBClassifier
-
 from copy import deepcopy
+
 import numpy as np
 import pandas as pd
-from pandas import DataFrame
 from sklearn.metrics.scorer import get_scorer
+from sklearn.model_selection import cross_validate
+from sklearn.svm import LinearSVR, LinearSVC, SVC
+from xgboost import XGBRegressor, XGBClassifier
+from scipy.stats import sem, t
+from scipy import mean
+
 import gbl
 
 
@@ -120,3 +120,12 @@ def perm_imp_test(est, base_score, X, y, n_iter=3, scoring=None):
         perm_imp_frame.at['perm_imp', column] = score_diff/n_iter
     return perm_imp_frame
 
+
+# credit: kite
+def conf_interval(data):
+    confidence = 0.95
+    n = len(data)
+    m = mean(data)
+    std_err = sem(data)
+    h = std_err * t.ppf((1 + confidence) / 2, n - 1)
+    return [m, h]

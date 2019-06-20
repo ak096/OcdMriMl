@@ -8,6 +8,8 @@ from sklearn.feature_selection import VarianceThreshold
 from FreeSurfer_read import FreeSurfer_data_collect
 from gdrive import get_pat_stats
 
+pd.options.mode.use_inf_as_na = True
+
 
 def svm_hyper_param_space(est_class):
     svm_hps = {
@@ -66,11 +68,11 @@ non_linear_ = 'non_linear'
 clf = 'clf'
 reg = 'reg'
 
-param_grid_lsvc = list(ParameterGrid(svm_hyper_param_space('clf')))
+param_grid_lsvc = list(ParameterSampler(svm_hyper_param_space('clf'), n_iter=30))
 
-param_grid_lsvr = list(ParameterGrid(svm_hyper_param_space('reg')))
+param_grid_lsvr = list(ParameterSampler(svm_hyper_param_space('reg'), n_iter=30))
 
-param_grid_xgb = list(ParameterSampler(xgb_hyper_param_space(), n_iter=40))
+param_grid_xgb = list(ParameterSampler(xgb_hyper_param_space(), n_iter=30))
 # param_grid_xgbr = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
 
 # Hoexter et al 2013 (CSTC)
