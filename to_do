@@ -11,54 +11,6 @@ to understand :
 XGboost parameters,
 mutual info
 
-PAPER:
-contribution is perhaps new pipeline (also for paper) over clf reg supervised learning tasks over various objectives...
-(2, 3, 4 class)
-# non-ocd (0-9) mild (10-20), moderate (21-30), severe (31-40) Okasha et. al. (2000)
-feature set loop
-hyperparameter loop
-cross validation loop
-for each feature set report best scoring model (with hyperparameters)...
-
-double up on atlas to
-1.include more features
-2.perhaps account for error in freesurfer for area
-
-analysis of complexity savings
-
-lsvm one v rest and not one vs one
-roc_auc_score binary classification lsvc is weighted average for imbalanced classes
-
-always strategy from infinite space with statistical strategies to narrow down space
--menze with t test
--rankings..
-
-Boedhoe no cortical thickness or area correlations in severity?  maybe i find something different
-
-section on (main purpose is to have measure of power for feature subset
-proposal for new pipeline RFECV over grid remove extraneous feats and differences between two atlases
-with freq_item_set mining with relatively high support
-retrain on grid, find best5 est and predictions and assign these prediction values as importance/power to
-freq item sets with perm importances for ests with predictions over 0.5 sorted
-but would have for each class target many subsets (+2 boedhoe, hoexter) with same under data structures,
-! computational complexity increases by how much - calculate...
-how to summarize over targets and sets?  to create final score for comparison?
-
-factors of set's power
-number of times set occurs over tgts
-prediction performance
--> simple multiplication of the two
-can compute also permutation importance over feats from all remaining feat sets
-
-
-new pipeline:
-1.feature pool :per task: pool union of t test between mild and severe, p_value based f_scores, and mutual information
-2.feature subset collection from pool, forward permutation importance backward rfecv reporting on held out test set and
-compared with hoexter and boedhoe sets
--(further work) include more subsets by taking not just best but perhaps best 5
-3.frequent item set analysis
-4. perhaps NB explanation this week
-
 PRIO MID-------------
 
 make dataset Subs class for just one type of group: so pat = Subs(...group='pat') con = Subs(...group='con')

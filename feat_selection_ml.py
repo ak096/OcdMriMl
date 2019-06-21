@@ -7,6 +7,8 @@ from sklearn.feature_selection import RFECV
 #from mlxtend.frequent_patterns import apriori
 #from mlxtend.preprocessing import TransactionEncoder
 import pyfpgrowth
+import gbl
+from sys import getsizeof
 
 from train_predict import set_paramgrid_est, conf_interval
 
@@ -30,8 +32,8 @@ def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=
 
         feat_sel = [feat_pool[i] for i in np.where(sel.support_)[0]]
         print('%s/%s: RFECV %d/%d computed %d feats' % (tgt_name, est_type, idx+1, len(param_grid), len(feat_sel)))
-        for a, b, c in zip(feat_sel[::3], feat_sel[1::3], feat_sel[2::3]):
-            print('{:<30}{:<30}{:<}'.format(a, b, c))
+        # for a, b, c in zip(feat_sel[::3], feat_sel[1::3], feat_sel[2::3]):
+        #     print('{:<30}{:<30}{:<}'.format(a, b, c))
         feat_sels_rfecv.append(feat_sel)
 
     return feat_sels_rfecv
@@ -39,12 +41,14 @@ def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=
 
 def freq_item_sets_compute(dataset, min_sup=1.0):
     freq_item_sets = {}
+    type(dataset[0][0])
+    getsizeof(dataset[0][0])
     patterns = pyfpgrowth.find_frequent_patterns(dataset, round(min_sup*len(dataset)))
     if len(patterns) > 0:
         for k, v in patterns.items():
-            freq_item_sets.setdefault(v, []).append(list(k))
+            freq_item_sets.setdefault(len(k), []).append(list(k)) #keys are length of sets
         max_key = max(freq_item_sets, key=int)
-        print('%d freq item sets of max size %d' % (len(freq_item_sets[max_key]), max_key))
+        print('%d freq item sets of len %d' % (len(freq_item_sets[max_key]), max_key))
         return freq_item_sets[max_key]
     else:
         return dataset
@@ -60,29 +64,14 @@ def freq_item_sets_compute(dataset, min_sup=1.0):
 #     return freq_item_sets_frame
 
 
-def feat_perm_imp_compute(all_tgt_results, all_fsets_results, task):
-    delete = []
-    feat_all = list(set([f for f in [fs['fset_list'] for fs in all_fsets_results.values()]]))
-    fimp_collect = {}
-    for f in feat_all:
-        fimp_collect[f] = []
-        for tgt, est_type_dict in all_tgt_results.items():
-            if task in tgt:
-                for est_type, fset_dict in est_type_dict.items():
-                    for fset, fset_results in fset_dict.items():
-                        index = "{}_{}_{}".format(tgt, est_type, fset)
-                        if not fset_results.data['pred_scores']:
-                            delete.append(index)
-                        elif f in fset_results.data['feat_imp_frames'][0].columns.tolist():
-                            fimp_collect[f].append(
-                                fset_results.data['feat_imp_frames'][0].loc['perm_imp', f])
-    fimp_result = {}
-    for k, v in fimp_collect.items():
-        fimp_result[k] = {'freq': len(fimp_collect[k]),
-                          'perm_imp_high': np.max(fimp_collect[k]),
-                          'perm_imp_avg': conf_interval(fimp_collect[k])[0],
-                          'perm_imp_low': np.min(fimp_collect[k]),
-                          'perm_imp_ci': conf_interval(fimp_collect[k])[1]
-                         }
+def feat_perm_imp_compute(fpis):
+    fpi_result = {}
+    for k, v in fpis.items():
+        fpi_result[gbl.all_feat_names[k]] = {'freq': len(fpis[k]),
+                                             'perm_imp_high': np.max(fpis[k]),
+                                             'perm_imp_avg': conf_interval(fpis[k])[0],
+                                             'perm_imp_low': np.min(fpis[k]),
+                                             'perm_imp_ci': conf_interval(fpis[k])[1]
+                                             }
 
-    return fimp_result, delete
+    return fpi_result

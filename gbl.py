@@ -68,7 +68,7 @@ non_linear_ = 'non_linear'
 clf = 'clf'
 reg = 'reg'
 
-grid_space_size = 10
+grid_space_size = 1
 
 param_grid_lsvc = list(ParameterSampler(svm_hyper_param_space('clf'), n_iter=grid_space_size))
 
@@ -190,4 +190,5 @@ clin_demog_feats = [all_feat_names.index(f) for f in clin_demog_feats_names]
 #get std of YBOCS
 YBOCS_std = np.std(pat_frame_stats.loc[:, 'YBOCS_reg'])
 
-
+fpis_clf = {}
+fpis_reg = {}
