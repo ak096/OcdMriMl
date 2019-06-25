@@ -89,49 +89,78 @@ param_grid_gbe = list(ParameterSampler(gbe_hyper_param_space(), n_iter=grid_spac
 # param_grid_xgbr = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
 
 # Hoexter et al 2013 (CSTC)
-# volumetric data:
-# right rostral anteriorcingulate
-# left rostral anteriorcingulate
-# right thalamus
-# left thalamus
-# right medial orbitofrontal
-# right lateral orbitofrontal
-# left medial orbitofrontal
-# left lateral orbitofrontal
-# right accumbens area (?)
-# right pallidum
-# right putamen
-# right caudate
-# left accumbens area (?)
-# left pallidum
-# left putamen
-# left caudate
+# volumetric data xlh/rh:
+## cortical
+# rostral anteriorcingulate
+# medial orbitofrontal
+# lateral orbitofrontal
+## subcortical
+# thalamus
+# accumbens area (no vol. available)
+# pallidum
+# putamen
+# caudate
+
 
 hoexter_feats_Desikan_names = [
-                        'lh_rostralanteriorcingulate_volume**aparc',
-                        'rh_rostralanteriorcingulate_volume**aparc',
+                                #LEFT
+                                #cortical
+                                'lh_rostralanteriorcingulate_volume**Desi.',
+                                'lh_medialorbitofrontal_volume**Desi.',
+                                'lh_lateralorbitofrontal_volume**Desi.',
+                                #sub-cortical
+                                'Left-Thalamus-Proper_volume',
+                                'Left-Accumbens-area',
+                                'Left-Pallidum_volume',
+                                'Left-Putamen_volume',
+                                'Left-Caudate_volume',
 
-                        'Right-Thalamus-Proper_volume',
-                        'Left-Thalamus-Proper_volume',
+                                #RIGHT
+                                #cortical
+                                'rh_rostralanteriorcingulate_volume**Desi.',
+                                'rh_medialorbitofrontal_volume**Desi.',
+                                'rh_lateralorbitofrontal_volume**Desi.',
+                                #sub-cortical
+                                'Right-Thalamus-Proper_volume',
+                                'Right-Accumbens-area',
+                                'Right-Pallidum_volume',
+                                'Right-Putamen_volume',
+                                'Right-Caudate_volume'
+                              ]
 
-                        'rh_medialorbitofrontal_volume**aparc',
-                        'lh_medialorbitofrontal_volume**aparc',
+hoexter_feats_Destrieux_names = [
+                                #LEFT
+                                #cortical
+                                'lh_G&S_cingul-Ant_volume**Dest.09s',
+                                'lh_G&S_cingul-Mid-Ant_volume**Dest.09s',
+                                'lh_G_front_inf-Orbital_volume**Dest.09s',
+                                'lh_G_orbital_volume**Dest.09s',
+                                'lh_S_orbital-H_Shaped_volume**Dest.09s',
+                                'lh_S_orbital_lateral_volume**Dest.09s',
+                                'lh_S_suborbital_volume**Dest.09s',
+                                #sub-cortical
+                                'Left-Thalamus-Proper_volume',
+                                'Left-Accumbens-area',
+                                'Left-Pallidum_volume',
+                                'Left-Putamen_volume',
+                                'Left-Caudate_volume',
 
-                        'rh_lateralorbitofrontal_volume**aparc',
-                        'lh_lateralorbitofrontal_volume**aparc',
-
-                        'Left-Accumbens-area',
-                        'Right-Accumbens-area',
-
-                        'Left-Pallidum_volume',
-                        'Right-Pallidum_volume',
-
-                        'Right-Putamen_volume',
-                        'Left-Putamen_volume',
-
-                        'Left-Caudate_volume',
-                        'Right-Caudate_volume'
-                        ]
+                                #RIGHT
+                                #cortical
+                                'rh_G&S_cingul-Ant_volume**Dest.09s',
+                                'rh_G&S_cingul-Mid-Ant_volume**Dest.09s',
+                                'rh_G_front_inf-Orbital_volume**Dest.09s',
+                                'rh_G_orbital_volume**Dest.09s',
+                                'rh_S_orbital-H_Shaped_volume**Dest.09s',
+                                'rh_S_orbital_lateral_volume**Dest.09s',
+                                'rh_S_suborbital_volume**Dest.09s',
+                                #sub-cortical
+                                'Right-Thalamus-Proper_volume',
+                                'Right-Accumbens-area',
+                                'Right-Pallidum_volume',
+                                'Right-Putamen_volume',
+                                'Right-Caudate_volume'
+                                ]
 
 # Boedhoe et al 2016 (Pallidum, Hippocampus)
 
@@ -141,6 +170,8 @@ boedhoe_feats_Desikan_names = [
                         'Left-Hippocampus_volume',
                         'Right-Hippocampus_volume'
                         ]
+
+boedhoe_feats_Destrieux_names = boedhoe_feats_Desikan_names
 
 # get data from FreeSurfer stats
 path_base = os.path.abspath('Desktop/FS_SUBJ_ALL').replace('PycharmProjects/OcdMriMl/', '')
@@ -193,7 +224,9 @@ all_feat_names = pat_frame.columns.tolist()
 pat_frame.columns = np.arange(len(pat_frame.columns.tolist()))
 
 hoexter_feats_Desikan = [all_feat_names.index(f) for f in hoexter_feats_Desikan_names]
+hoexter_feats_Destrieux = [all_feat_names.index(f) for f in hoexter_feats_Destrieux_names]
 boedhoe_feats_Desikan = [all_feat_names.index(f) for f in boedhoe_feats_Desikan_names]
+boedhoe_feats_Destrieux = [all_feat_names.index(f) for f in boedhoe_feats_Destrieux_names]
 
 FreeSurfer_feats = [all_feat_names.index(f) for f in FreeSurfer_feats_names]
 clin_demog_feats = [all_feat_names.index(f) for f in clin_demog_feats_names]
@@ -203,3 +236,11 @@ YBOCS_std = np.std(pat_frame_stats.loc[:, 'YBOCS_reg'])
 
 fpis_clf = {}
 fpis_reg = {}
+
+h_b_expert_feats = {'Desikan': [hoexter_feats_Desikan, boedhoe_feats_Desikan],
+                    'Destrieux': [hoexter_feats_Destrieux, boedhoe_feats_Destrieux],
+                    'Both': [list(set(hoexter_feats_Desikan + hoexter_feats_Destrieux)),
+                             list(set(boedhoe_feats_Desikan + boedhoe_feats_Destrieux))]
+                    }
+
+# note: convention for fset naming: ...'_feats_names' for strings else just ...'_feats' for indices

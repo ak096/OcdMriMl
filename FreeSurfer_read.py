@@ -25,9 +25,9 @@ def FreeSurfer_data_collect(group, path_base):
             suffix = '_area'
         # 'thickness' sub-parameter NOT available in sub-cortical (aseg) measurements
         elif '.aparc.a2009s.' in table_file.name:
-            suffix = '**a2009s'
+            suffix = '**Dest.09s'
         else:
-            suffix = '**aparc'
+            suffix = '**Desi.'
         # '_area', '_volume', '_thickness' already suffixed in aparc(.a2009s.) feature names
 
         table.columns = [n + suffix if n not in repeats else n for n in table.columns]

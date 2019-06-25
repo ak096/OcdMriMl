@@ -77,6 +77,7 @@ for idx, tgt_name in enumerate(targets):
     # univariate feature pool computation:
     zeit = time.time()
     feat_filter = []#['**a2009s']
+    hoexter_feats, boedhoe_feats = gbl.h_b_expert_feats['Both']
     t_frame, f_frame, mi_frame, feat_pool_counts_frame, feat_pool_set = feat_pool_compute(tgt_name=tgt_name, subs=subs,
                                                                                           feat_filter=feat_filter)
     feat_pool_set_num = len(feat_pool_set)
@@ -149,9 +150,9 @@ for idx, tgt_name in enumerate(targets):
             fsets_count += 1
             fset_dict['fset_' + str(fsets_count)] = fsel
         fsets_count += 1
-        fset_dict['boedhoe_' + str(fsets_count)] = gbl.boedhoe_feats_Desikan
+        fset_dict['hoexter_' + str(fsets_count)] = hoexter_feats
         fsets_count += 1
-        fset_dict['hoexter_' + str(fsets_count)] = gbl.hoexter_feats_Desikan
+        fset_dict['boedhoe_' + str(fsets_count)] = boedhoe_feats
         # train predict loop for each feat set
         #for fset, fset_results in all_tgt_results[tgt_name][est_type].items():
         for fset, fset_list in fset_dict.items():
@@ -240,7 +241,7 @@ feat_perm_imp_results_reg_frame = pd.DataFrame().from_dict(fpi_results_reg_dict)
 # SAVE RESULTS
 print('SAVING RESULTS')
 
-exp_description = 'notatlas_{}_gridpoints_{} '.format(feat_filter.pop(), gbl.grid_space_size)
+exp_description = 'notatlas_{}_gridpoints_{}.xlsx'.format(feat_filter.pop(), gbl.grid_space_size)
 
 
 # write prediction results to excel
