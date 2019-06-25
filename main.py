@@ -58,6 +58,10 @@ fsets_results_reg_frame = pd.DataFrame(index=fsets_results_frame_idx)
 fsets_results_reg_dict = {}
 fsets_names_reg_frame = pd.DataFrame()
 
+# settings for experiment
+atlas = 'Both' #'Desikan' 'Destrieux'
+gbl.grid_space_size = 20
+
 for idx, tgt_name in enumerate(targets):
 
     if '_ROS' in tgt_name:
@@ -74,12 +78,9 @@ for idx, tgt_name in enumerate(targets):
     #n = 0
     #norm = gbl.normType_list[n]
 
-    # settings for experiment
-    feat_filter = []  # ['**a2009s']
-    hoexter_fset, boedhoe_fset = gbl.h_b_expert_fsets['Both']
-
     # univariate feature pool computation:
     zeit = time.time()
+    feat_filter = gbl.atlas_dict[atlas]
     t_frame, f_frame, mi_frame, feat_pool_counts_frame, feat_pool_set = feat_pool_compute(tgt_name=tgt_name, subs=subs,
                                                                                           feat_filter=feat_filter)
     feat_pool_set_num = len(feat_pool_set)
@@ -151,6 +152,8 @@ for idx, tgt_name in enumerate(targets):
         for fsel in feat_sels:
             fsets_count += 1
             fset_dict['fset_' + str(fsets_count)] = fsel
+
+        hoexter_fset, boedhoe_fset = gbl.h_b_expert_fsets[atlas]
         fsets_count += 1
         fset_dict['hoexter_' + str(fsets_count)] = hoexter_fset
         fsets_count += 1
@@ -243,7 +246,7 @@ feat_perm_imp_results_reg_frame = pd.DataFrame().from_dict(fpi_results_reg_dict)
 # SAVE RESULTS
 print('SAVING RESULTS')
 
-exp_description = 'notatlas_{}_gridpoints_{}.xlsx'.format(feat_filter.pop(), gbl.grid_space_size)
+exp_description = 'atlas_{}_gridpoints_{}.xlsx'.format(atlas, gbl.grid_space_size)
 
 
 # write prediction results to excel

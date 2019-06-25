@@ -263,5 +263,6 @@ h_b_expert_fsets = {'Desikan': [hoexter_Desikan_feats + _hoexter_subcortical_fea
                     'Both': [hoexter_Desikan_feats + hoexter_Destrieux_feats + _hoexter_subcortical_feats,
                              boedhoe_Desikan_feats + boedhoe_Destrieux_feats + _boedhoe_subcortical_feats]
                     }
+atlas_dict = {'Desikan': ['**Desi.'], 'Destrieux': ['**Dest.09s'], 'Both': []}
 
 # note: convention for fset naming: ...'_feats_names' for strings else just ...'_feats' for indices
