@@ -77,7 +77,7 @@ for idx, tgt_name in enumerate(targets):
     # univariate feature pool computation:
     zeit = time.time()
     feat_filter = []#['**a2009s']
-    hoexter_feats, boedhoe_feats = gbl.h_b_expert_feats['Both']
+    hoexter_feats, boedhoe_feats = gbl.h_b_expert_fsets['Both']
     t_frame, f_frame, mi_frame, feat_pool_counts_frame, feat_pool_set = feat_pool_compute(tgt_name=tgt_name, subs=subs,
                                                                                           feat_filter=feat_filter)
     feat_pool_set_num = len(feat_pool_set)
@@ -105,7 +105,7 @@ for idx, tgt_name in enumerate(targets):
             #scoring = clf_scorer.accuracy
     if subs.tgt_task is gbl.reg:
         scoring = reg_scorer.neg_mean_absolute_error
-        thresh = -gbl.YBOCS_std
+        thresh = -gbl.YBOCS_reg_std
 
     # linear non-linear loop
     iteration = {gbl.linear_: {'params': lsvm_params},
