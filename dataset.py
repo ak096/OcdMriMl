@@ -3,7 +3,7 @@ from copy import copy
 
 import pandas as pd
 import numpy as np
-from imblearn.over_sampling import RandomOverSampler, SVMSMOTE
+from imblearn.over_sampling import RandomOverSampler, SMOTE
 
 from scale import scale, test_set_scale
 import gbl
@@ -104,8 +104,8 @@ class Subs:
                 return
             elif self.over_sampler == 'ROS':
                 o_sampler = RandomOverSampler(random_state=random.randint(1, 101))
-            elif self.over_sampler == 'SVMSMOTE':
-                o_sampler = SVMSMOTE(random_state=random.randint(1, 101))
+            elif self.over_sampler == 'SMOTE':
+                o_sampler = SMOTE(random_state=random.randint(1, 101))
             else:
                 print('%s: over_sampler not supported' % self.tgt_name)
                 return

@@ -12,7 +12,7 @@ from sklearn.exceptions import ConvergenceWarning
 
 #from pickling import *
 from feat_pool_univar import feat_pool_compute
-from feat_selection_ml import grid_rfe_cv, freq_item_sets_compute, feat_perm_imp_compute
+from feat_selection_ml import grid_rfe_cv, freq_item_sets_compute, feat_perm_imp_compute, largest_common_subsets
 from dataset import Subs
 from results import update_results #, FeatSetResults
 from train_predict import train, pred
@@ -26,15 +26,15 @@ if not sys.warnoptions:
     warnings.simplefilter("ignore")
     os.environ["PYTHONWARNINGS"] = "ignore" # Also affect subprocesses
 
-sys.setrecursionlimit(1500)
-resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+sys.setrecursionlimit(10**8)
+#resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
 # seed = 7
 # np.random.seed(seed)
 
 targets = [
-           #'YBOCS_reg',
-           #'YBOCS_class2',
+           'YBOCS_reg',
+           'YBOCS_class2',
             #'obs_class3',
             #'com_class3',
            'YBOCS_class3',
@@ -46,37 +46,39 @@ targets = [
 clf_scorer = ClfScorer()
 reg_scorer = RegScorer()
 
-fsets_count = 1
+fsets_count = 0
 
 fsets_results_frame_idx = ['freq', 'pred_best', 'tgt_best', 'est_type_best', 'pred_avg', 'pred_ci']
 
-all_fsets_results_clf_frame = pd.DataFrame(index=fsets_results_frame_idx)
-all_fsets_results_clf_dict = {}
+fsets_results_clf_frame = pd.DataFrame(index=fsets_results_frame_idx)
+fsets_results_clf_dict = {}
+fsets_names_clf_frame = pd.DataFrame()
 
-all_fsets_results_reg_frame = pd.DataFrame(index=fsets_results_frame_idx)
-all_fsets_results_reg_dict = {}
-
+fsets_results_reg_frame = pd.DataFrame(index=fsets_results_frame_idx)
+fsets_results_reg_dict = {}
+fsets_names_reg_frame = pd.DataFrame()
 
 for idx, tgt_name in enumerate(targets):
 
     if '_ROS' in tgt_name:
         subs.resample(over_sampler='ROS')
-    elif '_SVMSMOTE' in tgt_name:
-        subs.resample(over_sampler='SVMSMOTE')
+    elif '_SMOTE' in tgt_name:
+        subs.resample(over_sampler='SMOTE')
     else:
         print('%s: initialize dataset (subs): ' % (tgt_name))
         subs = Subs(tgt_name=tgt_name, test_size=0.15)
         if subs.imbalanced_classes:
             targets.insert(idx+1, tgt_name + '_ROS')
-            targets.insert(idx+2, tgt_name + '_SVMSMOTE')
+            targets.insert(idx+2, tgt_name + '_SMOTE')
 
     n = 0
     norm = gbl.normType_list[n]
 
     # univariate feature pool computation:
     zeit = time.time()
-    t_frame, f_frame, mi_frame, feat_pool_counts_frame, feat_pool_set = feat_pool_compute(tgt_name, subs,
-                                                                                          feat_filter=[])
+    feat_filter = []#['**a2009s']
+    t_frame, f_frame, mi_frame, feat_pool_counts_frame, feat_pool_set = feat_pool_compute(tgt_name=tgt_name, subs=subs,
+                                                                                          feat_filter=feat_filter)
     feat_pool_set_num = len(feat_pool_set)
     # all_tgt_results[tgt_name] = {
     #                             #'t_frame': t_frame.transpose(),
@@ -94,15 +96,15 @@ for idx, tgt_name in enumerate(targets):
     xgb_params = {}
     scoring = None
     thresh = None
-    if subs.tgt_task is 'clf':
+    if subs.tgt_task is gbl.clf:
         scoring = clf_scorer.recall_weighted
         thresh = 0.5
         if subs.resampled:
             lsvm_params.update({'class_weight': None})
             #scoring = clf_scorer.accuracy
-    if subs.tgt_task is 'reg':
+    if subs.tgt_task is gbl.reg:
         scoring = reg_scorer.neg_mean_absolute_error
-        thres = gbl.YBOCS_std
+        thresh = -gbl.YBOCS_std
 
     # linear non-linear loop
     iteration = {gbl.linear_: {'params': lsvm_params},
@@ -114,7 +116,7 @@ for idx, tgt_name in enumerate(targets):
         zeit = time.time()
         print('%s/%s: RFECV starting with feat pool:' % (tgt_name, est_type), feat_pool_set_num)
 
-        n_min_feat_rfecv = 5
+        n_min_feat_rfecv = 10
         n_max_feat_rfecv = None
         # grid point rfecv loop
         feat_sels_rfecv = grid_rfe_cv(tgt_name=tgt_name, est_type=est_type, task=subs.tgt_task, feat_pool=feat_pool_set,
@@ -123,13 +125,16 @@ for idx, tgt_name in enumerate(targets):
                                       n_max_feat=n_max_feat_rfecv, params=params['params'], scoring=scoring)
 
         print('%s/%s: RFECV took %.2f sec' % (tgt_name, est_type, time.time() - zeit))
-        # frequent item set mining
-        print('%s/%s: FIS starting' % (tgt_name, est_type))
-        freq_item_sets_list = freq_item_sets_compute(feat_sels_rfecv, min_sup=0.90)
-        #freq_item_sets_list = [fis for fis in freq_item_sets_list if len(fis) >= 2]
-        print('%s/%s: FIS resulted in %d sets' % (tgt_name, est_type, len(freq_item_sets_list)))
-
-        feat_sels = freq_item_sets_list
+        # # frequent item set mining
+        # print('%s/%s: FIS starting' % (tgt_name, est_type))
+        # freq_item_sets_list = freq_item_sets_compute(feat_sels_rfecv, min_sup=0.90)
+        #
+        # print('%s/%s: FIS resulted in %d sets' % (tgt_name, est_type, len(freq_item_sets_list)))
+        # largest common subsets
+        print('%s/%s: LCS starting' % (tgt_name, est_type))
+        lcs_list = largest_common_subsets(dataset=feat_sels_rfecv, min_sup=0.90)
+        print('%s/%s: LCS resulted in %d sets' % (tgt_name, est_type, len(lcs_list)))
+        feat_sels = lcs_list
 
         # naming convention/concept : feat_selections until put into data structure as feature sets
         # (along with hoexter, boedhoe)
@@ -141,8 +146,9 @@ for idx, tgt_name in enumerate(targets):
         # all_tgt_results[tgt_name][est_type]['hoexter_' + str(fsets_count)] = FeatSetResults(gbl.hoexter_feats_Desikan)
         fset_dict = {}
         for fsel in feat_sels:
-            fset_dict['fset_' + str(fsets_count)] = fsel
             fsets_count += 1
+            fset_dict['fset_' + str(fsets_count)] = fsel
+        fsets_count += 1
         fset_dict['boedhoe_' + str(fsets_count)] = gbl.boedhoe_feats_Desikan
         fsets_count += 1
         fset_dict['hoexter_' + str(fsets_count)] = gbl.hoexter_feats_Desikan
@@ -188,7 +194,7 @@ for idx, tgt_name in enumerate(targets):
             psb, pfb, eb = tp
             print('%s/%s/%s/%d: found best pred score:' % (tgt_name, est_type, fset, fsets_count), psb)
             if psb <= thresh:
-                print('%s/%s/%s/%d: skipping:' % (tgt_name, est_type, fset, fsets_count))
+                print('%s/%s/%s/%d: below thresh, skipping update' % (tgt_name, est_type, fset, fsets_count))
             else:
 
                 fset_results = {'pred_score_best': psb, 'pred_frame_best': pfb, 'fset_list': fset_list, 'est_best': eb}
@@ -196,25 +202,32 @@ for idx, tgt_name in enumerate(targets):
                     #fset_results.sort_prune_pred(pred_score_thresh=0.5)
                     # print('%s/%s/%s/%d: sorted and pruned to:' % (tgt_name, est_type, fset, fsets_count),
                     #       fset_results.data['pred_scores'])
-                    all_fsets_results_clf_frame, all_fsets_results_clf_dict = update_results(tgt_name, est_type, fsets_count,
-                                                                                             fset, fset_results,
-                                                                                             all_fsets_results_clf_frame,
-                                                                                             all_fsets_results_clf_dict)
+                    fsets_results_clf_frame, \
+                    fsets_results_clf_dict, \
+                    fsets_names_clf_frame = update_results(tgt_name, est_type, fsets_count, fset, fset_results,
+                                                           fsets_results_clf_frame,
+                                                           fsets_results_clf_dict,
+                                                           fsets_names_clf_frame)
                 elif subs.tgt_task is gbl.reg:
                     #fset_results.sort_prune_pred(pred_score_thresh=-gbl.YBOCS_std)
                     #print('%s/%s/%s/%d: sorted and pruned to:' % (tgt_name, est_type, fset, fsets_count),
                     #      fset_results.data['pred_scores'])
-                    all_fsets_results_reg_frame, all_fsets_results_reg_dict = update_results(tgt_name, est_type, fsets_count,
-                                                                                             fset, fset_results,
-                                                                                             all_fsets_results_reg_frame,
-                                                                                             all_fsets_results_reg_dict)
+                    fsets_results_reg_frame, \
+                    fsets_results_reg_dict, \
+                    fsets_names_reg_frame = update_results(tgt_name, est_type, fsets_count, fset, fset_results,
+                                                           fsets_results_reg_frame,
+                                                           fsets_results_reg_dict,
+                                                           fsets_names_reg_frame)
 
             print()
-
+            #clear cache due to memory errors
+            ests, train_scores, pred_scores, pred_frames = [None, None, None, None]
             # end train predict loop for each feat set
-
+        # clear cache
+        feat_sels_rfecv = None
         # end linear non-linear loop
-
+    #clear cache for tgt loop
+    #subs = None
     # end tgt loop
 fpi_results_clf_dict = feat_perm_imp_compute(gbl.fpis_clf)
 fpi_results_reg_dict = feat_perm_imp_compute(gbl.fpis_reg)
@@ -224,24 +237,26 @@ feat_perm_imp_results_clf_frame = pd.DataFrame().from_dict(fpi_results_clf_dict)
 feat_perm_imp_results_reg_frame = pd.DataFrame().from_dict(fpi_results_reg_dict)
 
 
-#
-#
-#
-# # SAVE RESULTS
-# print('SAVING RESULTS')
+# SAVE RESULTS
+print('SAVING RESULTS')
 
-# exp_description = '**balRandTest'+str(t_s)+'_RegTrainRest_ClfTrain' + over_samp_names[o_s] + '_' + norm + '_' \
-#                   + reg_scorers_names[r_sc] + '_' + clf_scorers_names[c_sc] + '_' + \
-#                   'cvFolds' + str(cv_folds) + \
-#                   '**t_allRegTrain_DesikanThickVolFeats_TorP'
-#
-#
-# # write prediction results to excel
-# xlsx_name =
-#
-# writer = pd.ExcelWriter(xlsx_name)
-# feat_pool_counts_frame.to_excel(writer, 'feat_pool_counts')
-# writer.save()
-# print('SAVED %s' % xlsx_name)
+exp_description = 'notatlas_{}_gridpoints_{} '.format(feat_filter.pop(), gbl.grid_space_size)
+
+
+# write prediction results to excel
+xlsx_name = exp_description
+
+writer = pd.ExcelWriter(xlsx_name)
+fsets_results_clf_frame.to_excel(writer, 'fsets_results_clf')
+fsets_names_clf_frame.to_excel(writer, 'fsets_names_clf')
+feat_perm_imp_results_clf_frame.to_excel(writer, 'fimps_clf')
+
+fsets_results_reg_frame.to_excel(writer, 'fsets_results_reg')
+fsets_names_reg_frame.to_excel(writer, 'fsets_names_reg')
+feat_perm_imp_results_reg_frame.to_excel(writer, 'fimps_reg')
+
+
+writer.save()
+print('SAVED %s' % xlsx_name)
 
 print("TOTAL TIME %.2f" % (time.time()-start_time))

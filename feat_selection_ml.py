@@ -1,14 +1,16 @@
-from random import randint
-from collections import OrderedDict
+#from random import randint
+#from collections import OrderedDict
+from itertools import combinations
+
 import numpy as np
-import pandas as pd
+#import pandas as pd
 from sklearn.feature_selection import RFECV
 #from yellowbrick.features import RFECV
 #from mlxtend.frequent_patterns import apriori
 #from mlxtend.preprocessing import TransactionEncoder
 import pyfpgrowth
 import gbl
-from sys import getsizeof
+#from sys import getsizeof
 
 from train_predict import set_paramgrid_est, conf_interval
 
@@ -28,7 +30,7 @@ def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=
         est.set_params(**grid_point)
 
         sel = RFECV(est, min_features_to_select=n_min_feat, cv=cv_folds, n_jobs=-1, step=1, verbose=0, scoring=scoring)
-        sel.fit(X.loc[:, feat_pool], y)
+        sel.fit(X.loc[:, feat_pool].values, y.values)
 
         feat_sel = [feat_pool[i] for i in np.where(sel.support_)[0]]
         print('%s/%s: RFECV %d/%d computed %d feats' % (tgt_name, est_type, idx+1, len(param_grid), len(feat_sel)))
@@ -40,16 +42,26 @@ def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=
 
 
 def freq_item_sets_compute(dataset, min_sup=1.0):
-    freq_item_sets = {}
-    type(dataset[0][0])
-    getsizeof(dataset[0][0])
+
+    dataset = [list(np.int16(ds)) for ds in dataset] # convert to int16s to save memory avoid MemoryError
+
     patterns = pyfpgrowth.find_frequent_patterns(dataset, round(min_sup*len(dataset)))
     if len(patterns) > 0:
-        for k, v in patterns.items():
-            freq_item_sets.setdefault(len(k), []).append(list(k)) #keys are length of sets
-        max_key = max(freq_item_sets, key=int)
-        print('%d freq item sets of len %d' % (len(freq_item_sets[max_key]), max_key))
-        return freq_item_sets[max_key]
+        # sets of largest size
+        # for k, v in patterns.items():
+        #     freq_item_sets.setdefault(len(k), []).append(list(k)) #keys are length of sets
+        # max_key = max(freq_item_sets, key=int)
+        # print('%d freq item sets of len %d' % (len(freq_item_sets[max_key]), max_key))
+        # return freq_item_sets[max_key]
+        # all maximum size unique subsets
+        del_keys = []
+        for k0 in patterns.keys():
+            for k1 in patterns.keys():
+                if set(k0) != set(k1):
+                    if set(k0).issubset(set(k1)):
+                        del_keys.append(k0)
+        freq_item_sets = [list(s) for s in patterns.keys() if s not in del_keys]
+        return freq_item_sets
     else:
         return dataset
 
@@ -75,3 +87,26 @@ def feat_perm_imp_compute(fpis):
                                              }
 
     return fpi_result
+
+
+def largest_common_subsets(dataset, min_sup=1.0):
+    dataset = [list(np.int16(ds)) for ds in dataset]  # convert to int16s to save memory avoid MemoryError
+    lcs_list = []
+    smallest_num_sets = round(len(dataset)*min_sup)
+    for num in np.arange(smallest_num_sets, len(dataset)+1, 1):
+        print('finding all combis of size: %d' % num)
+        subset_idxs = list(combinations(np.arange(len(dataset)), num))
+        print('combis found: %d' % len(subset_idxs))
+        for i, sis in enumerate(subset_idxs):
+            dataset_sub = [set(dataset[si]) for si in sis]
+            lcs = set.intersection(*dataset_sub)
+            #print('combi: %d/%d lcs size: %d' % (i, len(subset_idxs)-1, len(lcs)))
+            if len(lcs):
+                if list(lcs) not in lcs_list:
+                    lcs_list.append(list(lcs))
+                    print('updating lcs list with lcs of size: %d' % len(lcs))
+                else:
+                    print('skipping lcs list')
+    if not lcs_list:
+        print('lcs list is empty!!!!!!!!!!!!!!!!!!')
+    return lcs_list

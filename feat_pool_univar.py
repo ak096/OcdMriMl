@@ -8,20 +8,20 @@ from sklearn.feature_selection import f_classif, f_regression, mutual_info_class
 import gbl
 
 
-def check_feat_filter(feat_filter):
+def check_feat_filter(tgt_name, feat_filter):
     if not feat_filter:
         feat_list = gbl.FreeSurfer_feats
     else:
-        feat_list = [ft for ft in gbl.FreeSurfer_feats if any(x in ft for x in feat_filter)]
+        feat_list = [ft for ft in gbl.FreeSurfer_feats_names if not any(x in ft for x in feat_filter)]
+        feat_list = [gbl.all_feat_names.index(ft) for ft in feat_list]
+    print('%s: FreeSurfer feats.: %d' % (tgt_name, len(feat_list)))
     return feat_list
 
 
 feat_max = 50
 
 
-def t_frame_compute(frame_a, frame_b, feat_filter=[]):
-
-    feat_list = check_feat_filter(feat_filter)
+def t_frame_compute(frame_a, frame_b, feat_list):
 
     # t_test per feature
     t_frame = pd.DataFrame(index=['t_stat', 't_stat_abs', 'p_val', 'p_val_abs'], columns=feat_list)
@@ -50,9 +50,7 @@ def t_frame_compute(frame_a, frame_b, feat_filter=[]):
     return t_frame
 
 
-def f_frame_compute(frame, y_tgt, task, feat_filter=[]):
-
-    feat_list = check_feat_filter(feat_filter)
+def f_frame_compute(frame, y_tgt, task, feat_list):
 
     frame = frame.loc[:, feat_list]
     if task == 'clf':
@@ -76,9 +74,7 @@ def f_frame_compute(frame, y_tgt, task, feat_filter=[]):
     return f_frame
 
 
-def mi_frame_compute(frame, y_tgt, task, feat_filter=[]):
-
-    feat_list = check_feat_filter(feat_filter)
+def mi_frame_compute(frame, y_tgt, task, feat_list):
 
     frame = frame.loc[:, feat_list]
     if task == 'clf':
@@ -99,7 +95,9 @@ def mi_frame_compute(frame, y_tgt, task, feat_filter=[]):
     return mi_frame
 
 
-def feat_pool_compute(tgt_name, subs, feat_filter=[]):
+def feat_pool_compute(tgt_name, subs, feat_filter):
+
+    feat_list = check_feat_filter(tgt_name, feat_filter)
 
     # compute t_feats
     if subs.resampled:  # use .iloc
@@ -109,20 +107,20 @@ def feat_pool_compute(tgt_name, subs, feat_filter=[]):
         a = subs.pat_frame_train.loc[subs.pat_names_train_bins[subs.bin_keys[0]], :]
         b = subs.pat_frame_train.loc[subs.pat_names_train_bins[subs.bin_keys[-1]], :]
 
-    t_frame = t_frame_compute(a, b, feat_filter=[])  # ['thickness', 'volume'])
+    t_frame = t_frame_compute(frame_a=a, frame_b=b, feat_list=feat_list)  # ['thickness', 'volume'])
     t_feats = t_frame.columns.tolist()
     t_feats_num = len(t_feats)
     print('%s: computed %d T feats' % (tgt_name, t_feats_num))
 
     # compute f_feats
     f_frame = f_frame_compute(frame=subs.pat_frame_train, y_tgt=subs.pat_frame_train_y,
-                              task=subs.tgt_task, feat_filter=[])
+                              task=subs.tgt_task, feat_list=feat_list)
     f_feats = f_frame.columns.tolist()
     f_feats_num = len(f_feats)
     print('%s: computed %d F feats' % (tgt_name, f_feats_num))
     # compute mi_feats
     mi_frame = mi_frame_compute(frame=subs.pat_frame_train, y_tgt=subs.pat_frame_train_y,
-                                task=subs.tgt_task, feat_filter=[])
+                                task=subs.tgt_task, feat_list=feat_list)
     mi_feats = mi_frame.columns.tolist()
     mi_feats_num = len(mi_feats)
     print('%s: computed %d MI feats' % (tgt_name, mi_feats_num))

@@ -13,7 +13,7 @@ pd.options.mode.use_inf_as_na = True
 
 def svm_hyper_param_space(est_class):
     svm_hps = {
-               'C': np.arange(1, 1001, 99),
+               'C': [0.001, 0.01, 0.1, 1, 10, 50, 100, 250, 400, 500, 600, 800, 1000, 2000, 5000],
                }
     if est_class == 'reg':
         svm_hps['epsilon'] = [0.3, 0.5, 0.7, 0.9]
@@ -30,11 +30,12 @@ def xgb_hyper_param_space():
               #1.set init values, comp less expensive for initial look
               #for highly imbalanced classes
               'scale_pos_weight': [1],
+
               #2.most impact these two
               'min_child_weight': [1, 2, 3, 4, 5, 6],  #default:1
-              "max_depth": [3, 4, 5, 6, 7, 8], # default:6
+              'max_depth': [3, 4, 5, 6, 7, 8], # default:6
               #3.carry on with gamma
-              "min_split_loss": [0, 0.1, 0.2, 0.3],  # alias:gamma, default:0 should be tuned according to loss function
+              "min_split_loss": [0, 0.1, 0.2, 0.3, 1, 5, 15, 50],  # alias:gamma, default:0 should be tuned according to loss function
               #4.these two around 0.8
               "subsample": [0.5, 0.6, 0.7, 0.8, 0.9],  # default
               'colsample_bytree': [0.5, 0.6, 0.7, 0.8, 0.9],
@@ -42,8 +43,16 @@ def xgb_hyper_param_space():
               'reg_lambda': [1], #alias:lambda (L2), default:1
               'reg_alpha': [0, 0.001, 0.005, 0.01, 0.05], #alias:alpha (L1), default:0
               #6.decrease learning rate and increase number of trees
-              "learning_rate": [0.1, 0.2],  # alias:eta, default:0.3
+              "learning_rate": [0.1, 0.2, 0.3, 0.4],  # alias:eta, default:0.3
               'n_estimators': np.arange(100, 701, 100),  # default:100
+            }
+
+
+def gbe_hyper_param_space():
+    return {'n_estimators': np.arange(100, 701, 100),
+            'max_depth': [3, 4, 5, 6, 7, 8],
+            'learning_rate': np.arange(0.1, 1.1, 0.1),
+            'subsample': np.arange(0.5, 1.0, 0.1),  # default
             }
 
 
@@ -68,13 +77,15 @@ non_linear_ = 'non_linear'
 clf = 'clf'
 reg = 'reg'
 
-grid_space_size = 1
+grid_space_size = 20
 
 param_grid_lsvc = list(ParameterSampler(svm_hyper_param_space('clf'), n_iter=grid_space_size))
 
 param_grid_lsvr = list(ParameterSampler(svm_hyper_param_space('reg'), n_iter=grid_space_size))
 
 param_grid_xgb = list(ParameterSampler(xgb_hyper_param_space(), n_iter=grid_space_size))
+
+param_grid_gbe = list(ParameterSampler(gbe_hyper_param_space(), n_iter=grid_space_size))
 # param_grid_xgbr = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
 
 # Hoexter et al 2013 (CSTC)

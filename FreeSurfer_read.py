@@ -8,7 +8,7 @@ def FreeSurfer_data_collect(group, path_base):
     #subprocess.Popen(['/home/bran/PycharmProjects/OcdMriMl/bash_scripts/fs_gen_tables.sh %s' % group], \
     #                 shell=True, executable="/bin/bash")
     group_frame = pd.DataFrame()
-    repeats = ['BrainSegVolNotVent','eTIV', 'Right-Accumbens-area', 'Left-Accumbens-area']
+    repeats = ['BrainSegVolNotVent', 'eTIV', 'Right-Accumbens-area', 'Left-Accumbens-area']
     # concat fs table files into one data frame
     for table_file in os.scandir(path_base + '/' + group + '/' + group + '_tables/'):
         #print("reading %s" % table_file.path)

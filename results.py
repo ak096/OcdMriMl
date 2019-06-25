@@ -1,5 +1,5 @@
 import gbl
-
+import pandas as pd
 # class FeatSetResults():
 #     def __init__(self, fset_list):
 #         self.data = {
@@ -27,36 +27,40 @@ import gbl
 #         self.data['train_scores'] = [self.data['train_scores'][i] for i in idx]
 
 
-def update_results(tgt_name, est_type, fsets_count, curr_fset, curr_fset_results, all_fsets_results_frame, all_fsets_results_dict):
+def update_results(tgt_name, est_type, fsets_count, curr_fset, curr_fset_results, fsets_results_frame,
+                   fsets_results_dict, fsets_names_frame):
 
-    print('%s/%s/%s/%d: updating results:' % (tgt_name, est_type, curr_fset, fsets_count))
+    print('%s/%s/%s/%d: above thresh, updating results:' % (tgt_name, est_type, curr_fset, fsets_count))
     exists = False
-    for k, v in all_fsets_results_dict.items():
+    for k, v in fsets_results_dict.items():
         print('%s/%s/%s/%d: comparing to:' % (tgt_name, est_type, curr_fset, fsets_count), k)
         if set(v['fset_list']) == set(curr_fset_results['fset_list']) :
             exists = True
             print('%s/%s/%s/%d: update existing:' % (tgt_name, est_type, curr_fset, fsets_count), k)
-            all_fsets_results_frame.loc['freq', k] += 1
-            all_fsets_results_dict[k]['preds'].append(curr_fset_results['pred_score_best'])
-            if all_fsets_results_frame.loc['pred_best', k] < curr_fset_results['pred_score_best']:
-                all_fsets_results_frame.loc['pred_best', k] = curr_fset_results['pred_score_best']
-                all_fsets_results_frame.loc['tgt_best', k] = tgt_name
-                all_fsets_results_frame.loc['est_type_best', k] = est_type
+            fsets_results_frame.loc['freq', k] += 1
+            fsets_results_dict[k]['preds'].append(curr_fset_results['pred_score_best'])
+            if fsets_results_frame.loc['pred_best', k] < curr_fset_results['pred_score_best']:
+                fsets_results_frame.loc['pred_best', k] = curr_fset_results['pred_score_best']
+                fsets_results_frame.loc['tgt_best', k] = tgt_name
+                fsets_results_frame.loc['est_type_best', k] = est_type
 
-                all_fsets_results_dict[k].update({'est_best': curr_fset_results['est_best'],
+                fsets_results_dict[k].update({'est_best': curr_fset_results['est_best'],
                                                   'pred_frame_best': curr_fset_results['pred_frame_best']
-                                                  })
+                                              })
             break
     if not exists:  # add fset into results
         print('%s/%s/%s/%d: create new fset entry:' % (tgt_name, est_type, curr_fset, fsets_count), curr_fset)
-        all_fsets_results_frame[curr_fset] = [1, curr_fset_results['pred_score_best'], tgt_name, est_type,
-                                              -1, -1]
-        all_fsets_results_dict[curr_fset] = {'fset_list': curr_fset_results['fset_list'],
-                                             'fset_names_list': [gbl.all_feat_names[i] for i in
-                                                                 curr_fset_results['fset_list']],
-                                             'est_best': curr_fset_results['est_best'],
-                                             'pred_frame_best': curr_fset_results['pred_frame_best'],
-                                             'preds': [curr_fset_results['pred_score_best']]
-                                            }
-    return all_fsets_results_frame, all_fsets_results_dict
+        fsets_results_frame[curr_fset] = [1, curr_fset_results['pred_score_best'], tgt_name, est_type,
+                                          -1, -1]
+        fsets_results_dict[curr_fset] = {'fset_list': curr_fset_results['fset_list'],
+                                         'fset_names_list': [gbl.all_feat_names[i] for i in
+                                                             curr_fset_results['fset_list']],
+                                         'est_best': curr_fset_results['est_best'],
+                                         'pred_frame_best': curr_fset_results['pred_frame_best'],
+                                         'preds': [curr_fset_results['pred_score_best']]
+                                         }
+        fsets_names_frame = pd.concat([fsets_names_frame,
+                                       pd.DataFrame({curr_fset: sorted(fsets_results_dict[curr_fset]['fset_names_list'])})],
+                                      axis=1)
+    return fsets_results_frame, fsets_results_dict, fsets_names_frame
 

@@ -5,6 +5,7 @@ import pandas as pd
 from sklearn.metrics.scorer import get_scorer
 from sklearn.model_selection import cross_validate
 from sklearn.svm import LinearSVR, LinearSVC, SVC
+from sklearn.ensemble import GradientBoostingRegressor, GradientBoostingClassifier
 from xgboost import XGBRegressor, XGBClassifier
 from scipy.stats import sem, t
 from scipy import mean
@@ -23,11 +24,11 @@ def set_paramgrid_est(est_type, task):
             param_grid = gbl.param_grid_lsvr
             est = LinearSVR()
     elif est_type is gbl.non_linear_:
-        param_grid = gbl.param_grid_xgb
+        param_grid = gbl.param_grid_gbe #gbl.param_grid_xgb
         if task is gbl.clf:
-            est = XGBClassifier()
+            est = GradientBoostingClassifier() #XGBClassifier()
         elif task is gbl.reg:
-            est = XGBRegressor()
+            est = GradientBoostingRegressor() #XGBRegressor()
     return param_grid, est
 
 
