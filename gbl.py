@@ -113,7 +113,7 @@ _hoexter_subcortical_feats_names = [
     'Right-Accumbens-area',
     'Right-Pallidum_volume',
     'Right-Putamen_volume',
-    'Right-Caudate_volume'
+    'Right-Caudate_volume',
 ]
 
 hoexter_Desikan_feats_names = [
@@ -158,7 +158,7 @@ _boedhoe_subcortical_feats_names = [
     'Left-Hippocampus_volume',
     # RIGHT
     'Right-Pallidum_volume',
-    'Right-Hippocampus_volume'
+    'Right-Hippocampus_volume',
 ]
 
 boedhoe_Desikan_feats_names = [
@@ -168,7 +168,7 @@ boedhoe_Desikan_feats_names = [
     'lh_inferiorparietal_thickness**Desi.',
     # RIGHT
     'rh_transversetemporal_area**Desi.',
-    'rh_inferiorparietal_thickness**Desi.'
+    'rh_inferiorparietal_thickness**Desi.',
 ]
 
 #_boedhoe_Dest09s_parts = ['transverse', 'transv', 'temporal', 'temp', 'parietal', 'pariet']
@@ -183,7 +183,7 @@ boedhoe_Destrieux_feats_names = [
     # RIGHT
     'rh_G_temp_sup-G_T_transv_area**Dest.09s',
     'rh_S_temporal_transverse_area**Dest.09s',
-    'rh_S_subparietal_thickness**Dest.09s'
+    'rh_S_subparietal_thickness**Dest.09s',
     'rh_G_pariet_inf-Angular_thickness**Dest.09s',
     'rh_G_pariet_inf-Supramar_thickness**Dest.09s',
 ]
