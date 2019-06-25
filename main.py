@@ -71,13 +71,15 @@ for idx, tgt_name in enumerate(targets):
             targets.insert(idx+1, tgt_name + '_ROS')
             targets.insert(idx+2, tgt_name + '_SMOTE')
 
-    n = 0
-    norm = gbl.normType_list[n]
+    #n = 0
+    #norm = gbl.normType_list[n]
+
+    # settings for experiment
+    feat_filter = []  # ['**a2009s']
+    hoexter_fset, boedhoe_fset = gbl.h_b_expert_fsets['Both']
 
     # univariate feature pool computation:
     zeit = time.time()
-    feat_filter = []#['**a2009s']
-    hoexter_feats, boedhoe_feats = gbl.h_b_expert_fsets['Both']
     t_frame, f_frame, mi_frame, feat_pool_counts_frame, feat_pool_set = feat_pool_compute(tgt_name=tgt_name, subs=subs,
                                                                                           feat_filter=feat_filter)
     feat_pool_set_num = len(feat_pool_set)
@@ -150,9 +152,9 @@ for idx, tgt_name in enumerate(targets):
             fsets_count += 1
             fset_dict['fset_' + str(fsets_count)] = fsel
         fsets_count += 1
-        fset_dict['hoexter_' + str(fsets_count)] = hoexter_feats
+        fset_dict['hoexter_' + str(fsets_count)] = hoexter_fset
         fsets_count += 1
-        fset_dict['boedhoe_' + str(fsets_count)] = boedhoe_feats
+        fset_dict['boedhoe_' + str(fsets_count)] = boedhoe_fset
         # train predict loop for each feat set
         #for fset, fset_results in all_tgt_results[tgt_name][est_type].items():
         for fset, fset_list in fset_dict.items():
