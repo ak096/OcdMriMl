@@ -60,7 +60,7 @@ fsets_names_reg_frame = pd.DataFrame()
 
 # settings for experiment
 atlas = 'Both' #'Both' or 'Desikan' or 'Destrieux'
-#min_support = 10
+min_support = 0.8
 
 for idx, tgt_name in enumerate(targets):
 
@@ -136,8 +136,7 @@ for idx, tgt_name in enumerate(targets):
         # print('%s/%s: FIS resulted in %d sets' % (tgt_name, est_type, len(freq_item_sets_list)))
         # largest common subsets
         print('%s/%s: LCS starting' % (tgt_name, est_type))
-        min_support = round(0.5*len(feat_sels_rfecv))
-        lcs_list = largest_common_subsets(dataset=feat_sels_rfecv, min_sup=min_support)
+        lcs_list = largest_common_subsets(dataset=feat_sels_rfecv, min_sup=round(min_support*len(feat_sels_rfecv)))
         print('%s/%s: LCS resulted in %d sets' % (tgt_name, est_type, len(lcs_list)))
         feat_sels = lcs_list
 
