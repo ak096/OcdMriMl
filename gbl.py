@@ -112,29 +112,29 @@ grid_space_size = len(gbe_hypparam_grid)
 
 _hoexter_subcortical_feats_names = [
     # LEFT
-    'Left-Thalamus-Proper_volume',
-    'Left-Accumbens-area',
-    'Left-Pallidum_volume',
-    'Left-Putamen_volume',
-    'Left-Caudate_volume',
+    'Left-Thalamus-Proper_volume**SubCort',
+    'Left-Accumbens-area**SubCort',
+    'Left-Pallidum_volume**SubCort',
+    'Left-Putamen_volume**SubCort',
+    'Left-Caudate_volume**SubCort',
     # RIGHT
-    'Right-Thalamus-Proper_volume',
-    'Right-Accumbens-area',
-    'Right-Pallidum_volume',
-    'Right-Putamen_volume',
-    'Right-Caudate_volume',
+    'Right-Thalamus-Proper_volume**SubCort',
+    'Right-Accumbens-area**SubCort',
+    'Right-Pallidum_volume**SubCort',
+    'Right-Putamen_volume**SubCort',
+    'Right-Caudate_volume**SubCort',
 ]
 
 hoexter_Desikan_feats_names = [
     # from Desikan cortical parcellation atlas (gyri include sulci border limits)
     # LEFT
-    'lh_rostralanteriorcingulate_volume**Desi.',
-    'lh_medialorbitofrontal_volume**Desi.',
-    'lh_lateralorbitofrontal_volume**Desi.',
+    'lh_rostralanteriorcingulate_volume**Desi',
+    'lh_medialorbitofrontal_volume**Desi',
+    'lh_lateralorbitofrontal_volume**Desi',
     # RIGHT
-    'rh_rostralanteriorcingulate_volume**Desi.',
-    'rh_medialorbitofrontal_volume**Desi.',
-    'rh_lateralorbitofrontal_volume**Desi.',
+    'rh_rostralanteriorcingulate_volume**Desi',
+    'rh_medialorbitofrontal_volume**Desi',
+    'rh_lateralorbitofrontal_volume**Desi',
 
 ]
 #_hoexter_Dest09s_parts = ['cingulate', 'cingul', 'orbital', 'orbit']
@@ -163,21 +163,21 @@ hoexter_Destrieux_feats_names = [
 
 _boedhoe_subcortical_feats_names = [
     # LEFT
-    'Left-Pallidum_volume',
-    'Left-Hippocampus_volume',
+    'Left-Pallidum_volume**SubCort',
+    'Left-Hippocampus_volume**SubCort',
     # RIGHT
-    'Right-Pallidum_volume',
-    'Right-Hippocampus_volume',
+    'Right-Pallidum_volume**SubCort',
+    'Right-Hippocampus_volume**SubCort',
 ]
 
 boedhoe_Desikan_feats_names = [
     # Desikan cortical parcellation atlas (gyri include sulci border limits)
     # LEFT
-    'lh_transversetemporal_area**Desi.',
-    'lh_inferiorparietal_thickness**Desi.',
+    'lh_transversetemporal_area**Desi',
+    'lh_inferiorparietal_thickness**Desi',
     # RIGHT
-    'rh_transversetemporal_area**Desi.',
-    'rh_inferiorparietal_thickness**Desi.',
+    'rh_transversetemporal_area**Desi',
+    'rh_inferiorparietal_thickness**Desi',
 ]
 
 #_boedhoe_Dest09s_parts = ['transverse', 'transv', 'temporal', 'temp', 'parietal', 'pariet']

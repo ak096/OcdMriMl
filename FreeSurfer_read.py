@@ -43,7 +43,9 @@ def FreeSurfer_data_collect(group, path_base):
 
     # remove duplicates (specifically BrainSegVolNotVent and eTIV features)
     group_frame = group_frame.loc[:, ~group_frame.columns.duplicated()]
-
+    # add back suffix to singleton repeats
+    for r in repeats:
+        group_frame = group_frame.rename(columns={r: r+'**SubCort'})
     # sort by column name
     group_frame = group_frame.reindex(sorted(group_frame.columns), axis=1)
 
