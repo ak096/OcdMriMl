@@ -89,10 +89,11 @@ def feat_perm_imp_compute(fpis):
     return fpi_result
 
 
-def largest_common_subsets(dataset, min_sup=1.0):
+def largest_common_subsets(dataset, min_sup=10):
     dataset = [list(np.int16(ds)) for ds in dataset]  # convert to int16s to save memory avoid MemoryError
     lcs_list = []
-    smallest_num_sets = round(len(dataset)*min_sup)
+    #smallest_num_sets = round(len(dataset)*min_sup)
+    smallest_num_sets = min_sup
     for num in np.arange(smallest_num_sets, len(dataset)+1, 1):
         print('finding all combis of size: %d' % num)
         subset_idxs = list(combinations(np.arange(len(dataset)), num))

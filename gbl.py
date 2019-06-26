@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import pandas as pd
 import numpy as np
@@ -11,7 +12,7 @@ from gdrive import get_pat_stats
 pd.options.mode.use_inf_as_na = True
 
 
-def svm_hyper_param_space(est_class):
+def lsvm_hypparam_space(est_class):
     svm_hps = {
                'C': [0.001, 0.01, 0.1, 1, 10, 50, 100, 250, 400, 500, 600, 800, 1000, 2000, 5000],
                }
@@ -22,7 +23,7 @@ def svm_hyper_param_space(est_class):
     return svm_hps
 
 
-def xgb_hyper_param_space():
+def xgb_hypparam_space():
     return {  #learning task parameters : objective, eval, ...
               #'objective': ,
               #'eval_meas': ,
@@ -48,7 +49,7 @@ def xgb_hyper_param_space():
             }
 
 
-def gbe_hyper_param_space():
+def gbe_hypparam_space():
     return {'n_estimators': np.arange(100, 701, 100),
             'max_depth': [3, 4, 5, 6, 7, 8],
             'learning_rate': np.arange(0.1, 1.1, 0.1),
@@ -77,16 +78,23 @@ non_linear_ = 'non_linear'
 clf = 'clf'
 reg = 'reg'
 
-grid_space_size = 20
+with open('lsvc_hypparam_grid.pickle', 'rb') as handle:
+    lsvc_hypparam_grid = pickle.load(handle)
 
-param_grid_lsvc = list(ParameterSampler(svm_hyper_param_space('clf'), n_iter=grid_space_size))
 
-param_grid_lsvr = list(ParameterSampler(svm_hyper_param_space('reg'), n_iter=grid_space_size))
+with open('lsvr_hypparam_grid.pickle', 'rb') as handle:
+    lsvr_hypparam_grid = pickle.load(handle)
 
-param_grid_xgb = list(ParameterSampler(xgb_hyper_param_space(), n_iter=grid_space_size))
+with open('xgb_hypparam_grid.pickle', 'rb') as handle:
+    xgb_hypparam_grid = pickle.load(handle)
 
-param_grid_gbe = list(ParameterSampler(gbe_hyper_param_space(), n_iter=grid_space_size))
+
+with open('gbe_hypparam_grid.pickle', 'rb') as handle:
+    gbe_hypparam_grid = pickle.load(handle)
+
 # param_grid_xgbr = list(ParameterSampler(xgb_hyper_param_space(), n_iter=20))
+
+grid_space_size = len(gbe_hypparam_grid)
 
 ## Hoexter et al 2013 (CSTC)
 ## volumetric data x lh/rh:

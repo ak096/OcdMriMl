@@ -17,14 +17,14 @@ def set_paramgrid_est(est_type, task):
 
     if est_type is gbl.linear_:
         if task is gbl.clf:
-            param_grid = gbl.param_grid_lsvc
+            param_grid = gbl.lsvc_hypparam_grid
             est = LinearSVC()
             #est = SVC(kernel='linear', probability=True)
         elif task is gbl.reg:
-            param_grid = gbl.param_grid_lsvr
+            param_grid = gbl.lsvr_hypparam_grid
             est = LinearSVR()
     elif est_type is gbl.non_linear_:
-        param_grid = gbl.param_grid_gbe #gbl.param_grid_xgb
+        param_grid = gbl.gbe_hypparam_grid #gbl.param_grid_xgb
         if task is gbl.clf:
             est = GradientBoostingClassifier() #XGBClassifier()
         elif task is gbl.reg:
