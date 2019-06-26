@@ -20,16 +20,17 @@ def FreeSurfer_data_collect(group, path_base):
         # two main cases of features : aseg/wmparc for which sub-parameters lacks in name,
         #                              aparc(Desikan Atlas)/aparc.a2009s(Destreaux Atlas) which must be distinguished
         if any(s in table_file.name for s in ['.aseg.vol.', '.wmparc.vol.']):
-            suffix = '_volume'
+            suffix = '_volume**SubCort'
         elif '.aseg.area.' in table_file.name:
-            suffix = '_area'
+            suffix = '_area**SubCort'
         # 'thickness' sub-parameter NOT available in sub-cortical (aseg) measurements
         elif '.aparc.a2009s.' in table_file.name:
             suffix = '**Dest.09s'
         else:
-            suffix = '**Desi.'
+            suffix = '**Desi'
         # '_area', '_volume', '_thickness' already suffixed in aparc(.a2009s.) feature names
 
+        # suffixes have ** to make unique so no chance of feat name having it when filtering atlases
         table.columns = [n + suffix if n not in repeats else n for n in table.columns]
 
         table.columns = [s.replace('_and_', '&') for s in table.columns]

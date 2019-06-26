@@ -8,13 +8,14 @@ from sklearn.feature_selection import f_classif, f_regression, mutual_info_class
 import gbl
 
 
-def check_feat_filter(tgt_name, feat_filter):
-    if not feat_filter:
+def check_feat_filter(tgt_name, feat_picker):
+    if not feat_picker:
         feat_list = gbl.FreeSurfer_feats
     else:
-        feat_list = [ft for ft in gbl.FreeSurfer_feats_names if not any(x in ft for x in feat_filter)]
+        feat_picker.append('**SubCort')
+        feat_list = [ft for ft in gbl.FreeSurfer_feats_names if any(x in ft for x in feat_picker)]
         feat_list = [gbl.all_feat_names.index(ft) for ft in feat_list]
-    print('%s: FreeSurfer %s feats.: %d' % (tgt_name, feat_filter, len(feat_list)))
+    print('%s: FreeSurfer %s feats.: %d' % (tgt_name, feat_picker, len(feat_list)))
     return feat_list
 
 
@@ -95,9 +96,9 @@ def mi_frame_compute(frame, y_tgt, task, feat_list):
     return mi_frame
 
 
-def feat_pool_compute(tgt_name, subs, feat_filter):
+def feat_pool_compute(tgt_name, subs, feat_picker):
 
-    feat_list = check_feat_filter(tgt_name, feat_filter)
+    feat_list = check_feat_filter(tgt_name, feat_picker)
 
     # compute t_feats
     if subs.resampled:  # use .iloc

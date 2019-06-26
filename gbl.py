@@ -57,14 +57,15 @@ def gbe_hypparam_space():
             }
 
 
-def _add_rand_feats(frame):
-    # add some rand feat (randomly permuted features) to original data frame before train/test
-
-    rand_feats = list(np.random.choice(frame.columns.tolist(), n_rand_feat, replace=False))
-    for i in np.arange(n_rand_feat):
-        rand_feat_name = 'RANDOM_' + str(i) + '_' + rand_feats[i]
-        frame[rand_feat_name] = np.random.permutation(frame.loc[:, rand_feats[i]])
-    return frame
+def _add_rand_feats(frame, n_rand_feat):
+    # add randomly permuted features per atlas to original data frame before train/test
+    atlases = ['**SubCort', '**Desi', '**Dest.09s']
+    for a in atlases:
+        feats_names = list(np.random.choice([f for f in frame.columns.tolist() if a in f], n_rand_feat, replace=False))
+        for i in np.arange(n_rand_feat):
+            rand_feat_name = 'RANDOM_' + str(i) + '_' + feats_names[i]
+            frame[rand_feat_name] = np.random.permutation(frame.loc[:, feats_names[i]])
+        return frame
 # def init_globals():
 
 
@@ -228,8 +229,8 @@ print('PreProc: %d feats. removed: less than %.2f percent filled: %d to %d' %
 
 # add some random features (permuted original features)
 before = pat_frame.shape[1]
-n_rand_feat = 3
-pat_frame = _add_rand_feats(pat_frame)
+n_rand_feat = 2
+pat_frame = _add_rand_feats(pat_frame, n_rand_feat)
 after = pat_frame.shape[1]
 print('PreProc: %d feats. (rand.) added: %d to %d' % (n_rand_feat, before, after))
 
@@ -245,6 +246,7 @@ pat_frame = pd.concat([pat_frame, pat_frame_stats.loc[:, clin_demog_feats_names]
 
 all_feat_names = pat_frame.columns.tolist()
 
+# convert feat. names into feat. idxs
 pat_frame.columns = np.arange(len(pat_frame.columns.tolist()))
 
 _hoexter_subcortical_feats = [all_feat_names.index(f) for f in _hoexter_subcortical_feats_names]
@@ -268,9 +270,9 @@ h_b_expert_fsets = {'Desikan': [hoexter_Desikan_feats + _hoexter_subcortical_fea
                                 boedhoe_Desikan_feats + _boedhoe_subcortical_feats],
                     'Destrieux': [hoexter_Destrieux_feats + _hoexter_subcortical_feats,
                                   boedhoe_Destrieux_feats + _boedhoe_subcortical_feats],
-                    'Both': [hoexter_Desikan_feats + hoexter_Destrieux_feats + _hoexter_subcortical_feats,
-                             boedhoe_Desikan_feats + boedhoe_Destrieux_feats + _boedhoe_subcortical_feats]
+                    'Desi&Dest': [hoexter_Desikan_feats + hoexter_Destrieux_feats + _hoexter_subcortical_feats,
+                                  boedhoe_Desikan_feats + boedhoe_Destrieux_feats + _boedhoe_subcortical_feats]
                     }
-atlas_dict = {'Desikan': ['**Desi.'], 'Destrieux': ['**Dest.09s'], 'Both': []}
+atlas_dict = {'Desikan': ['**Desi'], 'Destrieux': ['**Dest.09s'], 'Desi&Dest': []}
 
 # note: convention for fset naming: ...'_feats_names' for strings else just ...'_feats' for indices

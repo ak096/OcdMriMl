@@ -59,7 +59,7 @@ fsets_results_reg_dict = {}
 fsets_names_reg_frame = pd.DataFrame()
 
 # settings for experiment
-atlas = 'Both' #'Both' or 'Desikan' or 'Destrieux'
+atlas = 'Desikan' #'Desi&Dest' or 'Desikan' or 'Destrieux'
 min_support = 0.8
 
 for idx, tgt_name in enumerate(targets):
@@ -80,9 +80,10 @@ for idx, tgt_name in enumerate(targets):
 
     # univariate feature pool computation:
     zeit = time.time()
-    feat_filter = gbl.atlas_dict[atlas]
+    feat_picker = gbl.atlas_dict[atlas]
+    # feat_picker used with entire atlas but could be list of any substrings in feats to pick (e.g. '_volume')
     t_frame, f_frame, mi_frame, feat_pool_counts_frame, feat_pool_set = feat_pool_compute(tgt_name=tgt_name, subs=subs,
-                                                                                          feat_filter=feat_filter)
+                                                                                          feat_picker=feat_picker)
     feat_pool_set_num = len(feat_pool_set)
     # all_tgt_results[tgt_name] = {
     #                             #'t_frame': t_frame.transpose(),
