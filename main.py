@@ -242,7 +242,7 @@ fpi_results_reg_dict = feat_perm_imp_compute(gbl.fpis_reg)
 feat_perm_imp_results_clf_frame = pd.DataFrame().from_dict(fpi_results_clf_dict)
 feat_perm_imp_results_reg_frame = pd.DataFrame().from_dict(fpi_results_reg_dict)
 
-# compute pred_ci and pred_avg
+# compute pred_ci, pred_avg and sort
 fsets_results_clf_frame = compute_results(fsets_results_clf_frame, fsets_results_clf_dict)
 fsets_results_reg_frame = compute_results(fsets_results_reg_frame, fsets_results_reg_dict)
 
