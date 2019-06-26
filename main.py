@@ -59,7 +59,7 @@ fsets_results_reg_dict = {}
 fsets_names_reg_frame = pd.DataFrame()
 
 # settings for experiment
-atlas = 'Destrieux' #'Both' or 'Desikan' or 'Destrieux'
+atlas = 'Both' #'Both' or 'Desikan' or 'Destrieux'
 #min_support = 10
 
 for idx, tgt_name in enumerate(targets):
@@ -261,7 +261,7 @@ feat_perm_imp_results_reg_frame.sort_values(by='perm_imp_high', axis=1, ascendin
 def save_results():
     print('SAVING RESULTS')
 
-    exp_description = 'atlas_{}_gridpoints_{}_minsupport_{}.xlsx'.format(atlas, gbl.grid_space_size, min_support)
+    exp_description = 'atlas_{}_maxgridpoints_{}_minsupport_{}.xlsx'.format(atlas, gbl.grid_space_size, min_support)
 
     # write prediction results to excel
     xlsx_name = exp_description
