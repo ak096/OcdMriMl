@@ -59,8 +59,9 @@ fsets_results_reg_dict = {}
 fsets_names_reg_frame = pd.DataFrame()
 
 # settings for experiment
-atlas = 'Both' #'Desikan' 'Destrieux'
+atlas = 'Destrieux' #'Both' or 'Desikan' or 'Destrieux'
 gbl.grid_space_size = 20
+min_support = 0.90
 
 for idx, tgt_name in enumerate(targets):
 
@@ -136,7 +137,7 @@ for idx, tgt_name in enumerate(targets):
         # print('%s/%s: FIS resulted in %d sets' % (tgt_name, est_type, len(freq_item_sets_list)))
         # largest common subsets
         print('%s/%s: LCS starting' % (tgt_name, est_type))
-        lcs_list = largest_common_subsets(dataset=feat_sels_rfecv, min_sup=0.90)
+        lcs_list = largest_common_subsets(dataset=feat_sels_rfecv, min_sup=min_support)
         print('%s/%s: LCS resulted in %d sets' % (tgt_name, est_type, len(lcs_list)))
         feat_sels = lcs_list
 
@@ -260,7 +261,7 @@ feat_perm_imp_results_reg_frame.sort_values(by='perm_imp_high', axis=1, ascendin
 def save_results():
     print('SAVING RESULTS')
 
-    exp_description = 'atlas_{}_gridpoints_{}.xlsx'.format(atlas, gbl.grid_space_size)
+    exp_description = 'atlas_{}_gridpoints_{}_minsupport_{}.xlsx'.format(atlas, gbl.grid_space_size, min_support)
 
     # write prediction results to excel
     xlsx_name = exp_description

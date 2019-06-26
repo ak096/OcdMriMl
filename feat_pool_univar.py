@@ -14,7 +14,7 @@ def check_feat_filter(tgt_name, feat_filter):
     else:
         feat_list = [ft for ft in gbl.FreeSurfer_feats_names if not any(x in ft for x in feat_filter)]
         feat_list = [gbl.all_feat_names.index(ft) for ft in feat_list]
-    print('%s: FreeSurfer feats.: %d' % (tgt_name, len(feat_list)))
+    print('%s: FreeSurfer %s feats.: %d' % (tgt_name, feat_filter, len(feat_list)))
     return feat_list
 
 
