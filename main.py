@@ -14,7 +14,7 @@ from sklearn.exceptions import ConvergenceWarning
 from feat_pool_univar import feat_pool_compute
 from feat_selection_ml import grid_rfe_cv, freq_item_sets_compute, feat_perm_imp_compute, largest_common_subsets
 from dataset import Subs
-from results import update_results #, FeatSetResults
+from results import update_results, compute_results #, FeatSetResults
 from train_predict import train, pred
 from scorers_ import RegScorer, ClfScorer
 import gbl
@@ -33,12 +33,12 @@ sys.setrecursionlimit(10**8)
 # np.random.seed(seed)
 
 targets = [
-           'YBOCS_reg',
-           'YBOCS_class2',
-            #'obs_class3',
-            #'com_class3',
-           'YBOCS_class3',
-           'YBOCS_class4'
+'YBOCS_class2',
+#'obs_class3',
+#'com_class3',
+'YBOCS_class3',
+'YBOCS_class4',
+'YBOCS_reg',
           ]
 
 #all_tgt_results = {}
@@ -242,27 +242,42 @@ fpi_results_reg_dict = feat_perm_imp_compute(gbl.fpis_reg)
 feat_perm_imp_results_clf_frame = pd.DataFrame().from_dict(fpi_results_clf_dict)
 feat_perm_imp_results_reg_frame = pd.DataFrame().from_dict(fpi_results_reg_dict)
 
+# compute pred_ci and pred_avg
+fsets_results_clf_frame = compute_results(fsets_results_clf_frame, fsets_results_clf_dict)
+fsets_results_reg_frame = compute_results(fsets_results_reg_frame, fsets_results_reg_dict)
+
+fsets_results_clf_frame.sort_values(by='pred_best', axis=1, ascending=False, inplace=True)
+fsets_results_reg_frame.sort_values(by='pred_best', axis=1, ascending=False, inplace=True)
+
+fsets_names_clf_frame = fsets_names_clf_frame.reindex(columns=fsets_results_clf_frame.columns.tolist())
+fsets_names_reg_frame = fsets_names_reg_frame.reindex(columns=fsets_results_reg_frame.columns.tolist())
+
+feat_perm_imp_results_clf_frame.sort_values(by='perm_imp_high', axis=1, ascending=False, inplace=True)
+feat_perm_imp_results_reg_frame.sort_values(by='perm_imp_high', axis=1, ascending=False, inplace=True)
+
 
 # SAVE RESULTS
-print('SAVING RESULTS')
+def save_results():
+    print('SAVING RESULTS')
 
-exp_description = 'atlas_{}_gridpoints_{}.xlsx'.format(atlas, gbl.grid_space_size)
+    exp_description = 'atlas_{}_gridpoints_{}.xlsx'.format(atlas, gbl.grid_space_size)
+
+    # write prediction results to excel
+    xlsx_name = exp_description
+
+    writer = pd.ExcelWriter(xlsx_name)
+    fsets_results_clf_frame.to_excel(writer, 'fsets_results_clf')
+    fsets_names_clf_frame.to_excel(writer, 'fsets_names_clf')
+    feat_perm_imp_results_clf_frame.to_excel(writer, 'fimps_clf')
+
+    fsets_results_reg_frame.to_excel(writer, 'fsets_results_reg')
+    fsets_names_reg_frame.to_excel(writer, 'fsets_names_reg')
+    feat_perm_imp_results_reg_frame.to_excel(writer, 'fimps_reg')
+
+    writer.save()
+    print('SAVED %s' % xlsx_name)
 
 
-# write prediction results to excel
-xlsx_name = exp_description
-
-writer = pd.ExcelWriter(xlsx_name)
-fsets_results_clf_frame.to_excel(writer, 'fsets_results_clf')
-fsets_names_clf_frame.to_excel(writer, 'fsets_names_clf')
-feat_perm_imp_results_clf_frame.to_excel(writer, 'fimps_clf')
-
-fsets_results_reg_frame.to_excel(writer, 'fsets_results_reg')
-fsets_names_reg_frame.to_excel(writer, 'fsets_names_reg')
-feat_perm_imp_results_reg_frame.to_excel(writer, 'fimps_reg')
-
-
-writer.save()
-print('SAVED %s' % xlsx_name)
+save_results()
 
 print("TOTAL TIME %.2f" % (time.time()-start_time))
