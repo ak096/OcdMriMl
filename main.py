@@ -59,8 +59,8 @@ fsets_results_reg_dict = {}
 fsets_names_reg_frame = pd.DataFrame()
 
 # settings for experiment
-atlas = 'Desikan' #'Desi&Dest' or 'Desikan' or 'Destrieux'
-min_support = 0.8
+atlas = 'Desi&Dest' #'Desi&Dest' or 'Desikan' or 'Destrieux'
+min_support = 0.9
 
 for idx, tgt_name in enumerate(targets):
 

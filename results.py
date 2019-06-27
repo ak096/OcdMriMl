@@ -31,10 +31,10 @@ from train_predict import conf_interval
 def update_results(tgt_name, est_type, fsets_count, curr_fset, curr_fset_results, fsets_results_frame,
                    fsets_results_dict, fsets_names_frame):
 
-    print('%s/%s/%s/%d: above thresh, updating results:' % (tgt_name, est_type, curr_fset, fsets_count))
+    print('%s/%s/%s/%d: above thresh, adding to results:' % (tgt_name, est_type, curr_fset, fsets_count))
     exists = False
     for k, v in fsets_results_dict.items():
-        print('%s/%s/%s/%d: comparing to:' % (tgt_name, est_type, curr_fset, fsets_count), k)
+        #print('%s/%s/%s/%d: comparing to:' % (tgt_name, est_type, curr_fset, fsets_count), k)
         if set(v['fset_list']) == set(curr_fset_results['fset_list']) :
             exists = True
             print('%s/%s/%s/%d: update existing:' % (tgt_name, est_type, curr_fset, fsets_count), k)
@@ -46,8 +46,8 @@ def update_results(tgt_name, est_type, fsets_count, curr_fset, curr_fset_results
                 fsets_results_frame.loc['est_type_best', k] = est_type
 
                 fsets_results_dict[k].update({'est_best': curr_fset_results['est_best'],
-                                                  'pred_frame_best': curr_fset_results['pred_frame_best']
-                                              })
+                                              'pred_frame_best': curr_fset_results['pred_frame_best']
+                                             })
             break
     if not exists:  # add fset into results
         print('%s/%s/%s/%d: create new fset entry:' % (tgt_name, est_type, curr_fset, fsets_count), curr_fset)
