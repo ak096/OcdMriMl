@@ -13,11 +13,12 @@ pd.options.mode.use_inf_as_na = True
 
 
 def lsvm_hypparam_space(est_class):
-    svm_hps = {
-               'C': [0.001, 0.01, 0.1, 1, 10, 50, 100, 250, 400, 500, 600, 800, 1000, 2000, 5000],
+    svm_hps = {'C': [0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 1, 10, 50, 100,
+                     200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200,
+                     1300, 1400, 1500, 2000, 2250, 2500, 2750, 3000, 4000, 5000]
                }
     if est_class == 'reg':
-        svm_hps['epsilon'] = [0.3, 0.5, 0.7, 0.9]
+        svm_hps['epsilon'] = [0.0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9]
     if est_class == 'clf':
         svm_hps['class_weight'] = ['balanced']
     return svm_hps
@@ -201,12 +202,12 @@ boedhoe_Destrieux_feats_names = [
 
 # get data from FreeSurfer stats
 path_base = os.path.abspath('Desktop/FS_SUBJ_ALL').replace('PycharmProjects/OcdMriMl/', '')
-print('PreProc: FreeSurfer read: pat and con')
+print('PreProc: FreeSurfer READ: pat and con')
 pat_frame = FreeSurfer_data_collect('pat', path_base)
 con_frame = FreeSurfer_data_collect('con', path_base)
 
 if not pat_frame.columns.tolist() == con_frame.columns.tolist():
-    print('PreProc: FreeSurfer read: pat and con frame not equal!')
+    print('PreProc: FreeSurfer READ: pat and con frame not equal!')
     exit()
 
 # remove low variance features
@@ -217,7 +218,7 @@ sel.fit(pat_frame)
 retained_mask = sel.get_support(indices=False)
 pat_frame = pat_frame.loc[:, retained_mask]
 after = pat_frame.shape[1]
-print('PreProc: %d feats. removed: under %.2f var: %d to %d' % (before - after, threshold, before, after))
+print('PreProc: <=%.2f VAR feats. removed: %d (%d to %d)' % (threshold, before - after, before, after))
 
 # remove features less than 90% populated
 before = pat_frame.shape[1]
@@ -225,15 +226,15 @@ ratio = 1.00
 threshold = round(ratio * pat_frame.shape[0])
 pat_frame.dropna(axis='columns', thresh=threshold, inplace=True)
 after = pat_frame.shape[1]
-print('PreProc: %d feats. removed: less than %.2f percent filled: %d to %d' %
-      (before - after, (threshold / pat_frame.shape[0]) * 100, before, after))
+print('PreProc: <%.2f PERCENT feats. removed: %d (%d to %d)' %
+      ((threshold / pat_frame.shape[0]) * 100, before - after, before, after))
 
 # add some random features (permuted original features)
 before = pat_frame.shape[1]
 n_rand_feat = 2
 pat_frame = _add_rand_feats(pat_frame, n_rand_feat)
 after = pat_frame.shape[1]
-print('PreProc: %d rand. feats. added: %d to %d' % (after-before, before, after))
+print('PreProc: RAND. feats. added: %d (%d to %d)' % (after-before, before, after))
 
 FreeSurfer_feats_names = pat_frame.columns.tolist()
 
