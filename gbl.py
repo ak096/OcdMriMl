@@ -65,7 +65,7 @@ def _add_rand_feats(frame, n_rand_feat):
         feats_names = list(np.random.choice([f for f in frame.columns.tolist() if a in f], n_rand_feat, replace=False))
         for i in np.arange(n_rand_feat):
             rand_feat_name = 'RANDOM_' + str(i) + '_' + feats_names[i]
-            #print('PreProc: adding %s' % rand_feat_name)
+            print('PreProc: %s added' % rand_feat_name)
             frame[rand_feat_name] = np.random.permutation(frame.loc[:, feats_names[i]])
     return frame
 # def init_globals():
