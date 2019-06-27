@@ -64,8 +64,9 @@ def _add_rand_feats(frame, n_rand_feat):
         feats_names = list(np.random.choice([f for f in frame.columns.tolist() if a in f], n_rand_feat, replace=False))
         for i in np.arange(n_rand_feat):
             rand_feat_name = 'RANDOM_' + str(i) + '_' + feats_names[i]
+            #print('PreProc: adding %s' % rand_feat_name)
             frame[rand_feat_name] = np.random.permutation(frame.loc[:, feats_names[i]])
-        return frame
+    return frame
 # def init_globals():
 
 
@@ -232,7 +233,7 @@ before = pat_frame.shape[1]
 n_rand_feat = 2
 pat_frame = _add_rand_feats(pat_frame, n_rand_feat)
 after = pat_frame.shape[1]
-print('PreProc: %d feats. (rand.) added: %d to %d' % (n_rand_feat, before, after))
+print('PreProc: %d rand. feats. added: %d to %d' % (after-before, before, after))
 
 FreeSurfer_feats_names = pat_frame.columns.tolist()
 

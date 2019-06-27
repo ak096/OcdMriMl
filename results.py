@@ -37,8 +37,10 @@ def update_results(tgt_name, est_type, fsets_count, curr_fset, curr_fset_results
         #print('%s/%s/%s/%d: comparing to:' % (tgt_name, est_type, curr_fset, fsets_count), k)
         if set(v['fset_list']) == set(curr_fset_results['fset_list']) :
             exists = True
-            print('%s/%s/%s/%d: update existing:' % (tgt_name, est_type, curr_fset, fsets_count), k)
             fsets_results_frame.loc['freq', k] += 1
+
+            print('%s/%s/%s/%d: update existing:%s freq:%d' % (tgt_name, est_type, curr_fset, fsets_count, k,
+                                                                fsets_results_frame.loc['freq', k]))
             fsets_results_dict[k]['preds'].append(curr_fset_results['pred_score_best'])
             if fsets_results_frame.loc['pred_best', k] < curr_fset_results['pred_score_best']:
                 fsets_results_frame.loc['pred_best', k] = curr_fset_results['pred_score_best']
