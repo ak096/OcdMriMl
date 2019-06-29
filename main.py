@@ -59,7 +59,7 @@ fsets_results_reg_dict = {}
 fsets_names_reg_frame = pd.DataFrame()
 
 # settings for experiment
-atlas = 'Desi&Dest' #'Desi&Dest' or 'Desikan' or 'Destrieux'
+atlas = 'Desikan' #'Desikan' or 'Destrieux' or 'DesiDest'
 min_support = 0.9
 
 for idx, tgt_name in enumerate(targets):
@@ -154,16 +154,16 @@ for idx, tgt_name in enumerate(targets):
             fsets_count += 1
             fset_dict['fset_' + str(fsets_count)] = fsel
 
-        hoexter_fset, boedhoe_fset = gbl.h_b_expert_fsets[atlas]
-        fsets_count += 1
-        fset_dict['hoexter_' + str(fsets_count)] = hoexter_fset
-        fsets_count += 1
-        fset_dict['boedhoe_' + str(fsets_count)] = boedhoe_fset
+        names = ['hoexter_', 'boedhoe_csc_', 'boedhoe_c_', 'boedhoe_sc_']
+        for i, exp_fset in enumerate(gbl.h_b_expert_fsets[atlas]):
+            fsets_count += 1
+            fset_dict[names[i] + str(fsets_count)] = exp_fset
+
         # train predict loop for each feat set
         #for fset, fset_results in all_tgt_results[tgt_name][est_type].items():
-        for fset, fset_list in fset_dict.items():
+        for fset_name, fset_list in fset_dict.items():
             zeit = time.time()
-            print('%s/%s/%s/%d: scoring used:' % (tgt_name, est_type, fset, fsets_count), scoring)
+            print('%s/%s/%s/%d: scoring used:' % (tgt_name, est_type, fset_name, fsets_count), scoring)
 
             #feat_train = fset_results.data['fset_list'] + gbl.clin_demog_feats
             feat_train = fset_list + gbl.clin_demog_feats
@@ -176,7 +176,7 @@ for idx, tgt_name in enumerate(targets):
                                        scoring=scoring,
                                        thresh=thresh
                                        )
-            print('%s/%s/%s/%d: trained cv over grid:' % (tgt_name, est_type, fset, fsets_count), train_scores)
+            print('%s/%s/%s/%d: trained cv over grid:' % (tgt_name, est_type, fset_name, fsets_count), train_scores)
 
             pred_scores, pred_frames = pred(est_type=est_type, task=subs.tgt_task, ests=ests,
                                             X=subs.pat_frame_test_norm.loc[:, feat_train],
@@ -184,7 +184,7 @@ for idx, tgt_name in enumerate(targets):
                                             scoring=scoring,
                                             thresh=thresh
                                            )
-            print('%s/%s/%s/%d: predicted:' % (tgt_name, est_type, fset, fsets_count), pred_scores)
+            print('%s/%s/%s/%d: predicted:' % (tgt_name, est_type, fset_name, fsets_count), pred_scores)
 
             # fset_results.data.update({
             #                      #'pred_frames': pred_frames,
@@ -195,13 +195,13 @@ for idx, tgt_name in enumerate(targets):
             #                      'ests': ests,
             #                      'train_scores': train_scores
             #                       })
-            print('%s/%s/%s/%d: train and predict took %.2f' % (tgt_name, est_type, fset, fsets_count,
+            print('%s/%s/%s/%d: train and predict took %.2f' % (tgt_name, est_type, fset_name, fsets_count,
                                                                 time.time() - zeit))
             tp = sorted(list(zip(pred_scores, pred_frames, ests)), key=lambda x: x[0], reverse=True)[0]
             psb, pfb, eb = tp
-            print('%s/%s/%s/%d: found best pred score:' % (tgt_name, est_type, fset, fsets_count), psb)
+            print('%s/%s/%s/%d: found best pred score:' % (tgt_name, est_type, fset_name, fsets_count), psb)
             if psb <= thresh:
-                print('%s/%s/%s/%d: below thresh, skipping update' % (tgt_name, est_type, fset, fsets_count))
+                print('%s/%s/%s/%d: below thresh, skipping update' % (tgt_name, est_type, fset_name, fsets_count))
             else:
 
                 fset_results = {'pred_score_best': psb, 'pred_frame_best': pfb, 'fset_list': fset_list, 'est_best': eb}
@@ -211,7 +211,7 @@ for idx, tgt_name in enumerate(targets):
                     #       fset_results.data['pred_scores'])
                     fsets_results_clf_frame, \
                     fsets_results_clf_dict, \
-                    fsets_names_clf_frame = update_results(tgt_name, est_type, fsets_count, fset, fset_results,
+                    fsets_names_clf_frame = update_results(tgt_name, est_type, fsets_count, fset_name, fset_results,
                                                            fsets_results_clf_frame,
                                                            fsets_results_clf_dict,
                                                            fsets_names_clf_frame)
@@ -221,7 +221,7 @@ for idx, tgt_name in enumerate(targets):
                     #      fset_results.data['pred_scores'])
                     fsets_results_reg_frame, \
                     fsets_results_reg_dict, \
-                    fsets_names_reg_frame = update_results(tgt_name, est_type, fsets_count, fset, fset_results,
+                    fsets_names_reg_frame = update_results(tgt_name, est_type, fsets_count, fset_name, fset_results,
                                                            fsets_results_reg_frame,
                                                            fsets_results_reg_dict,
                                                            fsets_names_reg_frame)

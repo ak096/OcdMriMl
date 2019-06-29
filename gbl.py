@@ -269,12 +269,18 @@ fpis_clf = {}
 fpis_reg = {}
 
 h_b_expert_fsets = {'Desikan': [hoexter_Desikan_feats + _hoexter_subcortical_feats,
-                                boedhoe_Desikan_feats + _boedhoe_subcortical_feats],
+                                boedhoe_Desikan_feats + _boedhoe_subcortical_feats,
+                                boedhoe_Desikan_feats,
+                                _boedhoe_subcortical_feats],
                     'Destrieux': [hoexter_Destrieux_feats + _hoexter_subcortical_feats,
-                                  boedhoe_Destrieux_feats + _boedhoe_subcortical_feats],
-                    'Desi&Dest': [hoexter_Desikan_feats + hoexter_Destrieux_feats + _hoexter_subcortical_feats,
-                                  boedhoe_Desikan_feats + boedhoe_Destrieux_feats + _boedhoe_subcortical_feats]
+                                  boedhoe_Destrieux_feats + _boedhoe_subcortical_feats,
+                                  boedhoe_Destrieux_feats,
+                                  _boedhoe_subcortical_feats],
+                    'DesiDest': [hoexter_Desikan_feats + hoexter_Destrieux_feats + _hoexter_subcortical_feats,
+                                 boedhoe_Desikan_feats + boedhoe_Destrieux_feats + _boedhoe_subcortical_feats,
+                                 boedhoe_Desikan_feats + boedhoe_Destrieux_feats,
+                                 _boedhoe_subcortical_feats]
                     }
-atlas_dict = {'Desikan': ['**Desi'], 'Destrieux': ['**Dest.09s'], 'Desi&Dest': []}
+atlas_dict = {'Desikan': ['**Desi'], 'Destrieux': ['**Dest.09s'], 'DesiDest': []}
 
 # note: convention for fset naming: ...'_feats_names' for strings else just ...'_feats' for indices
