@@ -70,8 +70,6 @@ def update_results(tgt_name, est_type, fsets_count, curr_fset, curr_fset_results
 
 def compute_results(fsets_results_frame, fsets_results_dict):
     for column in fsets_results_frame:
-        fsets_results_frame.loc['pred_avg', column] = \
-            sum(fsets_results_dict[column]['preds']) / len(fsets_results_dict[column]['preds'])
-
-        fsets_results_frame.loc['pred_ci', column] = conf_interval(fsets_results_dict[column]['preds'])[1]
+        fsets_results_frame.loc['pred_avg', column] = round(conf_interval(fsets_results_dict[column]['preds'])[0], 2)
+        fsets_results_frame.loc['pred_ci', column] = round(conf_interval(fsets_results_dict[column]['preds'])[1], 2)
     return fsets_results_frame
