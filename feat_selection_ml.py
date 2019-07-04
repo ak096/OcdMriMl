@@ -81,9 +81,9 @@ def feat_perm_imp_compute(fpis):
     for k, v in fpis.items():
         fpi_result[gbl.all_feat_names[k]] = {'freq': len(fpis[k]),
                                              'perm_imp_high': np.max(fpis[k]),
-                                             'perm_imp_avg': conf_interval(fpis[k])[0],
+                                             'perm_imp_avg': round(conf_interval(fpis[k])[0], 3),
                                              'perm_imp_low': np.min(fpis[k]),
-                                             'perm_imp_ci': conf_interval(fpis[k])[1]
+                                             'perm_imp_ci': round(conf_interval(fpis[k])[1], 3)
                                              }
 
     return fpi_result
