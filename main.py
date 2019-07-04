@@ -59,7 +59,7 @@ fsets_results_reg_dict = {}
 fsets_names_reg_frame = pd.DataFrame()
 
 # settings for experiment
-atlas = 'Desikan' #'Desikan' or 'Destrieux' or 'DesiDest'
+atlas = 'DesiDest' #'Desikan' or 'Destrieux' or 'DesiDest'
 min_support = 0.9
 
 for idx, tgt_name in enumerate(targets):
@@ -277,6 +277,12 @@ def save_results():
 
     writer.save()
     print('SAVED %s' % xlsx_name)
+
+    save_list = [fsets_results_clf_dict, fsets_results_reg_dict, fsets_count]
+    for l in save_list:
+        my_var_name = [k for k, v in locals().items() if v == l][0]
+        with open('{}_{}.pickle'.format(atlas, my_var_name), 'wb') as handle:
+            pickle.dump(l, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 save_results()

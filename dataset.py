@@ -20,7 +20,7 @@ class Subs:
 
         self.pat_frame_stats = gbl.pat_frame_stats.copy()
 
-        self.n_rand_feat = copy(gbl.n_rand_feat)
+        self.n_rand_feat = 0 #copy(gbl.n_rand_feat)
 
         self.num_pats = self.pat_frame.shape[0]
         self.pat_names = self.pat_frame.index.tolist()

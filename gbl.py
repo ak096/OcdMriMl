@@ -173,7 +173,7 @@ _boedhoe_subcortical_feats_names = [
 ]
 
 boedhoe_Desikan_feats_names = [
-    # Desikan cortical parcellation atlas (gyri include sulci border limits)
+    # from Desikan cortical parcellation atlas (gyri include sulci border limits)
     # LEFT
     'lh_transversetemporal_area**Desi',
     'lh_inferiorparietal_thickness**Desi',
@@ -229,12 +229,12 @@ after = pat_frame.shape[1]
 print('PreProc: <%.2f PERCENT feats. removed: %d (%d to %d)' %
       ((threshold / pat_frame.shape[0]) * 100, before - after, before, after))
 
-# add some random features (permuted original features)
-before = pat_frame.shape[1]
-n_rand_feat = 2
-pat_frame = _add_rand_feats(pat_frame, n_rand_feat)
-after = pat_frame.shape[1]
-print('PreProc: RAND. feats. added: %d (%d to %d)' % (after-before, before, after))
+# # add some random features (permuted original features)
+# before = pat_frame.shape[1]
+# n_rand_feat = 2
+# pat_frame = _add_rand_feats(pat_frame, n_rand_feat)
+# after = pat_frame.shape[1]
+# print('PreProc: RAND. feats. added: %d (%d to %d)' % (after-before, before, after))
 
 FreeSurfer_feats_names = pat_frame.columns.tolist()
 
