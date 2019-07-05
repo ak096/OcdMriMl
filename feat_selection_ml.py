@@ -3,7 +3,7 @@
 from itertools import combinations
 
 import numpy as np
-#import pandas as pd
+import pandas as pd
 from sklearn.feature_selection import RFECV
 #from yellowbrick.features import RFECV
 #from mlxtend.frequent_patterns import apriori
@@ -79,11 +79,11 @@ def freq_item_sets_compute(dataset, min_sup=1.0):
 def feat_perm_imp_compute(fpis):
     fpi_result = {}
     for k, v in fpis.items():
-        fpi_result[gbl.all_feat_names[k]] = {'freq': len(fpis[k]),
-                                             'perm_imp_high': np.max(fpis[k]),
-                                             'perm_imp_avg': round(conf_interval(fpis[k])[0], 3),
-                                             'perm_imp_low': np.min(fpis[k]),
-                                             'perm_imp_ci': round(conf_interval(fpis[k])[1], 3)
+        fpi_result[gbl.all_feat_names[k]] = {'pi_freq': len(fpis[k]),
+                                             'pi_avg': round(conf_interval(fpis[k])[0], 3),
+                                             'pi_high': np.max(fpis[k]),
+                                             'pi_low': np.min(fpis[k]),
+                                             'pi_ci': round(conf_interval(fpis[k])[1], 3)
                                              }
 
     return fpi_result
@@ -111,3 +111,38 @@ def largest_common_subsets(dataset, min_sup=10):
     if not lcs_list:
         print('lcs list is empty!!!!!!!!!!!!!!!!!!')
     return lcs_list
+
+
+def cust_func(s):
+    t = sum(s.freq)
+    if type(s.freq) is not pd.core.series.Series: # is than non-iterable int or float
+        s.freq = [s.freq]
+    if type(s.perm_imp_avg) is not pd.core.series.Series: # is than non-iterable int or float
+        s.perm_imp_avg = [s.perm_imp_avg]
+    pi_freq = t
+    pi_avg = round(sum([(i[0]/t)*i[1] for i in list(zip(s.freq, s.perm_imp_avg))])/t, 3)
+    pi_high = round(np.max(s.perm_imp_high), 3)
+    pi_low = round(np.min(s.perm_imp_low), 3)
+
+    return pd.Series({'pi_freq': pi_freq, 'pi_avg': pi_avg, 'pi_high': pi_high, 'pi_low': pi_low})
+
+
+def combine_fpi_frames(*args):
+    fpi_all_frame = pd.concat([a for a in args])
+    fpi_all_frame.apply(cust_func)
+    return fpi_all_frame.sort_values(by='pi_avg', axis=1, ascending=False, inplace=True) # without ci
+
+
+def combine_dicts(*args):
+    super_dict = {}
+    for dict in args:
+        for k, v in dict.items():
+            super_dict.setdefault(k, []).extend(v)
+    return super_dict
+
+
+def fpi_all_results_frame_compute(*args):
+    super_dict = combine_dicts(args)
+    fpi_all_results_dict = feat_perm_imp_compute(super_dict)
+    fpi_all_results_frame = pd.DataFrame.from_dict(fpi_all_results_dict)
+    return fpi_all_results_frame.sort_values(by='pi_avg', axis=1, ascending=False, inplace=True)
