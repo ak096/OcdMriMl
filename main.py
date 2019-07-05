@@ -90,8 +90,6 @@ for idx, tgt_name in enumerate(targets):
                                 'f_frame': f_frame.transpose(),
                                 'mi_frame': mi_frame.transpose(),
                                 'feat_count_frame': feat_pool_counts_frame.transpose(),
-                                #gbl.linear_: {},
-                                #gbl.non_linear_: {}
                                 }
 
     print('%s: computed feat_pool: %d' % (tgt_name, feat_pool_set_num))
