@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_selection import RFECV
 #from yellowbrick.features import RFECV
-#from mlxtend.frequent_patterns import apriori
-#from mlxtend.preprocessing import TransactionEncoder
+from mlxtend.frequent_patterns import apriori
+from mlxtend.preprocessing import TransactionEncoder
 import pyfpgrowth
 import gbl
 #from sys import getsizeof
@@ -65,41 +65,29 @@ def freq_item_sets_compute(dataset, min_sup=1.0):
     else:
         return dataset
 
-# def freq_item_sets(dataset, min_support=0.6): #expects list of lists, returns pandas DataFrame
-#     te = TransactionEncoder()
-#     te_ary = te.fit(dataset).transform(dataset)
-#     df = pd.DataFrame(te_ary, columns=te.columns_)
-#     freq_item_sets_frame = apriori(df, min_support=min_support, use_colnames=True, verbose=1)
-#     freq_item_sets_frame.sort_values(by='support', axis=0, ascending=False, inplace=True)
-#     freq_item_sets_frame['length'] = freq_item_sets_frame['itemsets'].apply(lambda x: len(x))
-#
-#     return freq_item_sets_frame
+
+def compute_fqis_frame(super_isets, min_support=0.6): # expects list of lists, returns pandas DataFrame
+    te = TransactionEncoder()
+    te_ary = te.fit(super_isets).transform(super_isets)
+    df = pd.DataFrame(te_ary, columns=te.columns_)
+    freq_item_sets_frame = apriori(df, min_support=min_support, use_colnames=True, verbose=1)
+    freq_item_sets_frame.sort_values(by='support', axis=0, ascending=False, inplace=True)
+    freq_item_sets_frame['length'] = freq_item_sets_frame['itemsets'].apply(lambda x: len(x))
+
+    return freq_item_sets_frame
 
 
-def feat_perm_imp_compute(fpis):
-    fpi_result = {}
-    for k, v in fpis.items():
-        fpi_result[gbl.all_feat_names[k]] = {'pi_freq': len(fpis[k]),
-                                             'pi_avg': round(conf_interval(fpis[k])[0], 3),
-                                             'pi_high': np.max(fpis[k]),
-                                             'pi_low': np.min(fpis[k]),
-                                             'pi_ci': round(conf_interval(fpis[k])[1], 3)
-                                             }
-
-    return fpi_result
-
-
-def largest_common_subsets(dataset, min_sup=10):
-    dataset = [list(np.int16(ds)) for ds in dataset]  # convert to int16s to save memory avoid MemoryError
+def largest_common_subsets(super_set, min_sup=10):
+    super_set = [list(np.int16(ds)) for ds in super_set]  # convert to int16s to save memory avoid MemoryError
     lcs_list = []
     #smallest_num_sets = round(len(dataset)*min_sup)
     smallest_num_sets = min_sup
-    for num in np.arange(smallest_num_sets, len(dataset)+1, 1):
+    for num in np.arange(smallest_num_sets, len(super_set) + 1, 1):
         print('finding all combis of size: %d' % num)
-        subset_idxs = list(combinations(np.arange(len(dataset)), num))
+        subset_idxs = list(combinations(np.arange(len(super_set)), num))
         print('combis found: %d' % len(subset_idxs))
         for i, sis in enumerate(subset_idxs):
-            dataset_sub = [set(dataset[si]) for si in sis]
+            dataset_sub = [set(super_set[si]) for si in sis]
             lcs = set.intersection(*dataset_sub)
             #print('combi: %d/%d lcs size: %d' % (i, len(subset_idxs)-1, len(lcs)))
             if len(lcs):
@@ -112,37 +100,3 @@ def largest_common_subsets(dataset, min_sup=10):
         print('lcs list is empty!!!!!!!!!!!!!!!!!!')
     return lcs_list
 
-
-def cust_func(s):
-    t = sum(s.freq)
-    if type(s.freq) is not pd.core.series.Series: # is than non-iterable int or float
-        s.freq = [s.freq]
-    if type(s.perm_imp_avg) is not pd.core.series.Series: # is than non-iterable int or float
-        s.perm_imp_avg = [s.perm_imp_avg]
-    pi_freq = t
-    pi_avg = round(sum([(i[0]/t)*i[1] for i in list(zip(s.freq, s.perm_imp_avg))])/t, 3)
-    pi_high = round(np.max(s.perm_imp_high), 3)
-    pi_low = round(np.min(s.perm_imp_low), 3)
-
-    return pd.Series({'pi_freq': pi_freq, 'pi_avg': pi_avg, 'pi_high': pi_high, 'pi_low': pi_low})
-
-
-def combine_fpi_frames(*args):
-    fpi_all_frame = pd.concat([a for a in args])
-    fpi_all_frame.apply(cust_func)
-    return fpi_all_frame.sort_values(by='pi_avg', axis=1, ascending=False, inplace=True) # without ci
-
-
-def combine_dicts(*args):
-    super_dict = {}
-    for dict in args:
-        for k, v in dict.items():
-            super_dict.setdefault(k, []).extend(v)
-    return super_dict
-
-
-def fpi_all_results_frame_compute(*args):
-    super_dict = combine_dicts(args)
-    fpi_all_results_dict = feat_perm_imp_compute(super_dict)
-    fpi_all_results_frame = pd.DataFrame.from_dict(fpi_all_results_dict)
-    return fpi_all_results_frame.sort_values(by='pi_avg', axis=1, ascending=False, inplace=True)

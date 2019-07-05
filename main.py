@@ -12,9 +12,9 @@ from sklearn.exceptions import ConvergenceWarning
 
 #from pickling import *
 from feat_pool_univar import feat_pool_compute
-from feat_selection_ml import grid_rfe_cv, freq_item_sets_compute, feat_perm_imp_compute, largest_common_subsets
+from feat_selection_ml import grid_rfe_cv, freq_item_sets_compute,  largest_common_subsets
 from dataset import Subs
-from results import update_results, compute_results #, FeatSetResults
+from results import update_fset_results, compute_fset_results_frame, compute_fpi_results_dict #, FeatSetResults
 from train_predict import train, pred
 from scorers_ import RegScorer, ClfScorer
 import gbl
@@ -135,7 +135,7 @@ for idx, tgt_name in enumerate(targets):
         # print('%s/%s: FIS resulted in %d sets' % (tgt_name, est_type, len(freq_item_sets_list)))
         # largest common subsets
         print('%s/%s: LCS starting' % (tgt_name, est_type))
-        lcs_list = largest_common_subsets(dataset=feat_sels_rfecv, min_sup=round(min_support*len(feat_sels_rfecv)))
+        lcs_list = largest_common_subsets(super_set=feat_sels_rfecv, min_sup=round(min_support * len(feat_sels_rfecv)))
         print('%s/%s: LCS resulted in %d sets' % (tgt_name, est_type, len(lcs_list)))
         feat_sels = lcs_list
 
@@ -209,20 +209,20 @@ for idx, tgt_name in enumerate(targets):
                     #       fset_results.data['pred_scores'])
                     fsets_results_clf_frame, \
                     fsets_results_clf_dict, \
-                    fsets_names_clf_frame = update_results(tgt_name, est_type, fsets_count_int, fset_name, fset_results,
-                                                           fsets_results_clf_frame,
-                                                           fsets_results_clf_dict,
-                                                           fsets_names_clf_frame)
+                    fsets_names_clf_frame = update_fset_results(tgt_name, est_type, fsets_count_int, fset_name, fset_results,
+                                                                fsets_results_clf_frame,
+                                                                fsets_results_clf_dict,
+                                                                fsets_names_clf_frame)
                 elif subs.tgt_task is gbl.reg:
                     #fset_results.sort_prune_pred(pred_score_thresh=-gbl.YBOCS_std)
                     #print('%s/%s/%s/%d: sorted and pruned to:' % (tgt_name, est_type, fset, fsets_count),
                     #      fset_results.data['pred_scores'])
                     fsets_results_reg_frame, \
                     fsets_results_reg_dict, \
-                    fsets_names_reg_frame = update_results(tgt_name, est_type, fsets_count_int, fset_name, fset_results,
-                                                           fsets_results_reg_frame,
-                                                           fsets_results_reg_dict,
-                                                           fsets_names_reg_frame)
+                    fsets_names_reg_frame = update_fset_results(tgt_name, est_type, fsets_count_int, fset_name, fset_results,
+                                                                fsets_results_reg_frame,
+                                                                fsets_results_reg_dict,
+                                                                fsets_names_reg_frame)
 
             print()
             #clear cache due to memory errors
@@ -234,16 +234,16 @@ for idx, tgt_name in enumerate(targets):
     #clear cache for tgt loop
     #subs = None
     # end tgt loop
-fpi_results_clf_dict = feat_perm_imp_compute(gbl.fpis_clf)
-fpi_results_reg_dict = feat_perm_imp_compute(gbl.fpis_reg)
+fpi_results_clf_dict = compute_fpi_results_dict(gbl.fpis_clf)
+fpi_results_reg_dict = compute_fpi_results_dict(gbl.fpis_reg)
 
 # collate permutation importance rankings
 feat_perm_imp_results_clf_frame = pd.DataFrame().from_dict(fpi_results_clf_dict)
 feat_perm_imp_results_reg_frame = pd.DataFrame().from_dict(fpi_results_reg_dict)
 
 # compute pred_ci, pred_avg and sort
-fsets_results_clf_frame = compute_results(fsets_results_clf_frame, fsets_results_clf_dict)
-fsets_results_reg_frame = compute_results(fsets_results_reg_frame, fsets_results_reg_dict)
+fsets_results_clf_frame = compute_fset_results_frame(fsets_results_clf_frame, fsets_results_clf_dict)
+fsets_results_reg_frame = compute_fset_results_frame(fsets_results_reg_frame, fsets_results_reg_dict)
 
 fsets_results_clf_frame.sort_values(by='pred_best', axis=1, ascending=False, inplace=True)
 fsets_results_reg_frame.sort_values(by='pred_best', axis=1, ascending=False, inplace=True)

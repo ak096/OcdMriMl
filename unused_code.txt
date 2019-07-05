@@ -263,3 +263,32 @@ Subs():..
             if 'RANDOM_' in column:
                 self.pat_frame_train_norm.drop(columns=column, inplace=True)
                 self.pat_frame_test_norm.drop(columns=column, inplace=True)
+
+
+results.py
+
+# class FeatSetResults():
+#     def __init__(self, fset_list):
+#         self.data = {
+#                     'fset_list': fset_list,
+#                     #'pred_frames': [],
+#                     'pred_scores': [],
+#                     'scoring': '',
+#                     'conf_interval': [],
+#                     'feat_imp_frames': [],
+#                     'ests': [],
+#                     'train_scores': []
+#                     }
+#
+#     def sort_prune_pred(self, pred_score_thresh=0.5):
+#
+#         #if self.data['scoring'] in list(ClfScorer().__dict__.keys()):
+#
+#         enum = [[i, v] for i, v in enumerate(self.data['pred_scores'])]
+#         idx = [i[0] for i in sorted(enum, key=lambda k:k[1], reverse=True) if i[1] > pred_score_thresh]
+#
+#         #self.data['pred_frames'] = [self.data['pred_frames'][i] for i in idx]
+#         self.data['pred_scores'] = [self.data['pred_scores'][i] for i in idx]
+#         self.data['feat_imp_frames'] = [self.data['feat_imp_frames'][i] for i in idx]
+#         self.data['ests'] = [self.data['ests'][i] for i in idx]
+#         self.data['train_scores'] = [self.data['train_scores'][i] for i in idx]
