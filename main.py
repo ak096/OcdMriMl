@@ -41,7 +41,7 @@ targets = [
 'YBOCS_reg',
           ]
 
-#all_tgt_results = {}
+tgt_univar_results_dict = {}
 
 clf_scorer = ClfScorer()
 reg_scorer = RegScorer()
@@ -85,14 +85,14 @@ for idx, tgt_name in enumerate(targets):
     t_frame, f_frame, mi_frame, feat_pool_counts_frame, feat_pool_set = feat_pool_compute(tgt_name=tgt_name, subs=subs,
                                                                                           feat_picker=feat_picker)
     feat_pool_set_num = len(feat_pool_set)
-    # all_tgt_results[tgt_name] = {
-    #                             #'t_frame': t_frame.transpose(),
-    #                             #'f_frame': f_frame.transpose(),
-    #                             #'mi_frame': mi_frame.transpose(),
-    #                             #'feat_count_frame': feat_pool_counts_frame.transpose(),
-    #                             gbl.linear_: {},
-    #                             gbl.non_linear_: {}
-    #                             }
+    tgt_univar_results_dict[tgt_name] = {
+                                't_frame': t_frame.transpose(),
+                                'f_frame': f_frame.transpose(),
+                                'mi_frame': mi_frame.transpose(),
+                                'feat_count_frame': feat_pool_counts_frame.transpose(),
+                                #gbl.linear_: {},
+                                #gbl.non_linear_: {}
+                                }
 
     print('%s: computed feat_pool: %d' % (tgt_name, feat_pool_set_num))
 
@@ -278,11 +278,23 @@ def save_results():
     writer.save()
     print('SAVED %s' % xlsx_name)
 
-    save_list = [fsets_results_clf_dict, fsets_results_reg_dict, fsets_count]
-    for l in save_list:
-        my_var_name = [k for k, v in locals().items() if v == l][0]
-        with open('{}_{}.pickle'.format(atlas, my_var_name), 'wb') as handle:
-            pickle.dump(l, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # save_list = [fsets_results_clf_dict, fsets_results_reg_dict, fsets_count, tgt_univar_results_dict]
+
+    my_var_name = [k for k, v in locals().items() if v == fsets_results_clf_dict][0]
+    with open('{}_{}.pickle'.format(atlas, my_var_name), 'wb') as handle:
+        pickle.dump(fsets_results_clf_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    my_var_name = [k for k, v in locals().items() if v == fsets_results_reg_dict][0]
+    with open('{}_{}.pickle'.format(atlas, my_var_name), 'wb') as handle:
+        pickle.dump(fsets_results_reg_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    my_var_name = [k for k, v in locals().items() if v == fsets_count][0]
+    with open('{}_{}_int.pickle'.format(atlas, my_var_name), 'wb') as handle:
+        pickle.dump(fsets_count, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    my_var_name = [k for k, v in locals().items() if v == tgt_univar_results_dict][0]
+    with open('{}_{}.pickle'.format(atlas, my_var_name), 'wb') as handle:
+        pickle.dump(tgt_univar_results_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 save_results()
