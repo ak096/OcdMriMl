@@ -46,7 +46,7 @@ tgt_univar_results_dict = {}
 clf_scorer = ClfScorer()
 reg_scorer = RegScorer()
 
-fsets_count = 0
+fsets_count_int = 0
 
 fsets_results_frame_idx = ['freq', 'pred_best', 'tgt_best', 'est_type_best', 'pred_avg', 'pred_ci']
 
@@ -149,19 +149,19 @@ for idx, tgt_name in enumerate(targets):
         # all_tgt_results[tgt_name][est_type]['hoexter_' + str(fsets_count)] = FeatSetResults(gbl.hoexter_feats_Desikan)
         fset_dict = {}
         for fsel in feat_sels:
-            fsets_count += 1
-            fset_dict['fset_' + str(fsets_count)] = fsel
+            fsets_count_int += 1
+            fset_dict['fset_' + str(fsets_count_int)] = fsel
 
         names = ['hoexter_', 'boedhoe_csc_', 'boedhoe_c_', 'boedhoe_sc_']
         for i, exp_fset in enumerate(gbl.h_b_expert_fsets[atlas]):
-            fsets_count += 1
-            fset_dict[names[i] + str(fsets_count)] = exp_fset
+            fsets_count_int += 1
+            fset_dict[names[i] + str(fsets_count_int)] = exp_fset
 
         # train predict loop for each feat set
         #for fset, fset_results in all_tgt_results[tgt_name][est_type].items():
         for fset_name, fset_list in fset_dict.items():
             zeit = time.time()
-            print('%s/%s/%s/%d: scoring used:' % (tgt_name, est_type, fset_name, fsets_count), scoring)
+            print('%s/%s/%s/%d: scoring used:' % (tgt_name, est_type, fset_name, fsets_count_int), scoring)
 
             #feat_train = fset_results.data['fset_list'] + gbl.clin_demog_feats
             feat_train = fset_list + gbl.clin_demog_feats
@@ -174,7 +174,7 @@ for idx, tgt_name in enumerate(targets):
                                        scoring=scoring,
                                        thresh=thresh
                                        )
-            print('%s/%s/%s/%d: trained cv over grid:' % (tgt_name, est_type, fset_name, fsets_count), train_scores)
+            print('%s/%s/%s/%d: trained cv over grid:' % (tgt_name, est_type, fset_name, fsets_count_int), train_scores)
 
             pred_scores, pred_frames = pred(est_type=est_type, task=subs.tgt_task, ests=ests,
                                             X=subs.pat_frame_test_norm.loc[:, feat_train],
@@ -182,7 +182,7 @@ for idx, tgt_name in enumerate(targets):
                                             scoring=scoring,
                                             thresh=thresh
                                            )
-            print('%s/%s/%s/%d: predicted:' % (tgt_name, est_type, fset_name, fsets_count), pred_scores)
+            print('%s/%s/%s/%d: predicted:' % (tgt_name, est_type, fset_name, fsets_count_int), pred_scores)
 
             # fset_results.data.update({
             #                      #'pred_frames': pred_frames,
@@ -193,13 +193,13 @@ for idx, tgt_name in enumerate(targets):
             #                      'ests': ests,
             #                      'train_scores': train_scores
             #                       })
-            print('%s/%s/%s/%d: train and predict took %.2f' % (tgt_name, est_type, fset_name, fsets_count,
+            print('%s/%s/%s/%d: train and predict took %.2f' % (tgt_name, est_type, fset_name, fsets_count_int,
                                                                 time.time() - zeit))
             tp = sorted(list(zip(pred_scores, pred_frames, ests)), key=lambda x: x[0], reverse=True)[0]
             psb, pfb, eb = tp
-            print('%s/%s/%s/%d: found best pred score:' % (tgt_name, est_type, fset_name, fsets_count), psb)
+            print('%s/%s/%s/%d: found best pred score:' % (tgt_name, est_type, fset_name, fsets_count_int), psb)
             if psb <= thresh:
-                print('%s/%s/%s/%d: below thresh, skipping update' % (tgt_name, est_type, fset_name, fsets_count))
+                print('%s/%s/%s/%d: below thresh, skipping update' % (tgt_name, est_type, fset_name, fsets_count_int))
             else:
 
                 fset_results = {'pred_score_best': psb, 'pred_frame_best': pfb, 'fset_list': fset_list, 'est_best': eb}
@@ -209,7 +209,7 @@ for idx, tgt_name in enumerate(targets):
                     #       fset_results.data['pred_scores'])
                     fsets_results_clf_frame, \
                     fsets_results_clf_dict, \
-                    fsets_names_clf_frame = update_results(tgt_name, est_type, fsets_count, fset_name, fset_results,
+                    fsets_names_clf_frame = update_results(tgt_name, est_type, fsets_count_int, fset_name, fset_results,
                                                            fsets_results_clf_frame,
                                                            fsets_results_clf_dict,
                                                            fsets_names_clf_frame)
@@ -219,7 +219,7 @@ for idx, tgt_name in enumerate(targets):
                     #      fset_results.data['pred_scores'])
                     fsets_results_reg_frame, \
                     fsets_results_reg_dict, \
-                    fsets_names_reg_frame = update_results(tgt_name, est_type, fsets_count, fset_name, fset_results,
+                    fsets_names_reg_frame = update_results(tgt_name, est_type, fsets_count_int, fset_name, fset_results,
                                                            fsets_results_reg_frame,
                                                            fsets_results_reg_dict,
                                                            fsets_names_reg_frame)
@@ -276,22 +276,22 @@ def save_results():
     writer.save()
     print('SAVED %s' % xlsx_name)
 
-    # save_list = [fsets_results_clf_dict, fsets_results_reg_dict, fsets_count, tgt_univar_results_dict]
+    # save_list = [fsets_results_clf_dict, fsets_results_reg_dict, fsets_count_int, tgt_univar_results_dict]
+    # for l in save_list:
+    #     my_var_name = [k for k, v in locals().items() if v == l and k is not 'l'][0]
+    #     with open(atlas+'_'+my_var_name+'.pickle', 'wb') as handle:
+    #         pickle.dump(l, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    my_var_name = [k for k, v in locals().items() if v == fsets_results_clf_dict][0]
-    with open('{}_{}.pickle'.format(atlas, my_var_name), 'wb') as handle:
+    with open('{}_{}.pickle'.format(atlas, 'fsets_results_clf_dict'), 'wb') as handle:
         pickle.dump(fsets_results_clf_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    my_var_name = [k for k, v in locals().items() if v == fsets_results_reg_dict][0]
-    with open('{}_{}.pickle'.format(atlas, my_var_name), 'wb') as handle:
+    with open('{}_{}.pickle'.format(atlas, 'fsets_results_reg_dict'), 'wb') as handle:
         pickle.dump(fsets_results_reg_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    my_var_name = [k for k, v in locals().items() if v == fsets_count][0]
-    with open('{}_{}_int.pickle'.format(atlas, my_var_name), 'wb') as handle:
-        pickle.dump(fsets_count, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('{}_{}.pickle'.format(atlas, 'fsets_count_int'), 'wb') as handle:
+        pickle.dump(fsets_count_int, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    my_var_name = [k for k, v in locals().items() if v == tgt_univar_results_dict][0]
-    with open('{}_{}.pickle'.format(atlas, my_var_name), 'wb') as handle:
+    with open('{}_{}.pickle'.format(atlas, 'tgt_univar_results_dict'), 'wb') as handle:
         pickle.dump(tgt_univar_results_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
