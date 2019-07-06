@@ -238,8 +238,8 @@ fpi_results_clf_dict = compute_fpi_results_dict(gbl.fpis_clf)
 fpi_results_reg_dict = compute_fpi_results_dict(gbl.fpis_reg)
 
 # collate permutation importance rankings
-feat_perm_imp_results_clf_frame = pd.DataFrame().from_dict(fpi_results_clf_dict)
-feat_perm_imp_results_reg_frame = pd.DataFrame().from_dict(fpi_results_reg_dict)
+fpi_results_clf_frame = pd.DataFrame().from_dict(fpi_results_clf_dict)
+fpi_results_reg_frame = pd.DataFrame().from_dict(fpi_results_reg_dict)
 
 # compute pred_ci, pred_avg and sort
 fsets_results_clf_frame = compute_fset_results_frame(fsets_results_clf_frame, fsets_results_clf_dict)
@@ -251,8 +251,8 @@ fsets_results_reg_frame.sort_values(by='pred_best', axis=1, ascending=False, inp
 fsets_names_clf_frame = fsets_names_clf_frame.reindex(columns=fsets_results_clf_frame.columns.tolist())
 fsets_names_reg_frame = fsets_names_reg_frame.reindex(columns=fsets_results_reg_frame.columns.tolist())
 
-feat_perm_imp_results_clf_frame.sort_values(by='perm_imp_high', axis=1, ascending=False, inplace=True)
-feat_perm_imp_results_reg_frame.sort_values(by='perm_imp_high', axis=1, ascending=False, inplace=True)
+fpi_results_clf_frame.sort_values(by='perm_imp_high', axis=1, ascending=False, inplace=True)
+fpi_results_reg_frame.sort_values(by='perm_imp_high', axis=1, ascending=False, inplace=True)
 
 
 # SAVE RESULTS
@@ -267,11 +267,11 @@ def save_results():
     writer = pd.ExcelWriter(xlsx_name)
     fsets_results_clf_frame.to_excel(writer, 'fsets_results_clf')
     fsets_names_clf_frame.to_excel(writer, 'fsets_names_clf')
-    feat_perm_imp_results_clf_frame.to_excel(writer, 'fimps_clf')
+    fpi_results_clf_frame.to_excel(writer, 'fimps_clf')
 
     fsets_results_reg_frame.to_excel(writer, 'fsets_results_reg')
     fsets_names_reg_frame.to_excel(writer, 'fsets_names_reg')
-    feat_perm_imp_results_reg_frame.to_excel(writer, 'fimps_reg')
+    fpi_results_reg_frame.to_excel(writer, 'fimps_reg')
 
     writer.save()
     print('SAVED %s' % xlsx_name)

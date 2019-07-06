@@ -95,7 +95,7 @@ def combine_dicts(*args):
     return super_dict
 
 
-def compute_fpi_all_results_frame(*args):
+def compute_fpi_all_results_frame(*args): #super_dict):#
     super_dict = combine_dicts(*args)
     fpi_all_results_dict = compute_fpi_results_dict(super_dict)
     fpi_all_results_frame = pd.DataFrame.from_dict(fpi_all_results_dict)
