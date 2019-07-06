@@ -294,6 +294,11 @@ def save_results():
     with open('{}_{}.pickle'.format(atlas, 'tgt_univar_results_dict'), 'wb') as handle:
         pickle.dump(tgt_univar_results_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+    with open('{}_{}.pickle'.format(atlas, 'fpis_clf_dict'), 'wb') as handle:
+        pickle.dump(gbl.fpis_clf, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open('{}_{}.pickle'.format(atlas, 'fpis_reg_dict'), 'wb') as handle:
+        pickle.dump(gbl.fpis_reg, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 save_results()
 
