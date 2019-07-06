@@ -87,16 +87,17 @@ def combine_fpi_frames(*args):
     return fpi_all_frame.sort_values(by='pi_avg', axis=1, ascending=False, inplace=True) # without ci
 
 
-def combine_dicts(dicts_list):
+def combine_dicts(*args):
     super_dict = {}
-    for dict in dicts_list:
+    for dict in args:
         for k, v in dict.items():
             super_dict.setdefault(k, []).extend(v)
     return super_dict
 
 
-def compute_fpi_all_results_frame(dicts_list):
-    super_dict = combine_dicts(dicts_list)
+def compute_fpi_all_results_frame(*args):
+    print(args)
+    super_dict = combine_dicts(args)
     fpi_all_results_dict = compute_fpi_results_dict(super_dict)
     fpi_all_results_frame = pd.DataFrame.from_dict(fpi_all_results_dict)
     return fpi_all_results_frame.sort_values(by='pi_avg', axis=1, ascending=False, inplace=True)
