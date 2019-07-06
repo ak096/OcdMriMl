@@ -265,8 +265,8 @@ clin_demog_feats = [all_feat_names.index(f) for f in clin_demog_feats_names]
 #get std of YBOCS
 YBOCS_reg_std = np.std(pat_frame_stats.loc[:, 'YBOCS_reg'])
 
-fpis_clf = {}
-fpis_reg = {}
+fpi_clf = {}
+fpi_reg = {}
 
 h_b_expert_fsets = {'Desikan': [hoexter_Desikan_feats + _hoexter_subcortical_feats,
                                 boedhoe_Desikan_feats + _boedhoe_subcortical_feats,
