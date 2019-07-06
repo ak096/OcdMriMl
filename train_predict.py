@@ -103,9 +103,9 @@ def perm_imp_test(task, est, base_score, X, y, n_iter=1, scoring=None):
                 score_diff += base_score - est.score(X, y)
             X.loc[:, f] = X_col
         if task is gbl.clf:
-            gbl.fpis_clf.setdefault(f, []).append(score_diff/n_iter)
+            gbl.fpi_clf.setdefault(f, []).append(score_diff / n_iter)
         elif task is gbl.reg:
-            gbl.fpis_reg.setdefault(f, []).append(score_diff/n_iter)
+            gbl.fpi_reg.setdefault(f, []).append(score_diff / n_iter)
 
     return
 

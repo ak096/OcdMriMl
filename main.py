@@ -234,8 +234,8 @@ for idx, tgt_name in enumerate(targets):
     #clear cache for tgt loop
     #subs = None
     # end tgt loop
-fpi_results_clf_dict = compute_fpi_results_dict(gbl.fpis_clf)
-fpi_results_reg_dict = compute_fpi_results_dict(gbl.fpis_reg)
+fpi_results_clf_dict = compute_fpi_results_dict(gbl.fpi_clf)
+fpi_results_reg_dict = compute_fpi_results_dict(gbl.fpi_reg)
 
 # collate permutation importance rankings
 fpi_results_clf_frame = pd.DataFrame().from_dict(fpi_results_clf_dict)
@@ -294,6 +294,11 @@ def save_results():
     with open('{}_{}.pickle'.format(atlas, 'tgt_univar_results_dict'), 'wb') as handle:
         pickle.dump(tgt_univar_results_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+    with open('{}_{}.pickle'.format(atlas, 'fpi_clf_dict'), 'wb') as handle:
+        pickle.dump(gbl.fpi_clf, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open('{}_{}.pickle'.format(atlas, 'fpi_reg_dict'), 'wb') as handle:
+        pickle.dump(gbl.fpi_reg, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 save_results()
 
