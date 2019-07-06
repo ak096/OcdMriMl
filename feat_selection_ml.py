@@ -41,7 +41,7 @@ def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=
     return feat_sels_rfecv
 
 
-def freq_item_sets_compute(dataset, min_sup=1.0):
+def compute_fqis_fpgrowth_list(dataset, min_sup=1.0):
 
     dataset = [list(np.int16(ds)) for ds in dataset] # convert to int16s to save memory avoid MemoryError
 
@@ -66,7 +66,7 @@ def freq_item_sets_compute(dataset, min_sup=1.0):
         return dataset
 
 
-def compute_fqis_frame(super_isets, min_support=0.6): # expects list of lists, returns pandas DataFrame
+def compute_fqis_apriori_frame(super_isets, min_support=0.6): # expects list of lists, returns pandas DataFrame
     te = TransactionEncoder()
     te_ary = te.fit(super_isets).transform(super_isets)
     df = pd.DataFrame(te_ary, columns=te.columns_)
