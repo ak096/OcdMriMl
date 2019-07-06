@@ -31,7 +31,7 @@ jupyter-console==6.0.0
 jupyter-core==4.4.0
 kiwisolver==1.1.0
 MarkupSafe==1.1.1
-matplotlib
+matplotlib==3.1.0
 mistune==0.8.4
 mlxtend==0.16.0
 more-itertools==4.3.0
@@ -81,5 +81,6 @@ urllib3==1.24.3
 wcwidth==0.1.7
 webencodings==0.5.1
 widgetsnbextension==3.4.2
+xlrd==1.2.0
 yellowbrick==0.9.1
 zipp==0.5.1

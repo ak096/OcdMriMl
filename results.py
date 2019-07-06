@@ -96,7 +96,7 @@ def combine_dicts(*args):
 
 
 def compute_fpi_all_results_frame(*args):
-    super_dict = combine_dicts(args)
+    super_dict = combine_dicts(*args)
     fpi_all_results_dict = compute_fpi_results_dict(super_dict)
     fpi_all_results_frame = pd.DataFrame.from_dict(fpi_all_results_dict)
     return fpi_all_results_frame.sort_values(by='pi_avg', axis=1, ascending=False, inplace=True)
