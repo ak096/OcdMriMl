@@ -41,36 +41,37 @@ def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=
     return feat_sels_rfecv
 
 
-def compute_fqis_fpgrowth_list(dataset, min_sup=1.0):
+def compute_fqis_fpgrowth_dict(dataset, min_sup=0.6):
 
     dataset = [list(np.int16(ds)) for ds in dataset] # convert to int16s to save memory avoid MemoryError
-
+    print('computing fqis')
     patterns = pyfpgrowth.find_frequent_patterns(dataset, round(min_sup*len(dataset)))
-    if len(patterns) > 0:
-        # sets of largest size
-        # for k, v in patterns.items():
-        #     freq_item_sets.setdefault(len(k), []).append(list(k)) #keys are length of sets
-        # max_key = max(freq_item_sets, key=int)
-        # print('%d freq item sets of len %d' % (len(freq_item_sets[max_key]), max_key))
-        # return freq_item_sets[max_key]
-        # all maximum size unique subsets
-        del_keys = []
-        for k0 in patterns.keys():
-            for k1 in patterns.keys():
-                if set(k0) != set(k1):
-                    if set(k0).issubset(set(k1)):
-                        del_keys.append(k0)
-        freq_item_sets = [list(s) for s in patterns.keys() if s not in del_keys]
-        return freq_item_sets
-    else:
-        return dataset
+    return patterns
+    # if len(patterns) > 0:
+    #     # sets of largest size
+    #     # for k, v in patterns.items():
+    #     #     freq_item_sets.setdefault(len(k), []).append(list(k)) #keys are length of sets
+    #     # max_key = max(freq_item_sets, key=int)
+    #     # print('%d freq item sets of len %d' % (len(freq_item_sets[max_key]), max_key))
+    #     # return freq_item_sets[max_key]
+    #     # all maximum size unique subsets
+    #     del_keys = []
+    #     for k0 in patterns.keys():
+    #         for k1 in patterns.keys():
+    #             if set(k0) != set(k1):
+    #                 if set(k0).issubset(set(k1)):
+    #                     del_keys.append(k0)
+    #     freq_item_sets = [list(s) for s in patterns.keys() if s not in del_keys]
+    #     return freq_item_sets
+    # else:
+    #     return dataset
 
 
 def compute_fqis_apriori_frame(super_isets, min_support=0.6): # expects list of lists, returns pandas DataFrame
     te = TransactionEncoder()
     te_ary = te.fit(super_isets).transform(super_isets)
     df = pd.DataFrame(te_ary, columns=te.columns_)
-    freq_item_sets_frame = apriori(df, min_support=min_support, use_colnames=True, verbose=1)
+    freq_item_sets_frame = apriori(df, min_support=min_support, use_colnames=True, verbose=2)
     freq_item_sets_frame.sort_values(by='support', axis=0, ascending=False, inplace=True)
     freq_item_sets_frame['length'] = freq_item_sets_frame['itemsets'].apply(lambda x: len(x))
 

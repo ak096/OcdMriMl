@@ -12,7 +12,7 @@ from sklearn.exceptions import ConvergenceWarning
 
 #from pickling import *
 from feat_pool_univar import feat_pool_compute
-from feat_selection_ml import grid_rfe_cv, compute_fqis_fpgrowth_list,  largest_common_subsets
+from feat_selection_ml import grid_rfe_cv, compute_fqis_fpgrowth_dict,  largest_common_subsets
 from dataset import Subs
 from results import update_fset_results, compute_fset_results_frame, compute_fpi_results_dict #, FeatSetResults
 from train_predict import train, pred
@@ -27,7 +27,7 @@ if not sys.warnoptions:
     os.environ["PYTHONWARNINGS"] = "ignore" # Also affect subprocesses
 
 sys.setrecursionlimit(10**8)
-#resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
 # seed = 7
 # np.random.seed(seed)
@@ -245,6 +245,7 @@ fpi_results_reg_frame = pd.DataFrame().from_dict(fpi_results_reg_dict)
 fsets_results_clf_frame = compute_fset_results_frame(fsets_results_clf_frame, fsets_results_clf_dict)
 fsets_results_reg_frame = compute_fset_results_frame(fsets_results_reg_frame, fsets_results_reg_dict)
 
+# sort results
 fsets_results_clf_frame.sort_values(by='pred_best', axis=1, ascending=False, inplace=True)
 fsets_results_reg_frame.sort_values(by='pred_best', axis=1, ascending=False, inplace=True)
 
