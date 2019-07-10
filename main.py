@@ -12,7 +12,7 @@ from sklearn.exceptions import ConvergenceWarning
 
 #from pickling import *
 from feat_pool_univar import feat_pool_compute
-from feat_selection_ml import grid_rfe_cv, compute_fqis_fpgrowth_dict,  largest_common_subsets
+from feat_selection_ml import grid_rfe_cv, compute_fqis_pyfpgrowth_dict,  largest_common_subsets
 from dataset import Subs
 from results import update_fset_results, compute_fset_results_frame, compute_fpi_results_dict #, FeatSetResults
 from train_predict import train, pred

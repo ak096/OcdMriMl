@@ -5,7 +5,7 @@ from copy import deepcopy
 
 import gbl
 from train_predict import conf_interval
-from feat_selection_ml import compute_fqis_apriori_frame, compute_fqis_fpgrowth_dict
+from feat_selection_ml import compute_fqis_apriori_frame, compute_fqis_pyfpgrowth_dict, compute_fqis_orange_fpgrowth_list, compute_fqis_lcs_dict
 
 
 def update_fset_results(tgt_name, est_type, fsets_count, curr_fset, curr_fset_results, fsets_results_frame,
@@ -106,10 +106,10 @@ def compute_fpi_all_results_frame(*args): #super_dict):#
 def compute_hb_idx(fsets_results_frame):
     fsrf = fsets_results_frame
     hb_idx = [True if any(f in c for f in ['hoexter', 'boedhoe']) else False for c in fsrf]
-    non_hb_idx = [not i for i in hb_idx]
+    non_hb_all_idx = [not i for i in hb_idx]
     ph = fsrf.loc['pred_best', hb_idx].min()
-    non_hb = [c for c in fsrf.loc[:, non_hb_idx] if fsrf.loc['pred_best', c] >= ph]
-    return non_hb, hb_idx, non_hb_idx
+    non_hb_geq = [c for c in fsrf.loc[:, non_hb_all_idx] if fsrf.loc['pred_best', c] >= ph]
+    return non_hb_geq, hb_idx, non_hb_all_idx
 
 
 def construct_fqis_super_isets(fsets_results_frame, fsets_names_frame): # for fsets >= pred_best of min hoexter/boedhoe
@@ -120,12 +120,12 @@ def construct_fqis_super_isets(fsets_results_frame, fsets_names_frame): # for fs
 
 
 def compute_hb_fcounts_frame(fsets_results_frame, fsets_names_frame):
-    non_hb, _, _ = compute_hb_idx(fsets_results_frame)
+    non_hb_geq, _, _ = compute_hb_idx(fsets_results_frame)
     fsnf = fsets_names_frame
-    non_hb_f_all = []
-    for c in fsnf.loc[:, non_hb]:
-        non_hb_f_all.extend(list(set(fsnf[c].tolist())))
-    non_hb_fcounts_frame = pd.DataFrame(index=['count'], data=dict(Counter(non_hb_f_all)))
+    non_hb_geq_f_all = []
+    for c in fsnf.loc[:, non_hb_geq]:
+        non_hb_geq_f_all.extend(list(set(fsnf[c].tolist())))
+    non_hb_fcounts_frame = pd.DataFrame(index=['count'], data=dict(Counter(non_hb_geq_f_all)))
     non_hb_fcounts_frame.sort_values(by='count', axis=1, ascending=False, inplace=True)
     nhbfcf = non_hb_fcounts_frame
     non_hb_hb_f = [c for c in nhbfcf if c in set(gbl.h_b_expert_fsets['DesiDest'][0] + gbl.h_b_expert_fsets['DesiDest'][1])]
@@ -134,12 +134,14 @@ def compute_hb_fcounts_frame(fsets_results_frame, fsets_names_frame):
 
 
 def compute_store_results():
-    e_writer = pd.ExcelWriter('all_fqis_fcounts_fimps.xlsx')
+    min_sup = 0.50
+    fqis_algo = 'lcs'
+    e_writer = pd.ExcelWriter('all_fqis{}{}_fsup.xlsx'.format(min_sup, fqis_algo))
 
     for task in [gbl.clf, gbl.reg]:
         print(task)
         fpi_results_frames = []
-        for atlas in ['Desikan', 'Destrieux', 'DesiDest']:
+        for atlas in gbl.atlas_dict.keys():
             print(atlas)
             fsets_results_frame = pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
                                                 sheet_name='fsets_results_{}'.format(task), index_col=0)
@@ -150,28 +152,71 @@ def compute_store_results():
             fpi_results_frames.append(pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
                                       sheet_name='fimps_{}'.format(task), index_col=0))
 
-            # fqis with apriori
+
             super_isets_names_list = construct_fqis_super_isets(fsets_results_frame, fsets_names_frame)
-            fqis_frame = compute_fqis_apriori_frame(super_isets_names_list)
+            super_isets_index_list = [[gbl.all_feat_names.index(f) for f in s] for s in super_isets_names_list]
+            drop=False
+            if fqis_algo == 'apriori':
+                # fqis with apriori
+                #fqis_frame = compute_fqis_apriori_frame(super_isets_names_list, min_sup)
+                pass
+            elif fqis_algo == 'pyfpgrowth':
+                ## fqis with fpgrowth
+                fqis_dict = compute_fqis_pyfpgrowth_dict(super_isets_index_list, min_sup)
+                fqis_frame = pd.DataFrame({'itemsets': [{gbl.all_feat_names[f] for f in s} for s in fqis_dict.keys()],
+                                           'support': [round(v/len(super_isets_index_list), 3) for v in fqis_dict.values()]},
+                                           index=np.arange(len(fqis_dict.keys())))
+                drop=True
+            elif fqis_algo == 'orange':
+                ## fqis with orange
+                print('fqis orange')
+                fqis_list = compute_fqis_orange_fpgrowth_list(super_isets_index_list, min_sup)
+                fqis_frame = pd.DataFrame({'itemsets': [{gbl.all_feat_names[f] for f in s[0]} for s in fqis_list],
+                                           'support': [round(v[1]/len(super_isets_index_list), 3) for v in fqis_list]},
+                                           index=np.arange(len(fqis_list)))
+                drop=True
+            elif fqis_algo == 'lcs':
+                ## fqis with largest common subsets
+                fqis_dict = compute_fqis_lcs_dict(super_isets_index_list, min_sup)
+                fqis_frame = pd.DataFrame({'itemsets': [{gbl.all_feat_names[f] for f in s} for s in fqis_dict.keys()],
+                                           'support': fqis_dict.values()},
+                                           index=np.arange(len(fqis_dict.keys())))
+                drop=False
 
-            ## fqis with fpgrowth
-            # super_isets_index_list = [[gbl.all_feat_names.index(f) for f in s] for s in super_isets_names_list]
-            # fqis_dict = compute_fqis_fpgrowth_dict(super_isets_index_list)
-            # fqis_frame = pd.DataFrame({'set': [[gbl.all_feat_names[f] for f in s] for s in fqis_dict.keys()],
-            #                            'count': fqis_dict.values()})
+            fqis_frame.sort_values(by='support', axis=0, ascending=False, inplace=True)
+            if drop:
+                drop_list = []
+                for i, its_i in enumerate(fqis_frame.loc[:, 'itemsets']):
+                    print('processing set {} from {}'.format(i + 1, len(fqis_frame.loc[:, 'itemsets'])))
+                    if len(its_i) == 1:
+                        drop_list.append(i)
+                        continue
+                    elif i+1 == len(fqis_frame.loc[:, 'itemsets']):
+                        continue
+                    else:
+                        for its_j in fqis_frame.loc[i+1:, 'itemsets']:
+                            if set(its_i).issubset(set(its_j)):
+                                drop_list.append(i)
+                                break
 
-            # for s in super_isets_names_list:
-            #     print(s)
-            #     print(len(s))
-            # print(len(super_isets_index_list))
+            print('dropping:', drop_list)
+            fqis_frame.drop(drop_list, inplace=True)
 
             fqis_frame.to_excel(e_writer, '{}_{}_fqis'.format(atlas, task))
 
+            # fcounts and fsup
+            non_hb_geq, _, _ = compute_hb_idx(fsets_results_frame)
             non_hb_fcounts_frame, hb_fcounts_frame = compute_hb_fcounts_frame(fsets_results_frame, fsets_names_frame)
-            non_hb_fcounts_frame.to_excel(e_writer, '{}_{}_non_hb_fcounts'.format(atlas, task))
-            hb_fcounts_frame.to_excel(e_writer, '{}_{}_hb_fcounts'.format(atlas, task))
 
-        fpi_all_frame = combine_fpi_frames(fpi_results_frames)
-        fpi_all_frame.to_excel(e_writer, 'fimps_{}'.format(task))
+            non_hb_fcounts_frame = non_hb_fcounts_frame.transpose()
+            hb_fcounts_frame = hb_fcounts_frame.transpose()
+            non_hb_fcounts_frame['support'] = non_hb_fcounts_frame['count']/len(non_hb_geq)
+            hb_fcounts_frame['support'] = hb_fcounts_frame['count']/len(non_hb_geq)
+
+            non_hb_fcounts_frame.to_excel(e_writer, '{}_{}_non_hb_fsup'.format(atlas, task))
+            hb_fcounts_frame.to_excel(e_writer, '{}_{}_hb_fsup'.format(atlas, task))
+
+        # fpi_all_frame = combine_fpi_frames(fpi_results_frames)
+        # fpi_all_frame.to_excel(e_writer, 'fimps_{}'.format(task))
 
     e_writer.save()

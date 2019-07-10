@@ -9,6 +9,7 @@ from sklearn.feature_selection import RFECV
 from mlxtend.frequent_patterns import apriori
 from mlxtend.preprocessing import TransactionEncoder
 import pyfpgrowth
+from orangecontrib.associate.fpgrowth import *
 import gbl
 #from sys import getsizeof
 
@@ -41,7 +42,7 @@ def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=
     return feat_sels_rfecv
 
 
-def compute_fqis_fpgrowth_dict(dataset, min_sup=0.6):
+def compute_fqis_pyfpgrowth_dict(dataset, min_sup=0.6):
 
     dataset = [list(np.int16(ds)) for ds in dataset] # convert to int16s to save memory avoid MemoryError
     print('computing fqis')
@@ -78,6 +79,11 @@ def compute_fqis_apriori_frame(super_isets, min_support=0.6): # expects list of 
     return freq_item_sets_frame
 
 
+def compute_fqis_orange_fpgrowth_list(super_ilists, min_sup=0.5):
+    itemsets = frequent_itemsets(super_ilists, min_sup)
+    return list(itemsets)
+
+
 def largest_common_subsets(super_set, min_sup=10):
     super_set = [list(np.int16(ds)) for ds in super_set]  # convert to int16s to save memory avoid MemoryError
     lcs_list = []
@@ -101,3 +107,25 @@ def largest_common_subsets(super_set, min_sup=10):
         print('lcs list is empty!!!!!!!!!!!!!!!!!!')
     return lcs_list
 
+
+def compute_fqis_lcs_dict(super_ilists, min_sup=0.6):
+    super_isets_list = [set(np.int16(ds)) for ds in super_ilists]  # convert to int16s to save memory avoid MemoryError
+    lcs_dict = {}
+    num_super_isets = len(super_isets_list)
+    min_num_isets = round(num_super_isets*min_sup)
+    #min_num_isets = min_sup
+    for num in np.arange(min_num_isets, len(super_isets_list) + 1, 1):
+        print('finding all combis of size: %d' % num)
+        siss_idxs = list(combinations(np.arange(len(super_isets_list)), num))
+        print('combis found: %d' % len(siss_idxs))
+        for i, siss_idx in enumerate(siss_idxs):
+            siss_sub = [super_isets_list[sis] for sis in siss_idx]
+            lcs = set.intersection(*siss_sub)
+            #print('combi: %d/%d lcs size: %d' % (i, len(siss_idxs)-1, len(lcs)))
+            if len(lcs):
+                lcs_dict.setdefault(lcs, []).append(num)
+                print('updated lcs dict with lcs size: %d sup: %d' % (len(lcs), num))
+    lcs_dict_final = {k: round(np.max(v)/num_super_isets, 3) for k, v in lcs_dict.items()}
+    if not lcs_dict_final:
+        print('lcs list is empty!!!!!!!!!!!!!!!!!!')
+    return lcs_dict_final
