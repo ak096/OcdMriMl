@@ -135,7 +135,7 @@ for idx, tgt_name in enumerate(targets):
         # print('%s/%s: FIS resulted in %d sets' % (tgt_name, est_type, len(freq_item_sets_list)))
         # largest common subsets
         print('%s/%s: LCS starting' % (tgt_name, est_type))
-        lcs_list = largest_common_subsets(super_set=feat_sels_rfecv, min_sup=round(min_support * len(feat_sels_rfecv)))
+        lcs_list = largest_common_subsets(super_ilists=feat_sels_rfecv, min_sup=round(min_support * len(feat_sels_rfecv)))
         print('%s/%s: LCS resulted in %d sets' % (tgt_name, est_type, len(lcs_list)))
         feat_sels = lcs_list
 

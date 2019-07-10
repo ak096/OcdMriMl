@@ -9,6 +9,8 @@ from sklearn.feature_selection import RFECV
 from mlxtend.frequent_patterns import apriori
 from mlxtend.preprocessing import TransactionEncoder
 import pyfpgrowth
+from orangecontrib.associate.fpgrowth import frequent_itemsets
+
 import gbl
 #from sys import getsizeof
 
@@ -41,11 +43,11 @@ def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=
     return feat_sels_rfecv
 
 
-def compute_fqis_fpgrowth_dict(dataset, min_sup=0.6):
+def compute_fqis_fpgrowth_dict(super_ilists, min_sup=0.6):
+    print('computing fpgrowth')
+    super_ilists = [list(np.int16(ds)) for ds in super_ilists] # convert to int16s to save memory avoid MemoryError
 
-    dataset = [list(np.int16(ds)) for ds in dataset] # convert to int16s to save memory avoid MemoryError
-    print('computing fqis')
-    patterns = pyfpgrowth.find_frequent_patterns(dataset, round(min_sup*len(dataset)))
+    patterns = pyfpgrowth.find_frequent_patterns(super_ilists, round(min_sup * len(super_ilists)))
     return patterns
     # if len(patterns) > 0:
     #     # sets of largest size
@@ -67,28 +69,35 @@ def compute_fqis_fpgrowth_dict(dataset, min_sup=0.6):
     #     return dataset
 
 
-def compute_fqis_apriori_frame(super_isets, min_support=0.6): # expects list of lists, returns pandas DataFrame
+def compute_fqis_apriori_frame(super_ilists, min_sup=0.6): # expects list of lists, returns pandas DataFrame
+    print('computing apriori')
     te = TransactionEncoder()
-    te_ary = te.fit(super_isets).transform(super_isets)
+    te_ary = te.fit(super_ilists).transform(super_ilists)
     df = pd.DataFrame(te_ary, columns=te.columns_)
-    freq_item_sets_frame = apriori(df, min_support=min_support, use_colnames=True, verbose=2)
+    freq_item_sets_frame = apriori(df, min_support=min_sup, use_colnames=True, verbose=2)
     freq_item_sets_frame.sort_values(by='support', axis=0, ascending=False, inplace=True)
-    freq_item_sets_frame['length'] = freq_item_sets_frame['itemsets'].apply(lambda x: len(x))
+    freq_item_sets_frame['length'] = freq_item_sets_frame['itemset'].apply(lambda x: len(x))
 
     return freq_item_sets_frame
 
 
-def largest_common_subsets(super_set, min_sup=10):
-    super_set = [list(np.int16(ds)) for ds in super_set]  # convert to int16s to save memory avoid MemoryError
+def compute_fqis_fpgrowth_orange3_list(super_ilists, min_sup=0.6):
+    print('computing fpgrowth orange')
+    itemsets = frequent_itemsets(super_ilists, min_sup)
+    return list(itemsets)
+
+
+def largest_common_subsets(super_ilists, min_sup=10):
+    super_ilists = [list(np.int16(ds)) for ds in super_ilists]  # convert to int16s to save memory avoid MemoryError
     lcs_list = []
     #smallest_num_sets = round(len(dataset)*min_sup)
     smallest_num_sets = min_sup
-    for num in np.arange(smallest_num_sets, len(super_set) + 1, 1):
+    for num in np.arange(smallest_num_sets, len(super_ilists) + 1, 1):
         print('finding all combis of size: %d' % num)
-        subset_idxs = list(combinations(np.arange(len(super_set)), num))
+        subset_idxs = list(combinations(np.arange(len(super_ilists)), num))
         print('combis found: %d' % len(subset_idxs))
         for i, sis in enumerate(subset_idxs):
-            dataset_sub = [set(super_set[si]) for si in sis]
+            dataset_sub = [set(super_ilists[si]) for si in sis]
             lcs = set.intersection(*dataset_sub)
             #print('combi: %d/%d lcs size: %d' % (i, len(subset_idxs)-1, len(lcs)))
             if len(lcs):
@@ -101,3 +110,21 @@ def largest_common_subsets(super_set, min_sup=10):
         print('lcs list is empty!!!!!!!!!!!!!!!!!!')
     return lcs_list
 
+
+def compute_lcs_dict(super_ilists, min_sup=0.5):
+    super_isets_list = [set(np.int16(sil)) for sil in super_ilists]  # convert to int16s to save memory avoid MemoryError
+    lcs_dict = {}
+    min_num_sets = round(len(super_isets_list) * min_sup)
+    #min_num_sets = min_sup
+    for num in np.arange(min_num_sets, len(super_isets_list) + 1, 1):
+        print('finding all combis of size: %d' % num)
+        siss_idxs = list(combinations(np.arange(len(super_isets_list)), num))
+        print('combis found: %d' % len(siss_idxs))
+        for i, siss_idx in enumerate(siss_idxs):
+            siss_sub_list = [super_isets_list[si] for si in siss_idx]
+            lcs = set.intersection(*siss_sub_list)
+            #print('combi: %d/%d lcs size: %d' % (i, len(siss_idxs)-1, len(lcs)))
+            if len(lcs):
+                lcs_dict.setdefault(lcs, []).append(num)
+    lcs_dict_max = {k: np.max(v) for k, v in lcs_dict.items()}
+    return lcs_dict_max
