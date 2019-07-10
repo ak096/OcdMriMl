@@ -145,10 +145,93 @@ def compute_hb_fcounts_frame(fsets_results_frame, fsets_names_frame):
     return non_hb_fcounts_frame, non_hb_hb_fcounts_frame
 
 
+def scatterplot_fset_results(frame, atlas, task):
+
+    frame['sampling'] = ['OverSamp' if 'SMOTE' in tb or 'ROS' in tb else 'NonSamp' for tb in frame.tgt_best]
+    frame['tgt'] = ['2-clf' if '2' in tb else '3-clf' if '3' in tb else '4-clf' if '4' in tb else 'reg'
+                    for tb in frame.tgt_best]
+    frame['annot'] = ['S' if 'SMOTE' in tb else 'R' if 'ROS' in tb else '' for tb in frame.tgt_best]
+    frame['est_type'] = frame['est_type_best']
+    frame['idx'] = frame.index.tolist()
+    print(frame)
+
+    dpi = 100
+    h = max(0.22 * len(frame.index), 14)
+    fig, ax = plt.subplots(figsize=(8, h), dpi=dpi)
+
+    markers = {'2-clf': 'X', '3-clf': '^', '4-clf': 'd', 'reg': 'o'}
+    sizes = {'OverSamp': 14 ** 2, 'NonSamp': 9 ** 2}
+    # seaborn
+    sns.scatterplot(x='pred_best', y='idx', data=frame, ax=ax,
+                    hue='est_type', hue_order=[gbl.linear_, gbl.non_linear_],
+                    size='sampling', sizes=sizes, size_order=['NonSamp', 'OverSamp'],
+                    style='tgt', markers=markers)
+
+    for i, txt in enumerate(frame.annot):
+        ax.annotate(txt, (frame.pred_best[i], frame.index[i]), fontsize='small')
+    ax.legend(title='Legend', loc='lower right')  # , markerscale=0.8)# fontsize='medium')
+    ax.yaxis.set_major_locator(plt.LinearLocator())
+    ax.xaxis.set_major_locator(plt.MaxNLocator())
+
+    ax.autoscale(enable=True)
+    ax.set_aspect('auto')
+
+    plt.title('{}'.format(atlas))  # , fontsize='x-large')
+    plt.ylabel('fset')
+
+    if task == gbl.clf:
+        xlabel = 'recall-weighted'
+    if task == gbl.reg:
+        xlabel = 'mean_abs_error'
+    plt.xlabel(xlabel)
+
+    plt.yticks(frame.index, weight='bold')  # , rotation='vertical')#, fontsize='xx-small',)
+    # plt.tick_params(width=2, grid_alpha=0.7)
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.savefig('{}_{}_fsr.png'.format(atlas, task))
+
+
+def scatterplot_fpi_results(frame, atlas, task, suffix=''):
+    dpi = 100
+    h = max(0.22 * len(frame.index), 14)
+    # h = max(0.20 * np.unique(frame.))
+    fig, ax = plt.subplots(figsize=(8, h), dpi=dpi)
+
+    sns.scatterplot('perm_imp_avg', frame.index, ax=ax, data=frame, size=frame.freq, size_norm=(5 ** 2, 20 ** 2),
+                    label='pi_avg', markers='o')
+    sns.scatterplot('perm_imp_high', frame.index, ax=ax, data=frame, label='pi_high', markers='o')
+
+    ax.legend(title='Legend', loc='lower right')  # , markerscale=0.8)#, fontsize='xx-large')
+
+    ax.yaxis.set_major_locator(plt.LinearLocator())
+
+    if task == gbl.clf:
+        # ax.xaxis.set_major_locator(plt.MultipleLocator(base=0.05))
+        ax.xaxis.set_major_locator(plt.MaxNLocator())
+    elif task == gbl.reg:
+        ax.xaxis.set_major_locator(plt.MaxNLocator())
+
+    ax.autoscale(enable=True)
+    ax.set_aspect('auto')
+
+    plt.title('{}'.format(str(atlas)))  # , fontsize='large')
+    plt.ylabel('feature')  # , fontsize='large')
+    plt.xlabel('permutation importance')  # , fontsize='large')
+
+    plt.yticks(frame.index, weight='bold')  # , rotation='vertical')#, fontsize='x-small')
+    # plt.tick_params(axis='x', width=2.0, grid_alpha=0.7)
+    plt.grid(True)
+
+    plt.tight_layout()  # prevent clipping
+    plt.savefig('{}_{}_fpi{}.png'.format(atlas, task, suffix))
+
+
 def compute_store_results():
     min_sup = 0.50
     fqis_algo = 'orange'
-    xlsx_name = 'all>=hb_fs30gp0.9mins_fq{}{}_fcs_fp.xlsx'.format(min_sup, fqis_algo)
+    xlsx_name = 'all_geqhb_fs30gp0.9mins_fq{}{}_fcs_fp.xlsx'.format(min_sup, fqis_algo)
     e_writer = pd.ExcelWriter(xlsx_name)
 
     for task in [gbl.clf, gbl.reg]:
@@ -170,10 +253,13 @@ def compute_store_results():
 
             fsrf = fsets_results_frame.loc[:, np.array(hb_idx) | np.array(non_hb_geq_idx)].copy()
             fsnf = fsets_names_frame.loc[:, np.array(hb_idx) | np.array(non_hb_geq_idx)].copy()
+
             # save transposed versions of fset results for plotting purposes
-            # fsets_results_frame.transpose().to_excel(e_writer, '{}_{}_fsets_results'.format(atlas, task))
-            fsrf.transpose().to_excel(e_writer, '{}_{}_fsets_results'.format(atlas, task))
-            # fsets_names_frame.transpose().to_excel(e_writer, '{}_{}_fsets_names'.format(atlas, task))
+            fsrfT = fsrf.transpose(copy=True)
+            fsrfT.to_excel(e_writer, '{}_{}_fsets_results'.format(atlas, task))
+            # plot
+            scatterplot_fset_results(frame=fsrfT, atlas=atlas, task=task)
+
             fsnf.transpose().to_excel(e_writer, '{}_{}_fsets_names'.format(atlas, task))
 
             # FQIS
@@ -263,7 +349,7 @@ def compute_store_results():
             fpirf_geqhbT = fpi_results_frames[-1][[c for c in fpi_results_frames[-1] if c in non_hb_geq_hb_f]]\
                                     .transpose(copy=True)
             fpirf_geqhbT.to_excel(e_writer, '{}_{}_fpi_hb_geq'.format(atlas, task))
-            scatterplot_fpi_results_helper(fpirf_geqhbT, atlas, task, suffix='_hb_geq')
+            scatterplot_fpi_results(fpirf_geqhbT, atlas, task, suffix='_hb_geq')
 
         # FPIS
         fpi_task_results_frame = combine_fpi_frames(fpi_results_frames)
@@ -279,66 +365,18 @@ def compute_store_results():
         fpitrfT = fpi_task_results_frame[[c for c in fpi_task_results_frame if c in non_hb_geq_hb_f_all]]\
                                .transpose(copy=True)
         fpitrfT.to_excel(e_writer, '{}_fpi_hb_geq'.format(task))
-        scatterplot_fpi_results_helper(fpitrfT, 'all', task, suffix='_hb_geq')
+        scatterplot_fpi_results(fpitrfT, 'all', task, suffix='_hb_geq')
     e_writer.save()
     print('SAVED %s' % xlsx_name)
 
 
-def scatterplot_fset_results():
-    for task in [gbl.clf, gbl.reg]:
-        for atlas in gbl.atlas_dict.keys():
-            fsets_results_frame = pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
-                                                sheet_name='fsets_results_{}'.format(task), index_col=0)
-            fsets_results_frame.sort_values(by='pred_best', axis=1, ascending=True, inplace=True)
-            _, hb_idx, _, non_hb_geq_idx = compute_hb_idx(fsets_results_frame)
-            fsrf = fsets_results_frame.loc[:, np.array(hb_idx) | np.array(non_hb_geq_idx)].copy()
-
-            fsrft = fsrf.transpose()
-
-            fsrft['sampling'] = ['OverSamp' if 'SMOTE' in tb or 'ROS' in tb else 'NonSamp' for tb in fsrft.tgt_best]
-            fsrft['tgt'] = ['2-clf' if '2' in tb else '3-clf' if '3' in tb else '4-clf' if '4' in tb else 'reg'
-                            for tb in fsrft.tgt_best]
-            fsrft['annot'] = ['S' if 'SMOTE' in tb else 'R' if 'ROS' in tb else '' for tb in fsrft.tgt_best]
-            fsrft['est_type'] = fsrft['est_type_best']
-            fsrft['idx'] = fsrft.index.tolist()
-            print(fsrft)
-
-            dpi = 100
-            h=max(0.22*len(fsrft.index), 14)
-            fig, ax = plt.subplots(figsize=(8, h), dpi=dpi)
-
-            markers = {'2-clf': 'X', '3-clf': '^', '4-clf': 'd', 'reg': 'o'}
-            sizes = {'OverSamp': 14**2, 'NonSamp': 9**2}
-            # seaborn
-            sns.scatterplot(x='pred_best', y='idx',  data=fsrft, ax=ax,
-                            hue='est_type', hue_order=[gbl.linear_, gbl.non_linear_],
-                            size='sampling', sizes=sizes, size_order=['NonSamp', 'OverSamp'],
-                            style='tgt', markers=markers)
-
-            for i, txt in enumerate(fsrft.annot):
-                ax.annotate(txt, (fsrft.pred_best[i], fsrft.index[i]), fontsize='small')
-            ax.legend(title='Legend', loc='lower right')#, markerscale=0.8)# fontsize='medium')
-            ax.yaxis.set_major_locator(plt.LinearLocator())
-            ax.xaxis.set_major_locator(plt.MaxNLocator())
-
-            ax.autoscale(enable=True)
-            ax.set_aspect('auto')
-
-            plt.title('{}'.format(atlas))  # , fontsize='x-large')
-            plt.ylabel('fset')
-
-            if task==gbl.clf:
-                xlabel = 'recall-weighted'
-            if task == gbl.reg:
-                xlabel = 'mean_abs_error'
-            plt.xlabel(xlabel)
-
-            plt.yticks(fsrft.index, weight='bold')#, rotation='vertical')#, fontsize='xx-small',)
-            #plt.tick_params(width=2, grid_alpha=0.7)
-            plt.grid(True)
-
-            plt.tight_layout()
-            plt.savefig('{}_{}_fsr.png'.format(atlas, task))
+def transpose_excel(xl_name): # inplace
+    xl = pd.ExcelFile(xl_name)
+    ewriter = pd.ExcelWriter(xl_name)
+    for s in xl.sheet_names:
+        frame = pd.read_excel(io=xl_name, sheet_name=s, index_col=0)
+        frame.transpose().to_excel(ewriter, s)
+    ewriter.save()
 
 
 # def boxplot_fpi_results():
@@ -362,67 +400,3 @@ def scatterplot_fset_results():
 #         plt.title('{} {} Feature Importance'.format(atlas, task))
 #         plt.xlabel('mean permutation importance')
 #         plt.savefig('all_{}_fpi'.format(atlas, task))
-
-
-def scatterplot_fpi_results_helper(frame, atlas, task, suffix=''):
-
-    dpi = 100
-    h = max(0.22*len(frame.index), 14)
-    #h = max(0.20 * np.unique(frame.))
-    fig, ax = plt.subplots(figsize=(8, h), dpi=dpi)
-
-    sns.scatterplot('perm_imp_avg', frame.index, ax=ax, data=frame, size=frame.freq, size_norm=(5**2, 20**2),
-                    label='pi_avg', markers='o')
-    sns.scatterplot('perm_imp_high', frame.index, ax=ax, data=frame, label='pi_high', markers='o')
-
-    ax.legend(title='Legend', loc='lower right')#, markerscale=0.8)#, fontsize='xx-large')
-
-    ax.yaxis.set_major_locator(plt.LinearLocator())
-
-    if task == gbl.clf:
-        ax.xaxis.set_major_locator(plt.MultipleLocator(base=0.05))
-    elif task == gbl.reg:
-        ax.xaxis.set_major_locator(plt.MaxNLocator())
-
-    ax.autoscale(enable=True)
-    ax.set_aspect('auto')
-
-    plt.title('{}'.format(str(atlas)))  # , fontsize='large')
-    plt.ylabel('feature')#, fontsize='large')
-    plt.xlabel('permutation importance')#, fontsize='large')
-
-    plt.yticks(frame.index, weight='bold')#, rotation='vertical')#, fontsize='x-small')
-    #plt.tick_params(axis='x', width=2.0, grid_alpha=0.7)
-    plt.grid(True)
-
-    plt.tight_layout() # prevent clipping
-    plt.savefig('{}_{}_fpi{}.png'.format(atlas, task, suffix))
-
-
-def scatterplot_fpi_results():
-    for task in [gbl.clf, gbl.reg]:
-        fpi_results_frames = []
-        for atlas in gbl.atlas_dict.keys():
-            fpi_results_frames.append(pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
-                                                    sheet_name='fimps_{}'.format(task), index_col=0))
-
-            fpi_results_frames[-1].sort_values(by='perm_imp_avg', axis=1, ascending=True, inplace=True)
-            fpi_results_frames[-1].drop(fpi_results_frames[-1].columns[fpi_results_frames[-1].loc['perm_imp_avg', :] <= 0.0], axis=1, inplace=True)
-            fpirfT = fpi_results_frames[-1].transpose(copy=True)
-            scatterplot_fpi_results_helper(fpirfT, atlas, task)
-
-        fpi_task_results_frame = combine_fpi_frames(fpi_results_frames) # already sorted descending perm_imp_avg
-        fpi_task_results_frame.sort_values(by='perm_imp_avg', axis=1, ascending=True, inplace=True)
-        fpi_task_results_frame.drop(fpi_task_results_frame.columns[fpi_task_results_frame.loc['perm_imp_avg', :] <= 0.0], axis=1, inplace=True)
-        fpitrfT = fpi_task_results_frame.transpose(copy=True)
-
-        scatterplot_fpi_results_helper(fpitrfT, 'all', task)
-
-
-def transpose_excel(xl_name): # inplace
-    xl = pd.ExcelFile(xl_name)
-    ewriter = pd.ExcelWriter(xl_name)
-    for s in xl.sheet_names:
-        frame = pd.read_excel(io=xl_name, sheet_name=s, index_col=0)
-        frame.transpose().to_excel(ewriter, s)
-    ewriter.save()
