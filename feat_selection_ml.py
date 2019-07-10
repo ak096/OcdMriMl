@@ -43,7 +43,7 @@ def grid_rfe_cv(tgt_name, est_type, task, feat_pool, X, y, cv_folds, n_min_feat=
     return feat_sels_rfecv
 
 
-def compute_fqis_fpgrowth_dict(super_ilists, min_sup=0.6):
+def compute_fqis_pyfpgrowth_dict(super_ilists, min_sup=0.6):
     print('computing fpgrowth')
     super_ilists = [list(np.int16(ds)) for ds in super_ilists] # convert to int16s to save memory avoid MemoryError
 
@@ -81,7 +81,7 @@ def compute_fqis_apriori_frame(super_ilists, min_sup=0.6): # expects list of lis
     return freq_item_sets_frame
 
 
-def compute_fqis_fpgrowth_orange3_list(super_ilists, min_sup=0.6):
+def compute_fqis_orangefpgrowth_list(super_ilists, min_sup=0.6):
     print('computing fpgrowth orange')
     itemsets = frequent_itemsets(super_ilists, min_sup)
     return list(itemsets)
@@ -111,7 +111,7 @@ def largest_common_subsets(super_ilists, min_sup=10):
     return lcs_list
 
 
-def compute_lcs_dict(super_ilists, min_sup=0.5):
+def compute_fqis_lcs_dict(super_ilists, min_sup=0.5):
     super_isets_list = [set(np.int16(sil)) for sil in super_ilists]  # convert to int16s to save memory avoid MemoryError
     lcs_dict = {}
     min_num_sets = round(len(super_isets_list) * min_sup)
@@ -125,6 +125,13 @@ def compute_lcs_dict(super_ilists, min_sup=0.5):
             lcs = set.intersection(*siss_sub_list)
             #print('combi: %d/%d lcs size: %d' % (i, len(siss_idxs)-1, len(lcs)))
             if len(lcs):
-                lcs_dict.setdefault(lcs, []).append(num)
-    lcs_dict_max = {k: np.max(v) for k, v in lcs_dict.items()}
-    return lcs_dict_max
+                if frozenset(lcs) in lcs_dict.keys():
+                    if lcs_dict[frozenset(lcs)] < num:
+                        lcs_dict[frozenset(lcs)] = num
+                        print('updated lcs dict with lcs size: %d sup: %d' % (len(lcs), num))
+                    else:
+                        lcs_dict[frozenset(lcs)] = num
+                        print('updated lcs dict with lcs size: %d sup: %d' % (len(lcs), num))
+    if not lcs_dict:
+        print('lcs list is empty!!!!!!!!!!!!!!!!!!')
+    return lcs_dict
