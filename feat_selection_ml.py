@@ -123,9 +123,13 @@ def compute_fqis_lcs_dict(super_ilists, min_sup=0.6):
             lcs = set.intersection(*siss_sub)
             #print('combi: %d/%d lcs size: %d' % (i, len(siss_idxs)-1, len(lcs)))
             if len(lcs):
-                lcs_dict.setdefault(lcs, []).append(num)
-                print('updated lcs dict with lcs size: %d sup: %d' % (len(lcs), num))
-    lcs_dict_final = {k: round(np.max(v)/num_super_isets, 3) for k, v in lcs_dict.items()}
-    if not lcs_dict_final:
+                if frozenset(lcs) in lcs_dict.keys():
+                    if lcs_dict[frozenset(lcs)] < num:
+                        lcs_dict[frozenset(lcs)] = num
+                        print('updated lcs dict with lcs size: %d sup: %d' % (len(lcs), num))
+                    else:
+                        lcs_dict[frozenset(lcs)] = num
+                        print('updated lcs dict with lcs size: %d sup: %d' % (len(lcs), num))
+    if not lcs_dict:
         print('lcs list is empty!!!!!!!!!!!!!!!!!!')
-    return lcs_dict_final
+    return lcs_dict
