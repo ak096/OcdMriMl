@@ -132,11 +132,11 @@ def construct_fqis_super_ilists(fsets_results_frame, fsets_names_frame): # for f
 
 
 def compute_geqhb_non_fcounts_frame(fsets_results_frame, fsets_names_frame, atlas):
-    _, hb_idx, _, non_hb_geq_idx = compute_geqhb_idx(fsets_results_frame)
+    _, hb_idx, _, geqhb_non_idx = compute_geqhb_idx(fsets_results_frame)
     fsnf = fsets_names_frame
     geqhb_non_f = []
     hb_f = []
-    for c in fsnf.loc[:, non_hb_geq_idx]:
+    for c in fsnf.loc[:, geqhb_non_idx]:
         geqhb_non_f += [f for f in fsnf[c].tolist() if str(f) != 'nan']
     for c in fsnf.loc[:, hb_idx]:
         hb_f += [f for f in fsnf[c].tolist() if str(f) != 'nan']
