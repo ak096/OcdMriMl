@@ -155,7 +155,7 @@ def compute_store_results():
         print(task)
         fpi_results_frames = []
         non_hb_geq_f_all = []
-        for atlas in ['Desikan', 'Destrieux', 'DesiDest']:
+        for atlas in gbl.atlas_dict.keys():
             print(atlas)
             fsets_results_frame = pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
                                                 sheet_name='fsets_results_{}'.format(task), index_col=0)
@@ -195,7 +195,7 @@ def compute_store_results():
                 fqis_frame = pd.DataFrame({'itemsets': [{gbl.all_feat_names[f] for f in s} for s in fqis_dict.keys()],
                                            'support': [round(v/len(super_isets_index_list), 3) for v in fqis_dict.values()]},
                                            index=np.arange(len(fqis_dict.keys())))
-                drop=True
+                #drop=True
             elif fqis_algo == 'orange':
                 ## fqis with orange
                 print('fqis orange')
@@ -234,39 +234,52 @@ def compute_store_results():
             fqis_frame.to_excel(e_writer, '{}_{}_fqis'.format(atlas, task))
 
             # FCOUNTS FSUP
-            non_hb_geq_fcounts_frame, non_hb_geq_hb_fcounts_frame = compute_hb_fcounts_frame(fsets_results_frame, fsets_names_frame)
+            non_hb_geq_fcounts_frame, non_hb_geq_hb_fcounts_frame = \
+                compute_hb_fcounts_frame(fsets_results_frame, fsets_names_frame) # already descending sorted
 
-            non_hb_geq_f_all += non_hb_geq_fcounts_frame.columns.tolist() # for fpi_all filtering
+            non_hb_geq_f = non_hb_geq_fcounts_frame.columns.tolist() # for fpi_all filtering
+            non_hb_geq_f_all += non_hb_geq_f
 
-            non_hb_geq_fcounts_frame = non_hb_geq_fcounts_frame.transpose()
-            non_hb_geq_hb_fcounts_frame = non_hb_geq_hb_fcounts_frame.transpose()
+            non_hb_geq_fcounts_frameT = non_hb_geq_fcounts_frame.transpose(copy=True)
+            non_hb_geq_hb_fcounts_frameT = non_hb_geq_hb_fcounts_frame.transpose(copy=True)
 
-            non_hb_geq_fcounts_frame['support'] = non_hb_geq_fcounts_frame['count'] / len(non_hb_geq)
-            non_hb_geq_hb_fcounts_frame['support'] = non_hb_geq_hb_fcounts_frame['count'] / len(non_hb_geq)
+            non_hb_geq_fcounts_frameT['support'] = non_hb_geq_fcounts_frameT['count'] / len(non_hb_geq)
+            non_hb_geq_hb_fcounts_frameT['support'] = non_hb_geq_hb_fcounts_frameT['count'] / len(non_hb_geq)
 
-            non_hb_geq_fcounts_frame.to_excel(e_writer, '{}_{}_fcounts'.format(atlas, task))
-            non_hb_geq_hb_fcounts_frame.to_excel(e_writer, '{}_{}_hb_fcounts'.format(atlas, task))
+            non_hb_geq_fcounts_frameT.to_excel(e_writer, '{}_{}_fcounts'.format(atlas, task))
+            non_hb_geq_hb_fcounts_frameT.to_excel(e_writer, '{}_{}_hb_fcounts'.format(atlas, task))
 
 
             # FPI
             fpi_results_frames[-1].sort_values(by='perm_imp_avg', axis=1, ascending=True, inplace=True)
+            fpi_results_frames[-1].drop(fpi_results_frames[-1].columns[fpi_results_frames[-1].loc['perm_imp_avg', :] <= 0.0], axis=1, inplace=True)
 
             fpi_results_frames[-1].transpose().to_excel(e_writer, '{}_{}_fpi'.format(atlas, task))
 
-            non_hb_geq_hb_f = set(non_hb_geq_fcounts_frame.columns.tolist() + gbl.h_b_expert_fsets[atlas][0] + gbl.h_b_expert_fsets[atlas][1])
-            fpi_results_frames[-1][[c for c in fpi_results_frames[-1] if c in non_hb_geq_hb_f]]\
-                                    .transpose().to_excel(e_writer, '{}_{}_fpi_hb_geq'.format(atlas, task))
+            non_hb_geq_hb_f = set(non_hb_geq_f +
+                                  gbl.h_b_expert_fsets[atlas][0] +
+                                  gbl.h_b_expert_fsets[atlas][1])
+
+            fpirf_geqhbT = fpi_results_frames[-1][[c for c in fpi_results_frames[-1] if c in non_hb_geq_hb_f]]\
+                                    .transpose(copy=True)
+            fpirf_geqhbT.to_excel(e_writer, '{}_{}_fpi_hb_geq'.format(atlas, task))
+            scatterplot_fpi_results_helper(fpirf_geqhbT, atlas, task, suffix='_hb_geq')
 
         # FPIS
         fpi_task_results_frame = combine_fpi_frames(fpi_results_frames)
         fpi_task_results_frame.sort_values(by='perm_imp_avg', axis=1, ascending=True, inplace=True)
+        fpi_task_results_frame.drop(
+            fpi_task_results_frame.columns[fpi_task_results_frame.loc['perm_imp_avg', :] <= 0.0], axis=1, inplace=True)
 
         fpi_task_results_frame.transpose().to_excel(e_writer, '{}_fpi'.format(task))
 
-        non_hb_geq_hb_f_all = set(non_hb_geq_f_all + gbl.h_b_expert_fsets[atlas][0] + gbl.h_b_expert_fsets[atlas][1])
-        fpi_task_results_frame[[c for c in fpi_task_results_frame if c in non_hb_geq_hb_f_all]]\
-                               .transpose().to_excel(e_writer, '{}_fpi_hb_geq'.format(task))
-
+        non_hb_geq_hb_f_all = set(non_hb_geq_f_all +
+                                  gbl.h_b_expert_fsets[atlas][0] +
+                                  gbl.h_b_expert_fsets[atlas][1])
+        fpitrfT = fpi_task_results_frame[[c for c in fpi_task_results_frame if c in non_hb_geq_hb_f_all]]\
+                               .transpose(copy=True)
+        fpitrfT.to_excel(e_writer, '{}_fpi_hb_geq'.format(task))
+        scatterplot_fpi_results_helper(fpitrfT, 'all', task, suffix='_hb_geq')
     e_writer.save()
     print('SAVED %s' % xlsx_name)
 
@@ -351,7 +364,7 @@ def scatterplot_fset_results():
 #         plt.savefig('all_{}_fpi'.format(atlas, task))
 
 
-def scatterplot_fpi_results_helper(frame, atlas, task, w=50, h=30):
+def scatterplot_fpi_results_helper(frame, atlas, task, suffix=''):
 
     dpi = 100
     h = max(0.22*len(frame.index), 14)
@@ -383,7 +396,7 @@ def scatterplot_fpi_results_helper(frame, atlas, task, w=50, h=30):
     plt.grid(True)
 
     plt.tight_layout() # prevent clipping
-    plt.savefig('{}_{}_fpi.png'.format(atlas, task))
+    plt.savefig('{}_{}_fpi{}.png'.format(atlas, task, suffix))
 
 
 def scatterplot_fpi_results():
@@ -402,10 +415,8 @@ def scatterplot_fpi_results():
         fpi_task_results_frame.sort_values(by='perm_imp_avg', axis=1, ascending=True, inplace=True)
         fpi_task_results_frame.drop(fpi_task_results_frame.columns[fpi_task_results_frame.loc['perm_imp_avg', :] <= 0.0], axis=1, inplace=True)
         fpitrfT = fpi_task_results_frame.transpose(copy=True)
-        if task == 'clf':
-            scatterplot_fpi_results_helper(fpitrfT, 'all', task, w=60)
-        else:
-            scatterplot_fpi_results_helper(fpitrfT, 'all', task)
+
+        scatterplot_fpi_results_helper(fpitrfT, 'all', task)
 
 
 def transpose_excel(xl_name): # inplace

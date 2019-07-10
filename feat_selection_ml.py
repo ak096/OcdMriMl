@@ -82,7 +82,6 @@ def compute_fqis_apriori_frame(super_ilists, min_sup=0.6): # expects list of lis
 
 
 def compute_fqis_orangefpgrowth_list(super_ilists, min_sup=0.6):
-    print('computing fpgrowth orange')
     itemsets = frequent_itemsets(super_ilists, min_sup)
     return list(itemsets)
 
