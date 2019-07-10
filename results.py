@@ -114,35 +114,42 @@ def compute_fpi_all_results_frame(*args):
     return fpi_task_results_frame
 
 
-def compute_hb_idx(fsets_results_frame):
+def compute_geqhb_idx(fsets_results_frame):
     fsrf = fsets_results_frame
     hb_idx = [True if any(f in c for f in ['hoexter', 'boedhoe']) else False for c in fsrf]
     non_hb_idx = [not i for i in hb_idx]
     ph = fsrf.loc['pred_best', hb_idx].min()
-    non_hb_geq = [c for c in fsrf.loc[:, non_hb_idx] if fsrf.loc['pred_best', c] >= ph]
-    non_hb_geq_idx = [True if c in non_hb_geq else False for c in fsrf]
-    return non_hb_geq, hb_idx, non_hb_idx, non_hb_geq_idx
+    geqhb_non = [c for c in fsrf.loc[:, non_hb_idx] if fsrf.loc['pred_best', c] >= ph]
+    geqhb_non_idx = [True if c in geqhb_non else False for c in fsrf]
+    return geqhb_non, hb_idx, non_hb_idx, geqhb_non_idx
 
 
-def construct_fqis_super_isets(fsets_results_frame, fsets_names_frame): # for fsets >= pred_best of min hoexter/boedhoe
-    non_hb, _, _, _ = compute_hb_idx(fsets_results_frame)
+def construct_fqis_super_ilists(fsets_results_frame, fsets_names_frame): # for fsets >= pred_best of min hoexter/boedhoe
+    geqhb_non, _, _, _ = compute_geqhb_idx(fsets_results_frame)
     fsnf = fsets_names_frame
-    super_isets = [[f for f in fsnf[c].tolist() if str(f) != 'nan'] for c in non_hb]
-    return super_isets
+    super_ilists = [[f for f in fsnf[c].tolist() if str(f) != 'nan'] for c in geqhb_non]
+    return super_ilists
 
 
-def compute_hb_fcounts_frame(fsets_results_frame, fsets_names_frame):
-    non_hb, _, _, _ = compute_hb_idx(fsets_results_frame)
+def compute_geqhb_non_fcounts_frame(fsets_results_frame, fsets_names_frame, atlas):
+    _, hb_idx, _, non_hb_geq_idx = compute_geqhb_idx(fsets_results_frame)
     fsnf = fsets_names_frame
-    non_hb_f_all = []
-    for c in fsnf.loc[:, non_hb]:
-        non_hb_f_all.extend([f for f in fsnf[c].tolist() if str(f) != 'nan'])
-    non_hb_fcounts_frame = pd.DataFrame(index=['count'], data=dict(Counter(non_hb_f_all)))
-    non_hb_fcounts_frame.sort_values(by='count', axis=1, ascending=False, inplace=True)
-    nhbfcf = non_hb_fcounts_frame
-    non_hb_hb_f = [c for c in nhbfcf if c in set(gbl.h_b_expert_fsets['DesiDest'][0] + gbl.h_b_expert_fsets['DesiDest'][1])]
-    non_hb_hb_fcounts_frame = non_hb_fcounts_frame.loc[:, non_hb_hb_f]
-    return non_hb_fcounts_frame, non_hb_hb_fcounts_frame
+    geqhb_non_f = []
+    hb_f = []
+    for c in fsnf.loc[:, non_hb_geq_idx]:
+        geqhb_non_f += [f for f in fsnf[c].tolist() if str(f) != 'nan']
+    for c in fsnf.loc[:, hb_idx]:
+        hb_f += [f for f in fsnf[c].tolist() if str(f) != 'nan']
+
+    geqhb_non_fcounts_frame = pd.DataFrame(index=['count'], data=dict(Counter(geqhb_non_f)))
+    geqhb_non_fcounts_frame.columns = [str(c) for c in geqhb_non_fcounts_frame]
+    geqhb_non_fcounts_frame.sort_values(by='count', axis=1, ascending=False, inplace=True)
+    for c in geqhb_non_fcounts_frame:
+        if c in set(hb_f):
+            geqhb_non_fcounts_frame.loc['hb_lcl', c] = True
+        elif c in set(gbl.h_b_expert_fsets[atlas][0] + gbl.h_b_expert_fsets[atlas][1]):
+            geqhb_non_fcounts_frame.loc['hb_gbl', c] = True
+    return geqhb_non_fcounts_frame
 
 
 def scatterplot_fset_results(frame, atlas, task):
@@ -237,7 +244,7 @@ def compute_store_results():
     for task in [gbl.clf, gbl.reg]:
         print(task)
         fpi_results_frames = []
-        non_hb_geq_f_all = []
+        geqhb_non_f_all = []
         for atlas in gbl.atlas_dict.keys():
             print(atlas)
             fsets_results_frame = pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
@@ -249,21 +256,21 @@ def compute_store_results():
             fpi_results_frames.append(pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
                                       sheet_name='fimps_{}'.format(task), index_col=0))
 
-            non_hb_geq, hb_idx, _, non_hb_geq_idx = compute_hb_idx(fsets_results_frame)
+            non_hb_geq, hb_idx, _, non_hb_geq_idx = compute_geqhb_idx(fsets_results_frame)
 
-            fsrf = fsets_results_frame.loc[:, np.array(hb_idx) | np.array(non_hb_geq_idx)].copy()
-            fsnf = fsets_names_frame.loc[:, np.array(hb_idx) | np.array(non_hb_geq_idx)].copy()
+            fsrf_geqhb = fsets_results_frame.loc[:, np.array(hb_idx) | np.array(non_hb_geq_idx)].copy()
+            fsnf_geqhb = fsets_names_frame.loc[:, np.array(hb_idx) | np.array(non_hb_geq_idx)].copy()
 
             # save transposed versions of fset results for plotting purposes
-            fsrfT = fsrf.transpose(copy=True)
-            fsrfT.to_excel(e_writer, '{}_{}_fsets_results'.format(atlas, task))
+            fsrf_geqhbT = fsrf_geqhb.transpose().copy()
+            fsrf_geqhbT.to_excel(e_writer, '{}_{}_fsets_results'.format(atlas, task))
             # plot
-            scatterplot_fset_results(frame=fsrfT, atlas=atlas, task=task)
+            scatterplot_fset_results(frame=fsrf_geqhbT, atlas=atlas, task=task)
 
-            fsnf.transpose().to_excel(e_writer, '{}_{}_fsets_names'.format(atlas, task))
+            fsnf_geqhb.transpose().to_excel(e_writer, '{}_{}_fsets_names'.format(atlas, task))
 
             # FQIS
-            super_isets_names_list = construct_fqis_super_isets(fsets_results_frame, fsets_names_frame)
+            super_isets_names_list = construct_fqis_super_ilists(fsets_results_frame, fsets_names_frame)
             super_isets_index_list = [[gbl.all_feat_names.index(f) for f in s] for s in super_isets_names_list]
             # for s in super_isets_names_list:
             #     print(s)
@@ -320,34 +327,31 @@ def compute_store_results():
             fqis_frame.to_excel(e_writer, '{}_{}_fqis'.format(atlas, task))
 
             # FCOUNTS FSUP
-            non_hb_geq_fcounts_frame, non_hb_geq_hb_fcounts_frame = \
-                compute_hb_fcounts_frame(fsets_results_frame, fsets_names_frame) # already descending sorted
+            geqhb_non_fcounts_frame = \
+                compute_geqhb_non_fcounts_frame(fsets_results_frame, fsets_names_frame, atlas) # already descending sorted
 
-            non_hb_geq_f = non_hb_geq_fcounts_frame.columns.tolist() # for fpi_all filtering
-            non_hb_geq_f_all += non_hb_geq_f
+            geqhb_non_f = geqhb_non_fcounts_frame.columns.tolist() # for fpi_all filtering
+            geqhb_non_f_all += geqhb_non_f
 
-            non_hb_geq_fcounts_frameT = non_hb_geq_fcounts_frame.transpose(copy=True)
-            non_hb_geq_hb_fcounts_frameT = non_hb_geq_hb_fcounts_frame.transpose(copy=True)
+            geqhb_non_fcounts_frameT = geqhb_non_fcounts_frame.transpose().copy()
 
-            non_hb_geq_fcounts_frameT['support'] = non_hb_geq_fcounts_frameT['count'] / len(non_hb_geq)
-            non_hb_geq_hb_fcounts_frameT['support'] = non_hb_geq_hb_fcounts_frameT['count'] / len(non_hb_geq)
+            geqhb_non_fcounts_frameT['support'] = geqhb_non_fcounts_frameT['count'] / len(non_hb_geq)
+            geqhb_non_fcounts_frameT.to_excel(e_writer, '{}_{}_fcounts'.format(atlas, task))
 
-            non_hb_geq_fcounts_frameT.to_excel(e_writer, '{}_{}_fcounts'.format(atlas, task))
-            non_hb_geq_hb_fcounts_frameT.to_excel(e_writer, '{}_{}_hb_fcounts'.format(atlas, task))
 
 
             # FPI
             fpi_results_frames[-1].sort_values(by='perm_imp_avg', axis=1, ascending=True, inplace=True)
             fpi_results_frames[-1].drop(fpi_results_frames[-1].columns[fpi_results_frames[-1].loc['perm_imp_avg', :] <= 0.0], axis=1, inplace=True)
 
-            fpi_results_frames[-1].transpose().to_excel(e_writer, '{}_{}_fpi'.format(atlas, task))
+            fpi_results_frames[-1].transpose().to_excel(e_writer, '{}_{}_fpi_all'.format(atlas, task))
 
-            non_hb_geq_hb_f = set(non_hb_geq_f +
-                                  gbl.h_b_expert_fsets[atlas][0] +
-                                  gbl.h_b_expert_fsets[atlas][1])
+            geqhb_f = set(geqhb_non_f +
+                          gbl.h_b_expert_fsets[atlas][0] +
+                          gbl.h_b_expert_fsets[atlas][1])
 
-            fpirf_geqhbT = fpi_results_frames[-1][[c for c in fpi_results_frames[-1] if c in non_hb_geq_hb_f]]\
-                                    .transpose(copy=True)
+            fpirf_geqhbT = fpi_results_frames[-1][[c for c in fpi_results_frames[-1] if c in geqhb_f]]\
+                                    .transpose().copy()
             fpirf_geqhbT.to_excel(e_writer, '{}_{}_fpi_hb_geq'.format(atlas, task))
             scatterplot_fpi_results(fpirf_geqhbT, atlas, task, suffix='_hb_geq')
 
@@ -357,13 +361,13 @@ def compute_store_results():
         fpi_task_results_frame.drop(
             fpi_task_results_frame.columns[fpi_task_results_frame.loc['perm_imp_avg', :] <= 0.0], axis=1, inplace=True)
 
-        fpi_task_results_frame.transpose().to_excel(e_writer, '{}_fpi'.format(task))
+        fpi_task_results_frame.transpose().to_excel(e_writer, '{}_fpi_all'.format(task))
 
-        non_hb_geq_hb_f_all = set(non_hb_geq_f_all +
-                                  gbl.h_b_expert_fsets[atlas][0] +
-                                  gbl.h_b_expert_fsets[atlas][1])
-        fpitrfT = fpi_task_results_frame[[c for c in fpi_task_results_frame if c in non_hb_geq_hb_f_all]]\
-                               .transpose(copy=True)
+        geqhb_f_all = set(geqhb_non_f_all +
+                          gbl.h_b_expert_fsets['DesiDest'][0] +
+                          gbl.h_b_expert_fsets['DesiDest'][1])
+        fpitrfT = fpi_task_results_frame[[c for c in fpi_task_results_frame if c in geqhb_f_all]]\
+                               .transpose().copy()
         fpitrfT.to_excel(e_writer, '{}_fpi_hb_geq'.format(task))
         scatterplot_fpi_results(fpitrfT, 'all', task, suffix='_hb_geq')
     e_writer.save()
