@@ -152,8 +152,8 @@ def scatterplot_fset_results(frame, atlas, task):
                     for tb in frame.tgt_best]
     frame['annot'] = ['S' if 'SMOTE' in tb else 'R' if 'ROS' in tb else '' for tb in frame.tgt_best]
     frame['est_type'] = frame['est_type_best']
-    frame['idx'] = frame.index.tolist()
-    print(frame)
+
+    #print(frame)
 
     dpi = 100
     h = max(0.22 * len(frame.index), 14)
@@ -162,7 +162,7 @@ def scatterplot_fset_results(frame, atlas, task):
     markers = {'2-clf': 'X', '3-clf': '^', '4-clf': 'd', 'reg': 'o'}
     sizes = {'OverSamp': 14 ** 2, 'NonSamp': 9 ** 2}
     # seaborn
-    sns.scatterplot(x='pred_best', y='idx', data=frame, ax=ax,
+    sns.scatterplot(x='pred_best', y=frame.index, data=frame, ax=ax,
                     hue='est_type', hue_order=[gbl.linear_, gbl.non_linear_],
                     size='sampling', sizes=sizes, size_order=['NonSamp', 'OverSamp'],
                     style='tgt', markers=markers)
