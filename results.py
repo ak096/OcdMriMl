@@ -153,7 +153,7 @@ def compute_geqhb_non_fcounts_frame(fsets_results_frame, fsets_names_frame, atla
 
 
 def scatterplot_fset_results(frame, atlas, task):
-
+    frame = frame.sort_values(by='pred_best', axis=0, ascending=True, inplace=False)
     frame['sampling'] = ['OverSamp' if 'SMOTE' in tb or 'ROS' in tb else 'NonSamp' for tb in frame.tgt_best]
     frame['tgt'] = ['2-clf' if '2' in tb else '3-clf' if '3' in tb else '4-clf' if '4' in tb else 'reg'
                     for tb in frame.tgt_best]
@@ -164,7 +164,7 @@ def scatterplot_fset_results(frame, atlas, task):
 
     dpi = 100
     h = max(0.22 * len(frame.index), 14)
-    fig, ax = plt.subplots(figsize=(8, h), dpi=dpi)
+    fig, ax = plt.subplots(figsize=(10, h), dpi=dpi)
 
     markers = {'2-clf': 'X', '3-clf': '^', '4-clf': 'd', 'reg': 'o'}
     sizes = {'OverSamp': 14 ** 2, 'NonSamp': 9 ** 2}
@@ -201,10 +201,11 @@ def scatterplot_fset_results(frame, atlas, task):
 
 
 def scatterplot_fpi_results(frame, atlas, task, suffix=''):
+    frame = frame.sort_values(by='perm_imp_avg', axis=0, ascending=True, inplace=False)
     dpi = 100
     h = max(0.22 * len(frame.index), 14)
     # h = max(0.20 * np.unique(frame.))
-    fig, ax = plt.subplots(figsize=(8, h), dpi=dpi)
+    fig, ax = plt.subplots(figsize=(10, h), dpi=dpi)
 
     sns.scatterplot('perm_imp_avg', frame.index, ax=ax, data=frame, size=frame.freq, size_norm=(5 ** 2, 20 ** 2),
                     label='pi_avg', markers='o')
@@ -341,7 +342,7 @@ def compute_store_results():
 
 
             # FPI
-            fpi_results_frames[-1].sort_values(by='perm_imp_avg', axis=1, ascending=True, inplace=True)
+            fpi_results_frames[-1].sort_values(by='perm_imp_avg', axis=1, ascending=False, inplace=True)
             fpi_results_frames[-1].drop(fpi_results_frames[-1].columns[fpi_results_frames[-1].loc['perm_imp_avg', :] <= 0.0], axis=1, inplace=True)
 
             fpi_results_frames[-1].transpose().to_excel(e_writer, '{}_{}_fpi_all'.format(atlas, task))
@@ -357,7 +358,7 @@ def compute_store_results():
 
         # FPIS
         fpi_task_results_frame = combine_fpi_frames(fpi_results_frames)
-        fpi_task_results_frame.sort_values(by='perm_imp_avg', axis=1, ascending=True, inplace=True)
+        fpi_task_results_frame.sort_values(by='perm_imp_avg', axis=1, ascending=False, inplace=True)
         fpi_task_results_frame.drop(
             fpi_task_results_frame.columns[fpi_task_results_frame.loc['perm_imp_avg', :] <= 0.0], axis=1, inplace=True)
 
