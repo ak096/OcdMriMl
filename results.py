@@ -203,7 +203,7 @@ def compute_store_results():
                 fqis_frame = pd.DataFrame({'itemsets': [{gbl.all_feat_names[f] for f in s[0]} for s in fqis_list],
                                            'support': [round(v[1]/len(super_isets_index_list), 3) for v in fqis_list]},
                                            index=np.arange(len(fqis_list)))
-                drop=True
+                #drop=True
             elif fqis_algo == 'lcs':
                 ## fqis with largest common subsets
                 fqis_dict = compute_fqis_lcs_dict(super_isets_index_list, min_sup)
@@ -253,7 +253,7 @@ def compute_store_results():
 
             fpi_results_frames[-1].transpose().to_excel(e_writer, '{}_{}_fpi'.format(atlas, task))
 
-            non_hb_geq_hb_f = set(non_hb_geq_fcounts_frame.columns.tolist() + gbl.atlas_dict[atlas][0] + gbl.atlas_dict[atlas][1])
+            non_hb_geq_hb_f = set(non_hb_geq_fcounts_frame.columns.tolist() + gbl.h_b_expert_fsets[atlas][0] + gbl.h_b_expert_fsets[atlas][1])
             fpi_results_frames[-1][[c for c in fpi_results_frames[-1] if c in non_hb_geq_hb_f]]\
                                     .transpose().to_excel(e_writer, '{}_{}_fpi_hb_geq'.format(atlas, task))
 
@@ -263,7 +263,7 @@ def compute_store_results():
 
         fpi_task_results_frame.transpose().to_excel(e_writer, '{}_fpi'.format(task))
 
-        non_hb_geq_hb_f_all = set(non_hb_geq_f_all + gbl.atlas_dict[atlas][0] + gbl.atlas_dict[atlas][1])
+        non_hb_geq_hb_f_all = set(non_hb_geq_f_all + gbl.h_b_expert_fsets[atlas][0] + gbl.h_b_expert_fsets[atlas][1])
         fpi_task_results_frame[[c for c in fpi_task_results_frame if c in non_hb_geq_hb_f_all]]\
                                .transpose().to_excel(e_writer, '{}_fpi_hb_geq'.format(task))
 
