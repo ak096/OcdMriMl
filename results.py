@@ -407,5 +407,42 @@ def transpose_excel(xl_name): # inplace
 #         plt.xlabel('mean permutation importance')
 #         plt.savefig('all_{}_fpi'.format(atlas, task))
 
-
+# def perm_imp_test(task, est, base_score, X, y, n_iter=1, scoring=None):
+#     feats = [c for c in X.columns.tolist() if c not in gbl.clin_demog_feats]
+#     for f in feats:
+#         X_col = deepcopy(X.loc[:, f])
+#         score_diff = 0.0
+#         for _ in np.arange(n_iter):
+#             X.loc[:, f] = np.random.permutation(X.loc[:, f])
+#             if scoring:
+#                 scorer = get_scorer(scoring)
+#                 score_diff += base_score - scorer(est, X, y)
+#             else:
+#                 score_diff += base_score - est.score(X, y)
+#             X.loc[:, f] = X_col
+#         if task is gbl.clf:
+#             gbl.fpi_clf.setdefault(f, []).append(score_diff / n_iter)
+#         elif task is gbl.reg:
+#             gbl.fpi_reg.setdefault(f, []).append(score_diff / n_iter)
+#
+#     return
+#
+#
+# def compute_fpi_geqhb():
+#     with open('/home/akshay/PycharmProjects/OcdMriMl/pickle_files/Desikan_fsets_results_clf_dict.pickle',
+#               'rb') as handle:
+#         fsets_results_clf_dict = pickle.load(handle)
+#
+#     fsets_results_frame = pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format('Desikan'),
+#                                         sheet_name='fsets_results_{}'.format('clf'), index_col=0)
+#
+#     geqhb_non, hb_idx, non_hb_idx, geqhb_non_idx = compute_geqhb_idx(fsets_results_frame)
+#
+#     fsrf_geqhb = fsets_results_frame.loc[:, np.array(hb_idx) | np.array(geqhb_non_idx)].copy()
+#
+#     fs_geqhb = fsrf_geqhb.columns.tolist()
+#
+#     subs = Subs(tgt_name=tgt_name, test_size=0.15)
+#
+#     for c in fsrf_geqhb:
 
