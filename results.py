@@ -6,11 +6,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns ; sns.set()
 import pickle
+from sklearn.metrics.scorer import get_scorer
 
 import gbl
 from train_predict import conf_interval
 from dataset import Subs
-from feat_selection_ml import compute_fqis_apriori_frame, compute_fqis_pyfpgrowth_dict, compute_fqis_orangefpgrowth_list, compute_fqis_lcs_dict
+from feat_selection_ml import compute_fqis_apriori_frame, \
+    compute_fqis_pyfpgrowth_dict, compute_fqis_orangefpgrowth_list, compute_fqis_lcs_dict
+from scorers_ import RegScorer, ClfScorer
 
 
 def update_fset_results(tgt_name, est_type, fsets_count, curr_fset, curr_fset_results, fsets_results_frame,
@@ -202,15 +205,15 @@ def scatterplot_fset_results(frame, atlas, task):
 
 
 def scatterplot_fpi_results(frame, atlas, task, suffix=''):
-    frame = frame.sort_values(by='perm_imp_avg', axis=0, ascending=True, inplace=False)
+    frame = frame.sort_values(by='pi_avg', axis=0, ascending=True, inplace=False)
     dpi = 100
     h = max(0.22 * len(frame.index), 14)
     # h = max(0.20 * np.unique(frame.))
     fig, ax = plt.subplots(figsize=(10, h), dpi=dpi)
 
-    sns.scatterplot('perm_imp_avg', frame.index, ax=ax, data=frame, size=frame.freq, size_norm=(5 ** 2, 20 ** 2),
+    sns.scatterplot('pi_avg', frame.index, ax=ax, data=frame, size=frame.freq, size_norm=(5 ** 2, 20 ** 2),
                     label='pi_avg', markers='o')
-    sns.scatterplot('perm_imp_high', frame.index, ax=ax, data=frame, label='pi_high', markers='o')
+    sns.scatterplot('pi_high', frame.index, ax=ax, data=frame, label='pi_high', markers='o')
 
     ax.legend(title='Legend', loc='lower right')  # , markerscale=0.8)#, fontsize='xx-large')
 
@@ -237,15 +240,58 @@ def scatterplot_fpi_results(frame, atlas, task, suffix=''):
     plt.savefig('{}_{}_fpi{}.png'.format(atlas, task, suffix))
 
 
+def compute_feat_perm_imp(est, base_score, X, y, fpis_dict, n_iter=3, scoring=None):
+    feats = [c for c in X.columns.tolist() if c not in gbl.clin_demog_feats]
+    for f in feats:
+        X_col = deepcopy(X.loc[:, f])
+        score_diff = 0.0
+        for _ in np.arange(n_iter):
+            X.loc[:, f] = np.random.permutation(X.loc[:, f])
+            if scoring:
+                scorer = get_scorer(scoring)
+                score_diff += base_score - scorer(est, X, y)
+            else:
+                score_diff += base_score - est.score(X, y)
+            X.loc[:, f] = X_col
+        fpis_dict.setdefault(f, []).append(score_diff / n_iter)
+    return fpis_dict
+
+
+def compute_fpi_geqhb_dict(fsets_geqhb_results_frame, atlas, task, tgt_dict):
+    with open('/home/akshay/PycharmProjects/OcdMriMl/pickle_files/{}_fsets_results_{}_dict.pickle'.format(atlas, task),
+              'rb') as handle:
+        fsets_results_dict = pickle.load(handle)
+    fpis_dict = {}
+    for c in fsets_geqhb_results_frame:
+        tgt_best = fsets_geqhb_results_frame.loc['tgt_best', c]
+        pred_best = fsets_geqhb_results_frame.loc['pred_best', c]
+
+        feat_list = fsets_results_dict[c]['feat_list']
+        est_best = fsets_results_dict[c]['est_best']
+
+        feat_train = feat_list + gbl.clin_demog_feats
+
+        subs = tgt_dict[tgt_best]['subs']
+
+        fpis_dict = compute_feat_perm_imp(est=est_best, base_score=pred_best,
+                              X=subs.pat_frame_test_norm.loc[:, feat_train],
+                              y=subs.pat_frame_test_y.iloc[:, 0],
+                              n_iter=3,
+                              scoring=ClfScorer.recall_weighted,
+                              fpis_dict=fpis_dict,
+                              )
+    return fpis_dict
+
+
 def compute_store_results():
     min_sup = 0.50
     fqis_algo = 'orange'
-    xlsx_name = 'all_geqhb_fs30gp0.9mins_fq{}{}_fcs_fp.xlsx'.format(min_sup, fqis_algo)
+    xlsx_name = 'allclf_geqhb_fs30gp0.9mins_fq{}{}_fcs_fp.xlsx'.format(min_sup, fqis_algo)
     e_writer = pd.ExcelWriter(xlsx_name)
-
-    for task in [gbl.clf, gbl.reg]:
+    for task in [gbl.clf]:#, gbl.reg]:
         print(task)
         fpi_results_frames = []
+        fpi_dicts = {}
         geqhb_non_f_all = []
         for atlas in gbl.atlas_dict.keys():
             print(atlas)
@@ -255,8 +301,11 @@ def compute_store_results():
             fsets_names_frame = pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
                                               sheet_name='fsets_names_{}'.format(task), index_col=0, dtype=str)
 
-            fpi_results_frames.append(pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
-                                      sheet_name='fimps_{}'.format(task), index_col=0))
+            # fpi_results_frames.append(pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
+            #                           sheet_name='fimps_{}'.format(task), index_col=0))
+
+            with open('{}_{}.pickle'.format(atlas, 'tgt_dict'), 'rb') as handle:
+                tgt_dict = pickle.load(handle)
 
             non_hb_geq, hb_idx, _, non_hb_geq_idx = compute_geqhb_idx(fsets_results_frame)
 
@@ -269,64 +318,68 @@ def compute_store_results():
             # plot
             scatterplot_fset_results(frame=fsrf_geqhbT, atlas=atlas, task=task)
 
-            # fsnf_geqhb.transpose().to_excel(e_writer, '{}_{}_fsets_names'.format(atlas, task))
+            fsnf_geqhb.transpose().to_excel(e_writer, '{}_{}_fsets_names'.format(atlas, task))
 
-            # # FQIS
-            # super_isets_names_list = construct_fqis_super_ilists(fsets_results_frame, fsets_names_frame)
-            # super_isets_index_list = [[gbl.all_feat_names.index(f) for f in s] for s in super_isets_names_list]
-            # # for s in super_isets_names_list:
-            # #     print(s)
-            # #     print(len(s))
-            # # print(len(super_isets_index_list))
-            # drop = False
-            #
-            # if fqis_algo == 'apriori':
-            #     # fqis with apriori
-            #     #fqis_frame = compute_fqis_apriori_frame(super_isets_names_list, min_sup)
-            #     pass
-            # elif fqis_algo == 'pyfpgrowth':
-            #     ## fqis with fpgrowth
-            #     fqis_dict = compute_fqis_pyfpgrowth_dict(super_isets_index_list, min_sup)
-            #     fqis_frame = pd.DataFrame({'itemsets': [{gbl.all_feat_names[f] for f in s} for s in fqis_dict.keys()],
-            #                                'support': [round(v/len(super_isets_index_list), 3) for v in fqis_dict.values()]},
-            #                                index=np.arange(len(fqis_dict.keys())))
-            #     #drop=True
-            # elif fqis_algo == 'orange':
-            #     ## fqis with orange
-            #     print('fqis orange')
-            #     fqis_list = compute_fqis_orangefpgrowth_list(super_isets_index_list, min_sup)
-            #     fqis_frame = pd.DataFrame({'itemsets': [{gbl.all_feat_names[f] for f in s[0]} for s in fqis_list],
-            #                                'support': [round(v[1]/len(super_isets_index_list), 3) for v in fqis_list]},
-            #                                index=np.arange(len(fqis_list)))
-            #     #drop=True
-            # elif fqis_algo == 'lcs':
-            #     ## fqis with largest common subsets
-            #     fqis_dict = compute_fqis_lcs_dict(super_isets_index_list, min_sup)
-            #     fqis_frame = pd.DataFrame({'itemsets': [{gbl.all_feat_names[f] for f in s} for s in fqis_dict.keys()],
-            #                                'support': fqis_dict.values()},
-            #                                index=np.arange(len(fqis_dict.keys())))
-            #     drop=False
-            #
-            # fqis_frame.sort_values(by='support', axis=0, ascending=False, inplace=True)
-            # if drop:
-            #     drop_list = []
-            #     for i, its_i in enumerate(fqis_frame.loc[:, 'itemsets']):
-            #         print('processing set {} from {}'.format(i + 1, len(fqis_frame.loc[:, 'itemsets'])))
-            #         if len(its_i) == 1:
-            #             drop_list.append(i)
-            #             continue
-            #         elif i + 1 == len(fqis_frame.loc[:, 'itemsets']):
-            #             continue
-            #         else:
-            #             for its_j in fqis_frame.loc[i + 1:, 'itemsets']:
-            #                 if set(its_i).issubset(set(its_j)):
-            #                     drop_list.append(i)
-            #                     break
-            #
-            #     print('dropping:', drop_list)
-            #     fqis_frame.drop(drop_list, inplace=True)
-            #
-            # fqis_frame.to_excel(e_writer, '{}_{}_fqis'.format(atlas, task))
+            fpi_dicts[atlas] = compute_fpi_geqhb_dict(fsrf_geqhb, atlas, task, tgt_dict)
+
+            fpi_results_frames.append(pd.DataFrame.from_dict(compute_fpi_results_dict(fpi_dicts[atlas])))
+
+            # FQIS
+            super_isets_names_list = construct_fqis_super_ilists(fsets_results_frame, fsets_names_frame)
+            super_isets_index_list = [[gbl.all_feat_names.index(f) for f in s] for s in super_isets_names_list]
+            # for s in super_isets_names_list:
+            #     print(s)
+            #     print(len(s))
+            # print(len(super_isets_index_list))
+            drop = False
+
+            if fqis_algo == 'apriori':
+                # fqis with apriori
+                #fqis_frame = compute_fqis_apriori_frame(super_isets_names_list, min_sup)
+                pass
+            elif fqis_algo == 'pyfpgrowth':
+                ## fqis with fpgrowth
+                fqis_dict = compute_fqis_pyfpgrowth_dict(super_isets_index_list, min_sup)
+                fqis_frame = pd.DataFrame({'itemsets': [{gbl.all_feat_names[f] for f in s} for s in fqis_dict.keys()],
+                                           'support': [round(v/len(super_isets_index_list), 3) for v in fqis_dict.values()]},
+                                           index=np.arange(len(fqis_dict.keys())))
+                #drop=True
+            elif fqis_algo == 'orange':
+                ## fqis with orange
+                print('fqis orange')
+                fqis_list = compute_fqis_orangefpgrowth_list(super_isets_index_list, min_sup)
+                fqis_frame = pd.DataFrame({'itemsets': [{gbl.all_feat_names[f] for f in s[0]} for s in fqis_list],
+                                           'support': [round(v[1]/len(super_isets_index_list), 3) for v in fqis_list]},
+                                           index=np.arange(len(fqis_list)))
+                #drop=True
+            elif fqis_algo == 'lcs':
+                ## fqis with largest common subsets
+                fqis_dict = compute_fqis_lcs_dict(super_isets_index_list, min_sup)
+                fqis_frame = pd.DataFrame({'itemsets': [{gbl.all_feat_names[f] for f in s} for s in fqis_dict.keys()],
+                                           'support': fqis_dict.values()},
+                                           index=np.arange(len(fqis_dict.keys())))
+                drop=False
+
+            fqis_frame.sort_values(by='support', axis=0, ascending=False, inplace=True)
+            if drop:
+                drop_list = []
+                for i, its_i in enumerate(fqis_frame.loc[:, 'itemsets']):
+                    print('processing set {} from {}'.format(i + 1, len(fqis_frame.loc[:, 'itemsets'])))
+                    if len(its_i) == 1:
+                        drop_list.append(i)
+                        continue
+                    elif i + 1 == len(fqis_frame.loc[:, 'itemsets']):
+                        continue
+                    else:
+                        for its_j in fqis_frame.loc[i + 1:, 'itemsets']:
+                            if set(its_i).issubset(set(its_j)):
+                                drop_list.append(i)
+                                break
+
+                print('dropping:', drop_list)
+                fqis_frame.drop(drop_list, inplace=True)
+
+            fqis_frame.to_excel(e_writer, '{}_{}_fqis'.format(atlas, task))
 
             # FCOUNTS FSUP
             geqhb_non_fcounts_frame = \
@@ -335,18 +388,16 @@ def compute_store_results():
             geqhb_non_f = geqhb_non_fcounts_frame.columns.tolist() # for fpi_all filtering
             geqhb_non_f_all += geqhb_non_f
 
-            # geqhb_non_fcounts_frameT = geqhb_non_fcounts_frame.transpose().copy()
+            geqhb_non_fcounts_frameT = geqhb_non_fcounts_frame.transpose().copy()
 
-            # geqhb_non_fcounts_frameT['support'] = round(geqhb_non_fcounts_frameT['count'] / len(non_hb_geq), 3)
-            # geqhb_non_fcounts_frameT.to_excel(e_writer, '{}_{}_fcounts'.format(atlas, task))
-
-
+            geqhb_non_fcounts_frameT['support'] = round(geqhb_non_fcounts_frameT['count'] / len(non_hb_geq), 3)
+            geqhb_non_fcounts_frameT.to_excel(e_writer, '{}_{}_fcounts'.format(atlas, task))
 
             # FPI
-            fpi_results_frames[-1].sort_values(by='perm_imp_avg', axis=1, ascending=False, inplace=True)
-            fpi_results_frames[-1].drop(fpi_results_frames[-1].columns[fpi_results_frames[-1].loc['perm_imp_avg', :] <= 0.0], axis=1, inplace=True)
+            fpi_results_frames[-1].sort_values(by='pi_avg', axis=1, ascending=False, inplace=True)
+            fpi_results_frames[-1].drop(fpi_results_frames[-1].columns[fpi_results_frames[-1].loc['pi_avg', :] <= 0.0], axis=1, inplace=True)
 
-            fpi_results_frames[-1].transpose().to_excel(e_writer, '{}_{}_fpi_all'.format(atlas, task))
+            fpi_results_frames[-1].transpose().to_excel(e_writer, '{}_{}_fpi'.format(atlas, task))
 
             geqhb_f = set(geqhb_non_f +
                           gbl.h_b_expert_fsets[atlas][0] +
@@ -355,13 +406,13 @@ def compute_store_results():
             fpirf_geqhbT = fpi_results_frames[-1][[c for c in fpi_results_frames[-1] if c in geqhb_f]]\
                                     .transpose().copy()
             fpirf_geqhbT.to_excel(e_writer, '{}_{}_fpi_hb_geq'.format(atlas, task))
-            scatterplot_fpi_results(fpirf_geqhbT, atlas, task, suffix='_hb_geq')
+            scatterplot_fpi_results(fpirf_geqhbT, atlas, task, suffix='_geqhb')
 
         # FPIS
         fpi_task_results_frame = combine_fpi_frames(fpi_results_frames)
-        fpi_task_results_frame.sort_values(by='perm_imp_avg', axis=1, ascending=False, inplace=True)
+        fpi_task_results_frame.sort_values(by='pi_avg', axis=1, ascending=False, inplace=True)
         fpi_task_results_frame.drop(
-            fpi_task_results_frame.columns[fpi_task_results_frame.loc['perm_imp_avg', :] <= 0.0], axis=1, inplace=True)
+            fpi_task_results_frame.columns[fpi_task_results_frame.loc['pi_avg', :] <= 0.0], axis=1, inplace=True)
 
         fpi_task_results_frame.transpose().to_excel(e_writer, '{}_fpi_all'.format(task))
 
@@ -370,8 +421,8 @@ def compute_store_results():
                           gbl.h_b_expert_fsets['DesiDest'][1])
         fpitrfT = fpi_task_results_frame[[c for c in fpi_task_results_frame if c in geqhb_f_all]]\
                                .transpose().copy()
-        fpitrfT.to_excel(e_writer, '{}_fpi_hb_geq'.format(task))
-        scatterplot_fpi_results(fpitrfT, 'all', task, suffix='_hb_geq')
+        fpitrfT.to_excel(e_writer, '{}_fpi_geqhb'.format(task))
+        scatterplot_fpi_results(fpitrfT, 'all', task, suffix='_geqhb')
     e_writer.save()
     print('SAVED %s' % xlsx_name)
 
@@ -407,42 +458,5 @@ def transpose_excel(xl_name): # inplace
 #         plt.xlabel('mean permutation importance')
 #         plt.savefig('all_{}_fpi'.format(atlas, task))
 
-# def perm_imp_test(task, est, base_score, X, y, n_iter=1, scoring=None):
-#     feats = [c for c in X.columns.tolist() if c not in gbl.clin_demog_feats]
-#     for f in feats:
-#         X_col = deepcopy(X.loc[:, f])
-#         score_diff = 0.0
-#         for _ in np.arange(n_iter):
-#             X.loc[:, f] = np.random.permutation(X.loc[:, f])
-#             if scoring:
-#                 scorer = get_scorer(scoring)
-#                 score_diff += base_score - scorer(est, X, y)
-#             else:
-#                 score_diff += base_score - est.score(X, y)
-#             X.loc[:, f] = X_col
-#         if task is gbl.clf:
-#             gbl.fpi_clf.setdefault(f, []).append(score_diff / n_iter)
-#         elif task is gbl.reg:
-#             gbl.fpi_reg.setdefault(f, []).append(score_diff / n_iter)
-#
-#     return
-#
-#
-# def compute_fpi_geqhb():
-#     with open('/home/akshay/PycharmProjects/OcdMriMl/pickle_files/Desikan_fsets_results_clf_dict.pickle',
-#               'rb') as handle:
-#         fsets_results_clf_dict = pickle.load(handle)
-#
-#     fsets_results_frame = pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format('Desikan'),
-#                                         sheet_name='fsets_results_{}'.format('clf'), index_col=0)
-#
-#     geqhb_non, hb_idx, non_hb_idx, geqhb_non_idx = compute_geqhb_idx(fsets_results_frame)
-#
-#     fsrf_geqhb = fsets_results_frame.loc[:, np.array(hb_idx) | np.array(geqhb_non_idx)].copy()
-#
-#     fs_geqhb = fsrf_geqhb.columns.tolist()
-#
-#     subs = Subs(tgt_name=tgt_name, test_size=0.15)
-#
-#     for c in fsrf_geqhb:
+
 
