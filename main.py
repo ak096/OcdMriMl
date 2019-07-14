@@ -38,7 +38,7 @@ targets = [
 #'com_class3',
 'YBOCS_class3',
 'YBOCS_class4',
-'YBOCS_reg',
+#'YBOCS_reg',
           ]
 
 tgt_dict = {}
@@ -97,7 +97,7 @@ for idx, tgt_name in enumerate(targets):
 
     # choose training loss and evaluation metric
     lsvm_params = {}
-    xgb_params = {}
+    gbe_params = {}
     scoring = None
     thresh = None
     if subs.tgt_task is gbl.clf:
@@ -112,7 +112,7 @@ for idx, tgt_name in enumerate(targets):
 
     # linear non-linear loop
     iteration = {gbl.linear_: {'params': lsvm_params},
-                 gbl.non_linear_: {'params': xgb_params}
+                 gbl.non_linear_: {'params': gbe_params}
                 }
 
     for est_type, params in iteration.items():

@@ -17,9 +17,10 @@ def lsvm_hypparam_space(est_class):
                      200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200,
                      1300, 1400, 1500, 2000, 2250, 2500, 2750, 3000, 4000, 5000]
                }
-    if est_class == 'reg':
+    if est_class == reg:
+        pass
         svm_hps['epsilon'] = [0.0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9]
-    if est_class == 'clf':
+    if est_class == clf:
         svm_hps['class_weight'] = ['balanced']
     return svm_hps
 
@@ -52,10 +53,23 @@ def xgb_hypparam_space():
 
 def gbe_hypparam_space():
     return {'n_estimators': np.arange(100, 701, 100),
-            'max_depth': [3, 4, 5, 6, 7, 8],
-            'learning_rate': np.arange(0.1, 1.1, 0.1),
-            'subsample': np.arange(0.5, 1.0, 0.1),  # default
+            'max_depth': [3, 4, 5, 6, 7, 8, 9, 10],
+            'learning_rate': np.arange(0.1, 0.51, 0.1),
+            'subsample': np.arange(0.7, 1.01, 0.1),  # default
             }
+
+
+def pre_compute_hypparam_spaces(size=30):
+    gbe_hps = ParameterSampler(gbe_hypparam_space(), size)
+    lsvc_hps = ParameterSampler(lsvm_hypparam_space(clf), size)
+    lsvr_hps = ParameterSampler(lsvm_hypparam_space(reg), size)
+
+    with open('gbe_hypparam_grid.pickle', 'wb') as handle: pickle.dump(gbe_hps, handle,
+                                                                       protocol=pickle.HIGHEST_PROTOCOL)
+    with open('lsvc_hypparam_grid.pickle', 'wb') as handle: pickle.dump(lsvc_hps, handle,
+                                                                        protocol=pickle.HIGHEST_PROTOCOL)
+    with open('lsvr_hypparam_grid.pickle', 'wb') as handle: pickle.dump(lsvr_hps, handle,
+                                                                        protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def _add_rand_feats(frame, n_rand_feat):

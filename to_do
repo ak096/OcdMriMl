@@ -3,11 +3,9 @@
 PRIO HIGH-------------
 
 to do :
-check gamma and regularization for xgb and svm to prevent overfitting...look at train scores and pred scores..
+modify RFECV to run with fixed clin_demog features
 
-to understand :
-XGboost parameters,
-mutual info
+
 
 PRIO MID-------------
 
@@ -32,6 +30,8 @@ Free Surfer Group Analysis
 
 
 #------------DONE STACK------------#
+-to understand : gradient boost parameters, mutual info
+-check gamma and regularization for xgb and svm to prevent overfitting...look at train scores and pred scores..
 -adding permutation importance ranking of features at end
 -switch to index storage of features from pat_frame sys.getsizeof(object) reveals typical feature strings more
 than 2x larger...
