@@ -41,7 +41,7 @@ targets = [
 'YBOCS_reg',
           ]
 
-tgt_univar_results_dict = {}
+tgt_dict = {}
 
 clf_scorer = ClfScorer()
 reg_scorer = RegScorer()
@@ -85,11 +85,12 @@ for idx, tgt_name in enumerate(targets):
     t_frame, f_frame, mi_frame, feat_pool_counts_frame, feat_pool_set = feat_pool_compute(tgt_name=tgt_name, subs=subs,
                                                                                           feat_picker=feat_picker)
     feat_pool_set_num = len(feat_pool_set)
-    tgt_univar_results_dict[tgt_name] = {
+    tgt_dict[tgt_name] = {
                                 't_frame': t_frame.transpose(),
                                 'f_frame': f_frame.transpose(),
                                 'mi_frame': mi_frame.transpose(),
                                 'feat_count_frame': feat_pool_counts_frame.transpose(),
+                                'subs': subs
                                 }
 
     print('%s: computed feat_pool: %d' % (tgt_name, feat_pool_set_num))
@@ -234,12 +235,12 @@ for idx, tgt_name in enumerate(targets):
     #clear cache for tgt loop
     #subs = None
     # end tgt loop
-fpi_results_clf_dict = compute_fpi_results_dict(gbl.fpi_clf)
-fpi_results_reg_dict = compute_fpi_results_dict(gbl.fpi_reg)
+#fpi_results_clf_dict = compute_fpi_results_dict(gbl.fpi_clf)
+#fpi_results_reg_dict = compute_fpi_results_dict(gbl.fpi_reg)
 
 # collate permutation importance rankings
-fpi_results_clf_frame = pd.DataFrame().from_dict(fpi_results_clf_dict)
-fpi_results_reg_frame = pd.DataFrame().from_dict(fpi_results_reg_dict)
+#fpi_results_clf_frame = pd.DataFrame().from_dict(fpi_results_clf_dict)
+#fpi_results_reg_frame = pd.DataFrame().from_dict(fpi_results_reg_dict)
 
 # compute pred_ci, pred_avg and sort
 fsets_results_clf_frame = compute_fset_results_frame(fsets_results_clf_frame, fsets_results_clf_dict)
@@ -252,15 +253,15 @@ fsets_results_reg_frame.sort_values(by='pred_best', axis=1, ascending=False, inp
 fsets_names_clf_frame = fsets_names_clf_frame.reindex(columns=fsets_results_clf_frame.columns.tolist())
 fsets_names_reg_frame = fsets_names_reg_frame.reindex(columns=fsets_results_reg_frame.columns.tolist())
 
-fpi_results_clf_frame.sort_values(by='perm_imp_high', axis=1, ascending=False, inplace=True)
-fpi_results_reg_frame.sort_values(by='perm_imp_high', axis=1, ascending=False, inplace=True)
+#fpi_results_clf_frame.sort_values(by='perm_imp_high', axis=1, ascending=False, inplace=True)
+#fpi_results_reg_frame.sort_values(by='perm_imp_high', axis=1, ascending=False, inplace=True)
 
 
 # SAVE RESULTS
 def save_results():
     print('SAVING RESULTS')
 
-    exp_description = 'atlas_{}_maxgridpoints_{}_minsupport_{}.xlsx'.format(atlas, gbl.grid_space_size, min_support)
+    exp_description = 'atlas_{}_maxgridpoints_{}_minsupport_{}_geqbg_fpi.xlsx'.format(atlas, gbl.grid_space_size, min_support)
 
     # write prediction results to excel
     xlsx_name = exp_description
@@ -268,11 +269,11 @@ def save_results():
     writer = pd.ExcelWriter(xlsx_name)
     fsets_results_clf_frame.to_excel(writer, 'fsets_results_clf')
     fsets_names_clf_frame.to_excel(writer, 'fsets_names_clf')
-    fpi_results_clf_frame.to_excel(writer, 'fimps_clf')
+    #fpi_results_clf_frame.to_excel(writer, 'fimps_clf')
 
     fsets_results_reg_frame.to_excel(writer, 'fsets_results_reg')
     fsets_names_reg_frame.to_excel(writer, 'fsets_names_reg')
-    fpi_results_reg_frame.to_excel(writer, 'fimps_reg')
+    #fpi_results_reg_frame.to_excel(writer, 'fimps_reg')
 
     writer.save()
     print('SAVED %s' % xlsx_name)
@@ -292,14 +293,15 @@ def save_results():
     with open('{}_{}.pickle'.format(atlas, 'fsets_count_int'), 'wb') as handle:
         pickle.dump(fsets_count_int, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open('{}_{}.pickle'.format(atlas, 'tgt_univar_results_dict'), 'wb') as handle:
-        pickle.dump(tgt_univar_results_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('{}_{}.pickle'.format(atlas, 'tgt_dict'), 'wb') as handle:
+        pickle.dump(tgt_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open('{}_{}.pickle'.format(atlas, 'fpi_clf_dict'), 'wb') as handle:
-        pickle.dump(gbl.fpi_clf, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # with open('{}_{}.pickle'.format(atlas, 'fpi_clf_dict'), 'wb') as handle:
+    #     pickle.dump(gbl.fpi_clf, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    #
+    # with open('{}_{}.pickle'.format(atlas, 'fpi_reg_dict'), 'wb') as handle:
+    #     pickle.dump(gbl.fpi_reg, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open('{}_{}.pickle'.format(atlas, 'fpi_reg_dict'), 'wb') as handle:
-        pickle.dump(gbl.fpi_reg, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 save_results()
 

@@ -76,8 +76,8 @@ def pred(est_type, task, ests, X, y, scoring=None, thresh=None):
         pred_frames.append(pd.DataFrame(index=y.index.tolist(),
                                         data={'YBOCS_pred': est.predict(X),
                                               'YBOCS_target': y}))
-        if ps > thresh:
-            perm_imp_test(task, est, ps, X, y, 1, scoring)
+        # if ps > thresh:
+        #     perm_imp_test(task, est, ps, X, y, 1, scoring)
         # if task is gbl.clf:
         #     if est_type is gbl.linear_:
         #         pred_frames[i].insert(1, 'Confidence', est.decision_function(X))
