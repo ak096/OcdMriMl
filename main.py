@@ -5,7 +5,7 @@ import pickle
 import datetime
 import os
 import resource
-
+from copy import deepcopy
 import numpy as np
 import pandas as pd
 from sklearn.exceptions import ConvergenceWarning
@@ -90,7 +90,7 @@ for idx, tgt_name in enumerate(targets):
                                 'f_frame': f_frame.transpose(),
                                 'mi_frame': mi_frame.transpose(),
                                 'feat_count_frame': feat_pool_counts_frame.transpose(),
-                                'subs': subs
+                                'subs': deepcopy(subs)
                                 }
 
     print('%s: computed feat_pool: %d' % (tgt_name, feat_pool_set_num))
@@ -261,7 +261,7 @@ fsets_names_reg_frame = fsets_names_reg_frame.reindex(columns=fsets_results_reg_
 def save_results():
     print('SAVING RESULTS')
 
-    exp_description = 'atlas_{}_maxgridpoints_{}_minsupport_{}_geqbg_fpi.xlsx'.format(atlas, gbl.grid_space_size, min_support)
+    exp_description = 'atlas_{}_maxgridpoints_{}_minsupport_{}_geqhb_fpi.xlsx'.format(atlas, gbl.grid_space_size, min_support)
 
     # write prediction results to excel
     xlsx_name = exp_description

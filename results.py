@@ -30,6 +30,7 @@ def update_fset_results(tgt_name, est_type, fsets_count, curr_fset, curr_fset_re
             print('%s/%s/%s/%d: update existing:%s freq:%d' % (tgt_name, est_type, curr_fset, fsets_count, k,
                                                                fsets_results_frame.loc['freq', k]))
             fsets_results_dict[k]['preds'].append(curr_fset_results['pred_score_best'])
+
             if fsets_results_frame.loc['pred_best', k] < curr_fset_results['pred_score_best']:
                 fsets_results_frame.loc['pred_best', k] = curr_fset_results['pred_score_best']
                 fsets_results_frame.loc['tgt_best', k] = tgt_name
@@ -77,28 +78,27 @@ def compute_fpi_results_dict(fpis):
 
 
 def cust_func(s):
-    if type(s.freq) is not pd.core.series.Series: # is than non-iterable int or float
-        s.freq = [s.freq]
-    if type(s.perm_imp_avg) is not pd.core.series.Series: # is than non-iterable int or float
-        s.perm_imp_avg = [s.perm_imp_avg]
-    freq = [n for n in s.freq if str(n) != 'nan']
-    perm_imp_avg = [n for n in s.perm_imp_avg if str(n) != 'nan']
-    perm_imp_high = [n for n in s.perm_imp_high if str(n) != 'nan']
-    perm_imp_low = [n for n in s.perm_imp_low if str(n) != 'nan']
+    if type(s.pi_freq) is not pd.core.series.Series: # is than non-iterable int or float
+        s.pi_freq = [s.pi_freq]
+    if type(s.pi_avg) is not pd.core.series.Series: # is than non-iterable int or float
+        s.pi_avg = [s.pi_avg]
+    pi_freq_n = [n for n in s.pi_freq if str(n) != 'nan']
+    pi_avg_n = [n for n in s.pi_avg if str(n) != 'nan']
+    pi_high_n = [n for n in s.pi_high if str(n) != 'nan']
+    pi_low_n = [n for n in s.pi_low if str(n) != 'nan']
 
-    t = sum(freq)
-    pi_freq = t
-    pi_avg = round(sum([f*perm_imp_avg[i] for i, f in enumerate(freq)])/t, 3)
-    pi_high = round(np.max(perm_imp_high), 3)
-    pi_low = round(np.min(perm_imp_low), 3)
+    pi_freq = sum(pi_freq_n)
+    pi_avg = round(sum([f*pi_avg_n[i] for i, f in enumerate(pi_freq_n)])/pi_freq, 3)
+    pi_high = round(np.max(pi_high_n), 3)
+    pi_low = round(np.min(pi_low_n), 3)
 
-    return pd.Series({'freq': pi_freq, 'perm_imp_avg': pi_avg, 'perm_imp_high': pi_high, 'perm_imp_low': pi_low})
+    return pd.Series({'pi_freq': pi_freq, 'pi_avg': pi_avg, 'pi_high': pi_high, 'pi_low': pi_low})
 
 
 def combine_fpi_frames(args):
     fpi_task_all_results_frame = pd.concat([a for a in args], sort=False)
     fpi_task_results_frame = fpi_task_all_results_frame.apply(cust_func)
-    fpi_task_results_frame.sort_values(by='perm_imp_avg', axis=1, ascending=False, inplace=True)
+    #fpi_task_results_frame.sort_values(by='pi_avg', axis=1, ascending=False, inplace=True)
     return fpi_task_results_frame  # without ci
 
 
@@ -211,7 +211,7 @@ def scatterplot_fpi_results(frame, atlas, task, suffix=''):
     # h = max(0.20 * np.unique(frame.))
     fig, ax = plt.subplots(figsize=(10, h), dpi=dpi)
 
-    sns.scatterplot('pi_avg', frame.index, ax=ax, data=frame, size=frame.freq, size_norm=(5 ** 2, 20 ** 2),
+    sns.scatterplot('pi_avg', frame.index, ax=ax, data=frame, size=frame.pi_freq, size_norm=(5 ** 2, 20 ** 2),
                     label='pi_avg', markers='o')
     sns.scatterplot('pi_high', frame.index, ax=ax, data=frame, label='pi_high', markers='o')
 
@@ -258,7 +258,7 @@ def compute_feat_perm_imp(est, base_score, X, y, fpis_dict, n_iter=3, scoring=No
 
 
 def compute_fpi_geqhb_dict(fsets_geqhb_results_frame, atlas, task, tgt_dict):
-    with open('/home/akshay/PycharmProjects/OcdMriMl/pickle_files/{}_fsets_results_{}_dict.pickle'.format(atlas, task),
+    with open('{}_fsets_results_{}_dict.pickle'.format(atlas, task),
               'rb') as handle:
         fsets_results_dict = pickle.load(handle)
     fpis_dict = {}
@@ -266,18 +266,19 @@ def compute_fpi_geqhb_dict(fsets_geqhb_results_frame, atlas, task, tgt_dict):
         tgt_best = fsets_geqhb_results_frame.loc['tgt_best', c]
         pred_best = fsets_geqhb_results_frame.loc['pred_best', c]
 
-        feat_list = fsets_results_dict[c]['feat_list']
+        fset_list = fsets_results_dict[c]['fset_list']
         est_best = fsets_results_dict[c]['est_best']
 
-        feat_train = feat_list + gbl.clin_demog_feats
+        feat_train = fset_list + gbl.clin_demog_feats
 
         subs = tgt_dict[tgt_best]['subs']
 
+        clf_scorer = ClfScorer()
         fpis_dict = compute_feat_perm_imp(est=est_best, base_score=pred_best,
                               X=subs.pat_frame_test_norm.loc[:, feat_train],
                               y=subs.pat_frame_test_y.iloc[:, 0],
                               n_iter=3,
-                              scoring=ClfScorer.recall_weighted,
+                              scoring=clf_scorer.recall_weighted,
                               fpis_dict=fpis_dict,
                               )
     return fpis_dict
@@ -286,7 +287,7 @@ def compute_fpi_geqhb_dict(fsets_geqhb_results_frame, atlas, task, tgt_dict):
 def compute_store_results():
     min_sup = 0.50
     fqis_algo = 'orange'
-    xlsx_name = 'allclf_geqhb_fs30gp0.9mins_fq{}{}_fcs_fp.xlsx'.format(min_sup, fqis_algo)
+    xlsx_name = 'allclf_geqhb_fs30gp0.9minsup_fq{}{}_fcs_fp.xlsx'.format(min_sup, fqis_algo)
     e_writer = pd.ExcelWriter(xlsx_name)
     for task in [gbl.clf]:#, gbl.reg]:
         print(task)
@@ -295,10 +296,10 @@ def compute_store_results():
         geqhb_non_f_all = []
         for atlas in gbl.atlas_dict.keys():
             print(atlas)
-            fsets_results_frame = pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
+            fsets_results_frame = pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9_geqhb_fpi.xlsx'.format(atlas),
                                                 sheet_name='fsets_results_{}'.format(task), index_col=0)
 
-            fsets_names_frame = pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
+            fsets_names_frame = pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9_geqhb_fpi.xlsx'.format(atlas),
                                               sheet_name='fsets_names_{}'.format(task), index_col=0, dtype=str)
 
             # fpi_results_frames.append(pd.read_excel(io='atlas_{}_maxgridpoints_30_minsupport_0.9.xlsx'.format(atlas),
@@ -307,18 +308,36 @@ def compute_store_results():
             with open('{}_{}.pickle'.format(atlas, 'tgt_dict'), 'rb') as handle:
                 tgt_dict = pickle.load(handle)
 
+            train_test_dist_frame = pd.DataFrame()
+            for k, v in tgt_dict.items():
+                print(k)
+                subs = v['subs']
+                test_dist = {k: len(v) for k, v in subs.pat_names_test_bins.items()}
+                test_dist.update({'size': subs.pat_frame_test_norm.shape[0]})
+                train_test_dist_frame = pd.concat([train_test_dist_frame, pd.DataFrame(
+                    index = ['c0', 'c1', 'c2', 'c3', 'size'],
+                    data={k + '_TEST': test_dist})], axis=1)
+                train_dist= {k: len(v) for k, v in subs.pat_names_train_bins.items()}
+                train_dist.update({'size': subs.pat_frame_train_norm.shape[0]})
+                train_test_dist_frame = pd.concat([train_test_dist_frame, pd.DataFrame(
+                    index=['c0', 'c1', 'c2', 'c3', 'size'],
+                    data={k + '_TRAIN': train_dist})], axis=1)
+            train_test_dist_frame.to_excel(e_writer, '{}_{}_train_test_dist'.format(atlas, task))
+
             non_hb_geq, hb_idx, _, non_hb_geq_idx = compute_geqhb_idx(fsets_results_frame)
 
             fsrf_geqhb = fsets_results_frame.loc[:, np.array(hb_idx) | np.array(non_hb_geq_idx)].copy()
             fsnf_geqhb = fsets_names_frame.loc[:, np.array(hb_idx) | np.array(non_hb_geq_idx)].copy()
 
+            with open('{}_fsets_count_int.pickle'.format(atlas), 'rb') as handle: # only clf since reg turned off
+                fsets_count = pickle.load(handle)
             # save transposed versions of fset results for plotting purposes
             fsrf_geqhbT = fsrf_geqhb.transpose().copy()
-            fsrf_geqhbT.to_excel(e_writer, '{}_{}_fsets_results'.format(atlas, task))
+            fsrf_geqhbT.to_excel(e_writer, '{}_{}_{}_fsets_results'.format(atlas, task, fsets_count))
             # plot
             scatterplot_fset_results(frame=fsrf_geqhbT, atlas=atlas, task=task)
 
-            fsnf_geqhb.transpose().to_excel(e_writer, '{}_{}_fsets_names'.format(atlas, task))
+            fsnf_geqhb.transpose().to_excel(e_writer, '{}_{}_{}_fsets_names'.format(atlas, task, fsets_count))
 
             fpi_dicts[atlas] = compute_fpi_geqhb_dict(fsrf_geqhb, atlas, task, tgt_dict)
 
@@ -390,7 +409,7 @@ def compute_store_results():
 
             geqhb_non_fcounts_frameT = geqhb_non_fcounts_frame.transpose().copy()
 
-            geqhb_non_fcounts_frameT['support'] = round(geqhb_non_fcounts_frameT['count'] / len(non_hb_geq), 3)
+            geqhb_non_fcounts_frameT['support'] = [round(x, 3) for x in geqhb_non_fcounts_frameT['count'] / len(non_hb_geq)]
             geqhb_non_fcounts_frameT.to_excel(e_writer, '{}_{}_fcounts'.format(atlas, task))
 
             # FPI
@@ -399,14 +418,14 @@ def compute_store_results():
 
             fpi_results_frames[-1].transpose().to_excel(e_writer, '{}_{}_fpi'.format(atlas, task))
 
-            geqhb_f = set(geqhb_non_f +
-                          gbl.h_b_expert_fsets[atlas][0] +
-                          gbl.h_b_expert_fsets[atlas][1])
-
-            fpirf_geqhbT = fpi_results_frames[-1][[c for c in fpi_results_frames[-1] if c in geqhb_f]]\
-                                    .transpose().copy()
-            fpirf_geqhbT.to_excel(e_writer, '{}_{}_fpi_hb_geq'.format(atlas, task))
-            scatterplot_fpi_results(fpirf_geqhbT, atlas, task, suffix='_geqhb')
+            # geqhb_f = set(geqhb_non_f +
+            #               gbl.h_b_expert_fsets[atlas][0] +
+            #               gbl.h_b_expert_fsets[atlas][1])
+            #
+            # fpirf_geqhbT = fpi_results_frames[-1][[c for c in fpi_results_frames[-1] if c in geqhb_f]]\
+            #                         .transpose().copy()
+            # fpirf_geqhbT.to_excel(e_writer, '{}_{}_fpi_geqhb'.format(atlas, task))
+            scatterplot_fpi_results(fpi_results_frames[-1].transpose().copy(), atlas, task, suffix='_geqhb')
 
         # FPIS
         fpi_task_results_frame = combine_fpi_frames(fpi_results_frames)
@@ -416,13 +435,13 @@ def compute_store_results():
 
         fpi_task_results_frame.transpose().to_excel(e_writer, '{}_fpi_all'.format(task))
 
-        geqhb_f_all = set(geqhb_non_f_all +
-                          gbl.h_b_expert_fsets['DesiDest'][0] +
-                          gbl.h_b_expert_fsets['DesiDest'][1])
-        fpitrfT = fpi_task_results_frame[[c for c in fpi_task_results_frame if c in geqhb_f_all]]\
-                               .transpose().copy()
-        fpitrfT.to_excel(e_writer, '{}_fpi_geqhb'.format(task))
-        scatterplot_fpi_results(fpitrfT, 'all', task, suffix='_geqhb')
+        # geqhb_f_all = set(geqhb_non_f_all +
+        #                   gbl.h_b_expert_fsets['DesiDest'][0] +
+        #                   gbl.h_b_expert_fsets['DesiDest'][1])
+        # fpitrfT = fpi_task_results_frame[[c for c in fpi_task_results_frame if c in geqhb_f_all]]\
+        #                        .transpose().copy()
+        # fpitrfT.to_excel(e_writer, '{}_fpi_geqhb'.format(task))
+        scatterplot_fpi_results(fpi_task_results_frame.transpose().copy(), 'all', task, suffix='_geqhb')
     e_writer.save()
     print('SAVED %s' % xlsx_name)
 
